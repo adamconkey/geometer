@@ -6,6 +6,12 @@ pub struct Point {
     pub y: f64,
 }
 
+impl Point {
+    pub fn new(x: f64, y: f64) -> Point {
+        Point { x: x, y: y }
+    }
+}
+
 
 pub struct Triangle {
     pub a: Point,
@@ -33,9 +39,9 @@ mod tests {
 
     #[test]
     fn test_area_right_triangle() {
-        let a = Point {x: 0.0, y: 0.0};
-        let b = Point {x: 3.0, y: 0.0};
-        let c = Point {x: 0.0, y: 4.0};
+        let a = Point::new(0.0, 0.0);
+        let b = Point::new(3.0, 0.0);
+        let c = Point::new(0.0, 4.0);
         let triangle = Triangle::new(a, b, c);
         let area = triangle.area();
         assert_eq!(area, 6.0);
