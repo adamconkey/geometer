@@ -20,7 +20,6 @@ pub struct Triangle {
 }
 
 impl Triangle {
-
     pub fn new(a: Point, b: Point, c: Point) -> Triangle {
         Triangle { a: a, b: b, c: c }
     }
