@@ -1,26 +1,50 @@
 
 // TODO make this type-generic?
 // TODO handle dimensionality of coordinates
-pub struct Point {
+pub struct Vertex {
     pub x: f64,
     pub y: f64,
+    pub index: u32,
 }
 
-impl Point {
-    pub fn new(x: f64, y: f64) -> Point {
-        Point { x: x, y: y }
+impl Vertex {
+    // TODO it will be nice to not have to reason about
+    // indices, can look into making some kind of global
+    // integer generator that creates unique indices
+    pub fn new(x: f64, y: f64, index: u32) -> Vertex {
+        Vertex {
+            x: x,
+            y: y,
+            index: index,
+        }
+    }
+}
+
+
+pub struct Polygon {
+    // TODO
+}
+
+impl Polygon {
+    pub fn new() -> Polygon {
+        // TODO
+        Polygon { }
+    }
+
+    pub fn area(&self) -> f64 {
+        unimplemented!()
     }
 }
 
 
 pub struct Triangle {
-    pub a: Point,
-    pub b: Point,
-    pub c: Point,
+    pub a: Vertex,
+    pub b: Vertex,
+    pub c: Vertex,
 }
 
 impl Triangle {
-    pub fn new(a: Point, b: Point, c: Point) -> Triangle {
+    pub fn new(a: Vertex, b: Vertex, c: Vertex) -> Triangle {
         Triangle { a: a, b: b, c: c }
     }
     
@@ -38,9 +62,9 @@ mod tests {
 
     #[test]
     fn test_area_right_triangle() {
-        let a = Point::new(0.0, 0.0);
-        let b = Point::new(3.0, 0.0);
-        let c = Point::new(0.0, 4.0);
+        let a = Vertex::new(0.0, 0.0, 0);
+        let b = Vertex::new(3.0, 0.0, 1);
+        let c = Vertex::new(0.0, 4.0, 2);
         let triangle = Triangle::new(a, b, c);
         let area = triangle.area();
         assert_eq!(area, 6.0);
