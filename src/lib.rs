@@ -1,6 +1,9 @@
 
+use itertools::Itertools;
+
 // TODO make this type-generic?
 // TODO handle dimensionality of coordinates
+#[derive(Debug)]
 pub struct Vertex {
     pub x: f64,
     pub y: f64,
@@ -21,37 +24,40 @@ impl Vertex {
 }
 
 
+fn triangle_area(a: &Vertex, b: &Vertex, c: &Vertex) -> f64 {
+    let t1 = (b.x - a.x) * (c.y - a.y);
+    let t2 = (c.x - a.x) * (b.y - a.y);
+    0.5 * (t1 - t2)              
+}
+
+
 pub struct Polygon {
-    // TODO
+    pub vertices: Vec<Vertex>,
 }
 
 impl Polygon {
+    // TODO want vec-based new func
+    
     pub fn new() -> Polygon {
-        // TODO
-        Polygon { }
+        Polygon { vertices: Vec::new() }
     }
 
-    pub fn area(&self) -> f64 {
-        unimplemented!()
-    }
-}
-
-
-pub struct Triangle {
-    pub a: Vertex,
-    pub b: Vertex,
-    pub c: Vertex,
-}
-
-impl Triangle {
-    pub fn new(a: Vertex, b: Vertex, c: Vertex) -> Triangle {
-        Triangle { a: a, b: b, c: c }
+    pub fn add_vertex(&mut self, v: Vertex) {
+        self.vertices.push(v);
     }
     
     pub fn area(&self) -> f64 {
-        let t1 = (self.b.x - self.a.x) * (self.c.y - self.a.y);
-        let t2 = (self.c.x - self.a.x) * (self.b.y - self.a.y);
-        0.5 * (t1 - t2)              
+        // TODO for now we'll just panic if we access something
+        // that doesn't exist, which shouldn't happen if it's
+        // a well-defined polygon. So maybe we do some validation
+        // to ensure it's valid before even trying computations
+        // on it?
+        let p = &self.vertices[0];
+        let mut area = 0.0;
+        for (b, c) in self.vertices.iter().tuple_windows() {
+            area += triangle_area(p, b, c);
+        }
+        area
     }
 }
 
@@ -65,8 +71,11 @@ mod tests {
         let a = Vertex::new(0.0, 0.0, 0);
         let b = Vertex::new(3.0, 0.0, 1);
         let c = Vertex::new(0.0, 4.0, 2);
-        let triangle = Triangle::new(a, b, c);
-        let area = triangle.area();
+        let mut polygon = Polygon::new();
+        polygon.add_vertex(a);
+        polygon.add_vertex(b);
+        polygon.add_vertex(c);
+        let area = polygon.area();
         assert_eq!(area, 6.0);
     }
 }
