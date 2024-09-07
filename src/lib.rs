@@ -71,7 +71,8 @@ impl Polygon {
         // on it?
 
         // The first tuple will include the anchor, but that area
-        // ends up being zero so it doesn't affect the computation
+        // ends up being zero since p2 will trivially be collinear
+        // with anchor-p1 and thus doesn't affect the compuation
         let anchor = &self.vertices[0];
         let mut area = 0;
         for (p1, p2) in self.vertices.iter().tuple_windows() {
