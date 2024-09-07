@@ -5,8 +5,8 @@ use itertools::Itertools;
 // TODO handle dimensionality of coordinates
 #[derive(Debug)]
 pub struct Vertex {
-    pub x: f64,
-    pub y: f64,
+    pub x: u32,
+    pub y: u32,
     pub index: u32,
 }
 
@@ -14,7 +14,7 @@ impl Vertex {
     // TODO it will be nice to not have to reason about
     // indices, can look into making some kind of global
     // integer generator that creates unique indices
-    pub fn new(x: f64, y: f64, index: u32) -> Vertex {
+    pub fn new(x: u32, y: u32, index: u32) -> Vertex {
         Vertex {
             x: x,
             y: y,
@@ -24,10 +24,10 @@ impl Vertex {
 }
 
 
-fn triangle_area(a: &Vertex, b: &Vertex, c: &Vertex) -> f64 {
+fn triangle_double_area(a: &Vertex, b: &Vertex, c: &Vertex) -> u32 {
     let t1 = (b.x - a.x) * (c.y - a.y);
     let t2 = (c.x - a.x) * (b.y - a.y);
-    0.5 * (t1 - t2)              
+    t1 - t2
 }
 
 
@@ -46,7 +46,7 @@ impl Polygon {
         self.vertices.push(v);
     }
     
-    pub fn area(&self) -> f64 {
+    pub fn double_area(&self) -> u32 {
         // TODO for now we'll just panic if we access something
         // that doesn't exist, which shouldn't happen if it's
         // a well-defined polygon. So maybe we do some validation
@@ -56,9 +56,9 @@ impl Polygon {
         // The first tuple will include the anchor, but that area
         // ends up being zero so it doesn't affect the computation
         let anchor = &self.vertices[0];
-        let mut area = 0.0;
+        let mut area = 0;
         for (p1, p2) in self.vertices.iter().tuple_windows() {
-            area += triangle_area(anchor, p1, p2);
+            area += triangle_double_area(anchor, p1, p2);
         }
         area
     }
@@ -71,14 +71,14 @@ mod tests {
 
     #[test]
     fn test_area_right_triangle() {
-        let a = Vertex::new(0.0, 0.0, 0);
-        let b = Vertex::new(3.0, 0.0, 1);
-        let c = Vertex::new(0.0, 4.0, 2);
+        let a = Vertex::new(0, 0, 0);
+        let b = Vertex::new(3, 0, 1);
+        let c = Vertex::new(0, 4, 2);
         let mut polygon = Polygon::new();
         polygon.add_vertex(a);
         polygon.add_vertex(b);
         polygon.add_vertex(c);
-        let area = polygon.area();
-        assert_eq!(area, 6.0);
+        let double_area = polygon.double_area();
+        assert_eq!(double_area, 12);
     }
 }
