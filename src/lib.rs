@@ -52,10 +52,13 @@ impl Polygon {
         // a well-defined polygon. So maybe we do some validation
         // to ensure it's valid before even trying computations
         // on it?
-        let p = &self.vertices[0];
+
+        // The first tuple will include the anchor, but that area
+        // ends up being zero so it doesn't affect the computation
+        let anchor = &self.vertices[0];
         let mut area = 0.0;
-        for (b, c) in self.vertices.iter().tuple_windows() {
-            area += triangle_area(p, b, c);
+        for (p1, p2) in self.vertices.iter().tuple_windows() {
+            area += triangle_area(anchor, p1, p2);
         }
         area
     }
