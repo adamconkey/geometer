@@ -11,6 +11,21 @@ pub struct Vertex {
 }
 
 
+// TODO I think it might be worth defining an enum here for
+// left / collinear / right that resolves to 1 / 0 / -1 if
+// possible, so that you could do away with the left and
+// collinear tests and instead have a function that determines
+// the vertex's relation to two other vertices being one of
+// those 3 options. And it can be computed by getting the
+// sign of the area. Then it should be easy to define the
+// proper intsersection function. Will want to make some
+// good unit tests for this functionality
+
+
+// TODO want some better unit tests for the triangle area,
+// and also more general polygon areas.
+
+
 // TODO not sure what to do with this function yet, may end up
 // having a triangle type that we'll put this on
 fn triangle_double_area(a: &Vertex, b: &Vertex, c: &Vertex) -> i32 {
