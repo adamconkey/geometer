@@ -5,8 +5,8 @@ use unique_id::sequence::SequenceGenerator;
 // triangle primitive? If so then obviously the area can go on that,
 // and on some level it makese sense to also  consider point line
 // (segment) relations in terms of triangles.
-use crate::PointLineRelation;
-use crate::triangle_double_area;
+// use crate::PointLineRelation;
+// use crate::triangle_double_area;
 
 
 lazy_static!(
@@ -31,9 +31,5 @@ impl Vertex {
             y: y,
             index: ID_GENERATOR.next_id(),
         }
-    }
-
-    pub fn relation_to_line(&self, a: &Vertex, b: &Vertex) -> PointLineRelation {
-        PointLineRelation::from_i32(triangle_double_area(a, b, self).signum())
     }
 }
