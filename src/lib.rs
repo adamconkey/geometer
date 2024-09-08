@@ -1,31 +1,19 @@
 use itertools::Itertools;
-use unique_id::Generator;
-use unique_id::sequence::SequenceGenerator;
+
+use crate::vertex::Vertex;
+
+
+pub mod vertex;
+
 
 #[macro_use]
 extern crate lazy_static;
-
-
-lazy_static!(
-    static ref ID_GENERATOR: SequenceGenerator = SequenceGenerator::default();
-);
-
-
-// TODO make this type-generic?
-// TODO handle dimensionality of coordinates
-#[derive(Debug)]
-pub struct Vertex {
-    pub x: i32,
-    pub y: i32,
-    pub index: i64,
-}
 
 
 // TODO not sure yet if this is useful, will want to implement
 // the intersection function and see if it's worthwhile.
 // If the enum is unnecessary then can just have the function
 // return 0, -1, 1, and use those values directly
-
 #[derive(Debug, PartialEq)]
 pub enum PointLineRelation {
     Collinear = 0,
@@ -53,23 +41,6 @@ fn triangle_double_area(a: &Vertex, b: &Vertex, c: &Vertex) -> i32 {
     let t2 = (c.x - a.x) * (b.y - a.y);
     t1 - t2
 }
-
-
-impl Vertex {
-    pub fn new(x: i32, y: i32) -> Vertex {
-        Vertex {
-            x: x,
-            y: y,
-            index: ID_GENERATOR.next_id(),
-        }
-    }
-
-    pub fn relation_to_line(&self, a: &Vertex, b: &Vertex) -> PointLineRelation {
-        PointLineRelation::from_i32(triangle_double_area(a, b, self).signum())
-    }
-}
-
-
 
 
 pub struct Polygon {
