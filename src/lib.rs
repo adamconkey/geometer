@@ -16,6 +16,7 @@ pub struct Vertex {
 // If the enum is unnecessary then can just have the function
 // return 0, -1, 1, and use those values directly
 
+#[derive(Debug, PartialEq)]
 pub enum PointLineRelation {
     Collinear = 0,
     Left = 1,
@@ -118,5 +119,42 @@ mod tests {
         polygon.add_vertex(c);
         let double_area = polygon.double_area();
         assert_eq!(double_area, 12);
+    }
+
+    #[test]
+    fn test_point_line_relations_triangle() {
+        let a = Vertex::new(0, 0, 0);
+        let b = Vertex::new(4, 3, 1);
+        let c = Vertex::new(1, 3, 2);
+        let a_to_bc = a.relation_to_line(&b, &c);
+        let a_to_cb = a.relation_to_line(&c, &b);
+        let b_to_ac = b.relation_to_line(&a, &c);
+        let b_to_ca = b.relation_to_line(&c, &a);
+        let c_to_ab = c.relation_to_line(&a, &b);
+        let c_to_ba = c.relation_to_line(&b, &a);
+        assert_eq!(a_to_bc, PointLineRelation::Left);
+        assert_eq!(a_to_cb, PointLineRelation::Right);
+        assert_eq!(b_to_ac, PointLineRelation::Right);
+        assert_eq!(b_to_ca, PointLineRelation::Left);
+        assert_eq!(c_to_ab, PointLineRelation::Left);
+        assert_eq!(c_to_ba, PointLineRelation::Right);
+    }
+
+    #[test]
+    fn test_collinear() {
+        let a = Vertex::new(0, 0, 0);
+        let b = Vertex::new(4, 3, 1);
+        let c = Vertex::new(8, 6, 2);
+        let relations = vec![
+            a.relation_to_line(&b, &c),
+            a.relation_to_line(&c, &b),
+            b.relation_to_line(&a, &c),
+            b.relation_to_line(&c, &a),
+            c.relation_to_line(&a, &b),
+            c.relation_to_line(&b, &a),
+        ];
+        for relation in relations {
+            assert_eq!(relation, PointLineRelation::Collinear);
+        }
     }
 }
