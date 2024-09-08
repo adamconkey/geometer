@@ -1,5 +1,15 @@
-
 use itertools::Itertools;
+use unique_id::Generator;
+use unique_id::sequence::SequenceGenerator;
+
+#[macro_use]
+extern crate lazy_static;
+
+
+lazy_static!(
+    static ref ID_GENERATOR: SequenceGenerator = SequenceGenerator::default();
+);
+
 
 // TODO make this type-generic?
 // TODO handle dimensionality of coordinates
@@ -7,7 +17,7 @@ use itertools::Itertools;
 pub struct Vertex {
     pub x: i32,
     pub y: i32,
-    pub index: u32,
+    pub index: i64,
 }
 
 
@@ -36,10 +46,6 @@ impl PointLineRelation {
 }
 
 
-// TODO want some better unit tests for the triangle area,
-// and also more general polygon areas.
-
-
 // TODO not sure what to do with this function yet, may end up
 // having a triangle type that we'll put this on
 fn triangle_double_area(a: &Vertex, b: &Vertex, c: &Vertex) -> i32 {
@@ -50,14 +56,11 @@ fn triangle_double_area(a: &Vertex, b: &Vertex, c: &Vertex) -> i32 {
 
 
 impl Vertex {
-    // TODO it will be nice to not have to reason about
-    // indices, can look into making some kind of global
-    // integer generator that creates unique indices
-    pub fn new(x: i32, y: i32, index: u32) -> Vertex {
+    pub fn new(x: i32, y: i32) -> Vertex {
         Vertex {
             x: x,
             y: y,
-            index: index,
+            index: ID_GENERATOR.next_id(),
         }
     }
 
@@ -110,9 +113,9 @@ mod tests {
 
     #[test]
     fn test_area_right_triangle() {
-        let a = Vertex::new(0, 0, 0);
-        let b = Vertex::new(3, 0, 1);
-        let c = Vertex::new(0, 4, 2);
+        let a = Vertex::new(0, 0);
+        let b = Vertex::new(3, 0);
+        let c = Vertex::new(0, 4);
         let mut polygon = Polygon::new();
         polygon.add_vertex(a);
         polygon.add_vertex(b);
@@ -121,11 +124,15 @@ mod tests {
         assert_eq!(double_area, 12);
     }
 
+    // TODO want some better unit tests for the triangle area,
+    // and also more general polygon areas.
+
+    
     #[test]
     fn test_point_line_relations_triangle() {
-        let a = Vertex::new(0, 0, 0);
-        let b = Vertex::new(4, 3, 1);
-        let c = Vertex::new(1, 3, 2);
+        let a = Vertex::new(0, 0);
+        let b = Vertex::new(4, 3);
+        let c = Vertex::new(1, 3);
         let a_to_bc = a.relation_to_line(&b, &c);
         let a_to_cb = a.relation_to_line(&c, &b);
         let b_to_ac = b.relation_to_line(&a, &c);
@@ -142,9 +149,9 @@ mod tests {
 
     #[test]
     fn test_collinear() {
-        let a = Vertex::new(0, 0, 0);
-        let b = Vertex::new(4, 3, 1);
-        let c = Vertex::new(8, 6, 2);
+        let a = Vertex::new(0, 0);
+        let b = Vertex::new(4, 3);
+        let c = Vertex::new(8, 6);
         let relations = vec![
             a.relation_to_line(&b, &c),
             a.relation_to_line(&c, &b),
