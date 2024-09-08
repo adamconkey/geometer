@@ -11,15 +11,28 @@ pub struct Vertex {
 }
 
 
-// TODO I think it might be worth defining an enum here for
-// left / collinear / right that resolves to 1 / 0 / -1 if
-// possible, so that you could do away with the left and
-// collinear tests and instead have a function that determines
-// the vertex's relation to two other vertices being one of
-// those 3 options. And it can be computed by getting the
-// sign of the area. Then it should be easy to define the
-// proper intsersection function. Will want to make some
-// good unit tests for this functionality
+// TODO not sure yet if this is useful, will want to implement
+// the intersection function and see if it's worthwhile.
+// If the enum is unnecessary then can just have the function
+// return 0, -1, 1, and use those values directly
+
+pub enum PointLineRelation {
+    Collinear = 0,
+    Left = 1,
+    Right = -1,
+}
+
+
+impl PointLineRelation {
+    pub fn from_i32(value: i32) -> PointLineRelation {
+        match value {    
+            -1 => PointLineRelation::Right,
+            0 => PointLineRelation::Collinear,
+            1 => PointLineRelation::Left,
+            _ => panic!("Undefined for i32 not in [-1, 0, 1]"),
+        }
+    }
+}
 
 
 // TODO want some better unit tests for the triangle area,
@@ -47,16 +60,8 @@ impl Vertex {
         }
     }
 
-    pub fn left(&self, a: &Vertex, b: &Vertex) -> bool {
-        triangle_double_area(a, b, self) > 0
-    }
-
-    pub fn left_on(&self, a: &Vertex, b: &Vertex) -> bool {
-        triangle_double_area(a, b, self) >= 0
-    }
-
-    pub fn collinear(&self, a: &Vertex, b: &Vertex) -> bool {
-        triangle_double_area(a, b, self) == 0
+    pub fn relation_to_line(&self, a: &Vertex, b: &Vertex) -> PointLineRelation {
+        PointLineRelation::from_i32(triangle_double_area(a, b, self).signum())
     }
 }
 
