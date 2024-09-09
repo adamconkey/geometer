@@ -23,3 +23,16 @@ impl Vertex {
         Vertex { x: x, y: y, index: ID_GENERATOR.next_id() }
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_index() {
+        let v0 = Vertex::new(1, 2);
+        let v1 = Vertex::new(3, 4);
+        assert_ne!(v0.index, v1.index);
+    }
+}
