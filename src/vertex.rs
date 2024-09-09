@@ -1,12 +1,6 @@
+
 use unique_id::Generator;
 use unique_id::sequence::SequenceGenerator;
-
-// TODO will likely want to rethink this structure, will there be a
-// triangle primitive? If so then obviously the area can go on that,
-// and on some level it makese sense to also  consider point line
-// (segment) relations in terms of triangles.
-// use crate::PointLineRelation;
-// use crate::triangle_double_area;
 
 
 lazy_static!(
@@ -26,10 +20,6 @@ pub struct Vertex {
 
 impl Vertex {
     pub fn new(x: i32, y: i32) -> Vertex {
-        Vertex {
-            x: x,
-            y: y,
-            index: ID_GENERATOR.next_id(),
-        }
+        Vertex { x: x, y: y, index: ID_GENERATOR.next_id() }
     }
 }

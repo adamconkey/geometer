@@ -11,11 +11,7 @@ pub struct Triangle<'a> {
 
 impl<'a> Triangle<'a> {
     pub fn new(a: &'a Vertex, b: &'a Vertex, c: &'a Vertex) -> Triangle<'a> {
-        Triangle {
-            a: a,
-            b: b,
-            c: c,
-        }
+        Triangle { a: a, b: b, c: c }
     }
 
     pub fn double_area(&self) -> i32 {
