@@ -86,11 +86,26 @@ mod tests {
         
         let collinear = vec![
             Triangle::new(&a, &a, &a),
-            Triangle::new(&b, &b, &b),
-            Triangle::new(&c, &c, &c),
             Triangle::new(&a, &a, &b),
-
-            // TODO need to keep populating these, all combos
+            Triangle::new(&a, &a, &c),
+            Triangle::new(&a, &b, &a),
+            Triangle::new(&a, &b, &b),
+            Triangle::new(&a, &c, &a),
+            Triangle::new(&a, &c, &c),
+            Triangle::new(&b, &b, &a),
+            Triangle::new(&b, &b, &b),
+            Triangle::new(&b, &b, &c),
+            Triangle::new(&b, &a, &a),
+            Triangle::new(&b, &a, &b),
+            Triangle::new(&b, &c, &b),
+            Triangle::new(&b, &c, &c),
+            Triangle::new(&c, &c, &a),
+            Triangle::new(&c, &c, &b),
+            Triangle::new(&c, &c, &c),
+            Triangle::new(&c, &a, &a),
+            Triangle::new(&c, &a, &c),
+            Triangle::new(&c, &b, &b),
+            Triangle::new(&c, &b, &c),
         ];
         for triangle in collinear {
             assert_eq!(triangle.area_sign(), 0);
