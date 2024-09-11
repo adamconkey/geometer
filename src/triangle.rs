@@ -81,67 +81,25 @@ mod tests {
         let b = Vertex::new(4, 3);
         let c = Vertex::new(1, 3);
 
-        let cw = vec![
-            Triangle::new(&a, &c, &b),
-            Triangle::new(&c, &b, &a),
-            Triangle::new(&b, &a, &c),
-        ];
-
-        let ccw = vec![
-            Triangle::new(&a, &b, &c),
-            Triangle::new(&b, &c, &a),
-            Triangle::new(&c, &a, &b),
-        ];
-        
-        // let collinear = vec![
-        //     Triangle::new(&a, &a, &a),
-        //     Triangle::new(&a, &a, &b),
-        //     Triangle::new(&a, &a, &c),
-        //     Triangle::new(&a, &b, &a),
-        //     Triangle::new(&a, &b, &b),
-        //     Triangle::new(&a, &c, &a),
-        //     Triangle::new(&a, &c, &c),
-        //     Triangle::new(&b, &b, &a),
-        //     Triangle::new(&b, &b, &b),
-        //     Triangle::new(&b, &b, &c),
-        //     Triangle::new(&b, &a, &a),
-        //     Triangle::new(&b, &a, &b),
-        //     Triangle::new(&b, &c, &b),
-        //     Triangle::new(&b, &c, &c),
-        //     Triangle::new(&c, &c, &a),
-        //     Triangle::new(&c, &c, &b),
-        //     Triangle::new(&c, &c, &c),
-        //     Triangle::new(&c, &a, &a),
-        //     Triangle::new(&c, &a, &c),
-        //     Triangle::new(&c, &b, &b),
-        //     Triangle::new(&c, &b, &c),
-        // ];
-
-        let collinear = vec![&a, &b, &c]
-            .into_iter()
-            .combinations_with_replacement(3);
+        // This is choice with replacement over a 3-tuple, so there are
+        // 3 * 3 * 3 = 27 total options and this generates all of them.
+        let collinear = std::iter::repeat(vec![&a, &b, &c].into_iter())
+            .take(3)
+            .multi_cartesian_product();
         
         for vertices in collinear {
             let p0 = vertices[0];
             let p1 = vertices[1];
             let p2 = vertices[2];
             let triangle = Triangle::new(p0, p1, p2);
-
-            // TODO I think this isn't quite getting everything because
-            // it's saying order doesn't matter? But in my case it does,
-            // need to perhaps rethink this on whether all these combos
-            // are necessary (above) and what a sufficient test here
-            // looks like
             
-            if p0 == p1 || p1 == p2 {
-                println!("{:?}, {:?}, {:?}", p0, p1, p2);
-                // If there's duplicate vertices, they should be
-                // detected as collinear (zero area)
+            if p0 == p1 || p0 == p2 || p1 == p2 {
+                // If there's duplicate vertices, they should be detected
+                // as collinear (zero area)
                 assert_eq!(triangle.area_sign(), 0);
             } else {
-                // If all vertices are unique then they're either
-                // clockwise (negative area) or counter-clockwise
-                // (positive area)
+                // If all vertices are unique then they're either clockwise
+                // (negative area) or counter-clockwise (positive area)
                 assert_ne!(triangle.area_sign(), 0);
             }
         }
