@@ -17,7 +17,6 @@ impl<'a> Triangle<'a> {
     }
 
     pub fn double_area(&self) -> i32 {
-        // TODO should validate that this is actually only computing this once
         *self.double_area.get_or_init(|| {
             let t1 = (self.b.x - self.a.x) * (self.c.y - self.a.y);
             let t2 = (self.c.x - self.a.x) * (self.b.y - self.a.y);
