@@ -7,7 +7,7 @@ pub struct Triangle<'a> {
     pub a: &'a Vertex,
     pub b: &'a Vertex,
     pub c: &'a Vertex,
-    pub double_area: OnceCell<i32>,
+    double_area: OnceCell<i32>,
 }
 
 
