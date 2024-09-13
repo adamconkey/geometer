@@ -4,22 +4,23 @@ use crate::vertex::Vertex;
 
 
 pub struct LineSegment<'a> {
-    pub a: &'a Vertex,
-    pub b: &'a Vertex,
+    pub v1: &'a Vertex,
+    pub v2: &'a Vertex,
 }
 
 
-pub fn proper_intersection(ls1: &LineSegment, ls2: &LineSegment) -> bool {
+impl<'a> LineSegment<'a> {
+    pub fn new(v1: &'a Vertex, v2: &'a Vertex) -> Self {
+        LineSegment { v1: v1, v2: v2 }
+    }
+}
 
-    // TODO followed these naming conventions to follow the book text,
-    // but having lots of a b c floating around may not be the best
-    // idea. Should probably look at other libraries to see how they
-    // handle naming conventions for points in geometric entities
-    
-    let a = ls1.a;
-    let b = ls1.b;
-    let c = ls2.a;
-    let d = ls2.b;
+
+pub fn proper_intersection(ab: &LineSegment, cd: &LineSegment) -> bool {    
+    let a = ab.v1;
+    let b = ab.v2;
+    let c = cd.v1;
+    let d = cd.v2;
 
     let abc = Triangle::new(a, b, c);
     let abd = Triangle::new(a, b, d);
@@ -43,4 +44,39 @@ pub fn proper_intersection(ls1: &LineSegment, ls2: &LineSegment) -> bool {
 }
 
 
-// TODO need some unit tests for this
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_proper_intersection() {
+        let a = Vertex::new(6, 4);
+        let b = Vertex::new(0, 4);
+        let c = Vertex::new(1, 0);
+        let d = Vertex::new(4, 6);
+
+        let ab = LineSegment::new(&a, &b);
+        let cd = LineSegment::new(&c, &d);
+
+        assert!(proper_intersection(&ab, &cd));
+    }
+
+    #[test]
+    fn test_proper_intersection_no_intersect() {
+        let a = Vertex::new(6, 4);
+        let b = Vertex::new(4, 4);
+        let c = Vertex::new(1, 0);
+        let d = Vertex::new(4, 6);
+
+        let ab = LineSegment::new(&a, &b);
+        let cd = LineSegment::new(&c, &d);
+
+        assert!(!proper_intersection(&ab, &cd));
+    }
+
+    // TODO need more tests, can check proper func on improper
+    // scenario to show it fails, and if vertices coincide. May
+    // Want to implement other functions in that section so it's
+    // clear what other nominal test cases there might be
+   
+}
