@@ -92,11 +92,11 @@ mod tests {
 
         // This is choice with replacement over a 3-tuple, so there are
         // 3 * 3 * 3 = 27 total options and this generates all of them.
-        let collinear = std::iter::repeat(vec![&a, &b, &c].into_iter())
+        let all_combos = std::iter::repeat(vec![&a, &b, &c].into_iter())
             .take(3)
             .multi_cartesian_product();
         
-        for vertices in collinear {
+        for vertices in all_combos {
             let p0 = vertices[0];
             let p1 = vertices[1];
             let p2 = vertices[2];
@@ -105,11 +105,11 @@ mod tests {
             if p0 == p1 || p0 == p2 || p1 == p2 {
                 // If there's duplicate vertices, they should be detected
                 // as collinear (zero area)
-                assert_eq!(triangle.area_sign(), 0);
+                assert!(triangle.has_collinear_points());
             } else {
                 // If all vertices are unique then they're either clockwise
                 // (negative area) or counter-clockwise (positive area)
-                assert_ne!(triangle.area_sign(), 0);
+                assert!(!triangle.has_collinear_points());
             }
         }
     }
