@@ -13,6 +13,14 @@ impl<'a> LineSegment<'a> {
     pub fn new(v1: &'a Vertex, v2: &'a Vertex) -> Self {
         LineSegment { v1: v1, v2: v2 }
     }
+
+    pub fn is_vertical(&self) -> bool {
+        self.v1.x == self.v2.x
+    }
+
+    pub fn is_horizontal(&self) -> bool {
+        self.v1.y == self.v2.y
+    }
 }
 
 
