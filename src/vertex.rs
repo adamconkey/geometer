@@ -52,6 +52,9 @@ mod tests {
         assert_ne!(v0.index, v1.index);
     }
 
+
+    // TODO might be nice to add custom macro for between asserts,
+    // not sure how difficult it is to write macros at this stage
     #[test]
     fn test_between() {
         let v0 = Vertex::new(0, 0);
