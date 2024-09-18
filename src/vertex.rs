@@ -13,7 +13,7 @@ lazy_static!(
 
 // TODO make this type-generic?
 // TODO handle dimensionality of coordinates
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Vertex {
     pub x: i32,
     pub y: i32,
@@ -40,11 +40,11 @@ impl Vertex {
     }
 
     pub fn left(&self, ab: &LineSegment) -> bool {
-        Triangle::new(ab.v1, ab.v1, self).area_sign() > 0
+        Triangle::new(ab.v1, ab.v2, self).area_sign() > 0
     }
 
     pub fn left_on(&self, ab: &LineSegment) -> bool {
-        Triangle::new(ab.v1, ab.v1, self).area_sign() >= 0
+        Triangle::new(ab.v1, ab.v2, self).area_sign() >= 0
     }
 }
 

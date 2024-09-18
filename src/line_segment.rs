@@ -143,4 +143,16 @@ mod tests {
         assert!( ab.improper_intersects(&ab));
         assert!( ab.intersects(&ab));
     }
+
+    #[test]
+    fn test_reverse() {
+        let a = Vertex::new(0, 0);
+        let b = Vertex::new(1, 2);
+        let ab = LineSegment::new(&a, &b);
+        let ba = ab.reverse();
+        assert_eq!(ab.v1, &a);
+        assert_eq!(ab.v2, &b);
+        assert_eq!(ba.v1, &b);
+        assert_eq!(ba.v2, &a);
+    }
 }

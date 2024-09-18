@@ -62,6 +62,10 @@ impl Polygon {
         // not encoding arbitrary graphs so can likely do
         // something better here.
 
+        // TODO this won't work if vertex not in neighbors, would
+        // want to add error checking but really this is a terrible
+        // way to get neighbors, want to rethink this.
+        
         let first = &self.vertices[0];
         let last = self.vertices
             .last()
@@ -83,11 +87,13 @@ impl Polygon {
             if v == v1 {
                 prev = v0;
                 next = v2;
+                return (prev, next);
             } else if v2 == last {
                 // Edge case if the vertex we're looking for happens to be
                 // the last in the vec, need to wrap around to the front
                 prev = v1;
                 next = first;
+                return (prev, next);
             }
         }
 
@@ -144,5 +150,123 @@ mod tests {
         polygon.add_vertex(c);
         let double_area = polygon.double_area();
         assert_eq!(double_area, 12);
+    }
+
+    #[test]
+    fn test_neighbors_square() {
+        let a = Vertex::new(0, 0);
+        let b = Vertex::new(4, 0);
+        let c = Vertex::new(4, 4);
+        let d = Vertex::new(0, 4);
+
+        let mut polygon = Polygon::new();
+        polygon.add_vertex(a.clone());
+        polygon.add_vertex(b.clone());
+        polygon.add_vertex(c.clone());
+        polygon.add_vertex(d.clone());
+
+        assert_eq!(polygon.neighbors(&a), (&d, &b));
+        assert_eq!(polygon.neighbors(&b), (&a, &c));
+        assert_eq!(polygon.neighbors(&c), (&b, &d));
+        assert_eq!(polygon.neighbors(&d), (&c, &a));
+    }
+
+    #[test]
+    fn test_neighbors_p1() {
+        // TODO will be using polygons across tests, would be great to
+        // have better way to configure this, not sure what fixtures
+        // Rust offers
+        let a = Vertex::new( 0, 0);
+        let b = Vertex::new( 3, 4);
+        let c = Vertex::new( 6, 2);
+        let d = Vertex::new( 7, 6);
+        let e = Vertex::new( 3, 9);
+        let f = Vertex::new(-2, 7);
+
+        // TODO need to rethink this whole thing, I thought it would make
+        // sense for a polygon to own the vertices, it still might, but
+        // it does make it more of a pain to test things.
+        let mut polygon = Polygon::new();
+        polygon.add_vertex(a.clone());
+        polygon.add_vertex(b.clone());
+        polygon.add_vertex(c.clone());
+        polygon.add_vertex(d.clone());
+        polygon.add_vertex(e.clone());
+        polygon.add_vertex(f.clone());
+
+        assert_eq!(polygon.neighbors(&a), (&f, &b));
+        assert_eq!(polygon.neighbors(&b), (&a, &c));
+        assert_eq!(polygon.neighbors(&c), (&b, &d));
+        assert_eq!(polygon.neighbors(&d), (&c, &e));
+        assert_eq!(polygon.neighbors(&e), (&d, &f));
+        assert_eq!(polygon.neighbors(&f), (&e, &a));
+    }
+    
+    #[test]
+    fn test_diagonal() {
+        let a = Vertex::new( 0, 0);
+        let b = Vertex::new( 3, 4);
+        let c = Vertex::new( 6, 2);
+        let d = Vertex::new( 7, 6);
+        let e = Vertex::new( 3, 9);
+        let f = Vertex::new(-2, 7);
+
+        // TODO need to rethink this whole thing, I thought it would make
+        // sense for a polygon to own the vertices, it still might, but
+        // it does make it more of a pain to test things.
+        let mut polygon = Polygon::new();
+        polygon.add_vertex(a.clone());
+        polygon.add_vertex(b.clone());
+        polygon.add_vertex(c.clone());
+        polygon.add_vertex(d.clone());
+        polygon.add_vertex(e.clone());
+        polygon.add_vertex(f.clone());
+
+        // TODO obviously this is a pain, should think more about line
+        // segment and whether it's going to be a pain to have as a
+        // primitive, the alternative could be to just use ordered
+        // vertices (or assume order on vertices when input to funcs)
+        let ac = LineSegment::new(&a, &c);
+        let ad = LineSegment::new(&a, &d);
+        let ae = LineSegment::new(&a, &e);
+        let bd = LineSegment::new(&b, &d);
+        let be = LineSegment::new(&b, &e);
+        let bf = LineSegment::new(&b, &f);
+        let ca = LineSegment::new(&c, &a);
+        let ce = LineSegment::new(&c, &e);
+        let cf = LineSegment::new(&c, &f);
+        let da = LineSegment::new(&d, &a);
+        let db = LineSegment::new(&d, &b);
+        let df = LineSegment::new(&d, &f);
+        let ea = LineSegment::new(&e, &a);
+        let eb = LineSegment::new(&e, &b);
+        let ec = LineSegment::new(&e, &c);
+        let fb = LineSegment::new(&f, &b);
+        let fc = LineSegment::new(&f, &c);
+        let fd = LineSegment::new(&f, &d);
+
+        let internal = vec![&ae, &bd, &be, &bf, &ce, &db, &df, &ea, &eb, &ec, &fb, &fd];
+        let external = vec![&ac, &ca];
+        let not_diagonal = vec![&ad, &cf, &da, &fc];
+        
+        for ls in internal {
+            assert!(polygon.in_cone(ls));
+            assert!(polygon.diagonal_internal_external(ls));
+            assert!(polygon.diagonal(ls));
+        }
+
+        for ls in external {
+            // TODO might want to think of another example and think carefully
+            // about the in_cone, I think there'd be examples where at least
+            // one of the directions fails
+            assert!(!polygon.in_cone(ls));
+            assert!( polygon.diagonal_internal_external(ls));
+            assert!(!polygon.diagonal(ls));
+        }
+
+        for ls in not_diagonal {
+            assert!(!polygon.diagonal_internal_external(ls));
+            assert!(!polygon.diagonal(ls));
+        }
     }
 }
