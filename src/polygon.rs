@@ -51,10 +51,74 @@ impl Polygon {
             .collect()
     }
 
-    // TODO implement cone functions (used for diagonal check)
-    // TODO implement public diagonal function after cone functions
+    pub fn neighbors(&self, v: &Vertex) -> (&Vertex, &Vertex) {
+        // TODO this is a downside of my simple starting approach
+        // to storing vertices in a vec instead of doing dll which
+        // I think is going to be just too onerous in Rust. Have
+        // to do a O(n) search for the vertex. Could investigate
+        // more efficient ways to handle this as it fundamentally
+        // is a simple adjacency structure for a polygon where
+        // each vertex is adjacent to exactly 2 vertices. I'm
+        // not encoding arbitrary graphs so can likely do
+        // something better here.
 
-    fn _diagonal_internal_external(&self, ab: &LineSegment) -> bool {
+        let first = &self.vertices[0];
+        let last = self.vertices
+            .last()
+            .expect("Polygon should have at least 3 vertices");
+
+        // Arbitrarily initializing, these will be updated below
+        let mut prev: &Vertex = first;
+        let mut next: &Vertex = first;
+
+        // Edge case that won't be picked up by linear search if
+        // the vertex we're looking for is the first in our vec
+        if v == first {
+            prev = last;
+            next = &self.vertices[1];
+            return (prev, next);
+        }
+        
+        for (v0, v1, v2) in self.vertices.iter().tuple_windows::<(_,_,_)>() {
+            if v == v1 {
+                prev = v0;
+                next = v2;
+            } else if v2 == last {
+                // Edge case if the vertex we're looking for happens to be
+                // the last in the vec, need to wrap around to the front
+                prev = v1;
+                next = first;
+            }
+        }
+
+        (prev, next)
+    }
+
+    // TODO need to add tests for all of these, in_cone, diagonal, diag i/e
+    
+    pub fn in_cone(&self, ab: &LineSegment) -> bool {
+        let a = ab.v1;
+        let ba = &ab.reverse();
+        let (a0, a1) = self.neighbors(a);
+
+        // TODO I feel like 'reflexive' is perhaps a more meaningful
+        // property than left_on, maybe think about adding that to
+        // polylgon and reversing the checks here?
+        
+        if a0.left_on(&LineSegment::new(a, a1)) {
+            return a0.left(ab) && a1.left(ba);
+        }
+        
+        // Otherwise a is reflexive
+        !(a1.left_on(ab) && a0.left_on(ba))
+    }
+    
+    pub fn diagonal(&self, ab: &LineSegment) -> bool {
+        let ba = &ab.reverse();
+        self.in_cone(ab) && self.in_cone(ba) && self.diagonal_internal_external(ab)
+    }
+
+    fn diagonal_internal_external(&self, ab: &LineSegment) -> bool {
         for e in self.edges() {
             if !e.connected_to(ab) && e.intersects(ab) {
                 return false;

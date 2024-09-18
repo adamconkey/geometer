@@ -38,6 +38,14 @@ impl Vertex {
         
         (e1..e2).contains(&check) || (e2..e1).contains(&check)
     }
+
+    pub fn left(&self, ab: &LineSegment) -> bool {
+        Triangle::new(ab.v1, ab.v1, self).area_sign() > 0
+    }
+
+    pub fn left_on(&self, ab: &LineSegment) -> bool {
+        Triangle::new(ab.v1, ab.v1, self).area_sign() >= 0
+    }
 }
 
 

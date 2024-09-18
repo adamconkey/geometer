@@ -14,6 +14,10 @@ impl<'a> LineSegment<'a> {
         LineSegment { v1: v1, v2: v2 }
     }
 
+    pub fn reverse(&self) -> LineSegment {
+        LineSegment::new(self.v2, self.v1)
+    }
+    
     pub fn is_vertical(&self) -> bool {
         self.v1.x == self.v2.x
     }
