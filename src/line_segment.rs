@@ -48,8 +48,7 @@ impl<'a> LineSegment<'a> {
                 
         ab_splits_cd && cd_splits_ab
     }
-    
-    
+        
     pub fn improper_intersects(&self, cd: &LineSegment) -> bool {
         let a = self.v1;
         let b = self.v2;
@@ -59,9 +58,16 @@ impl<'a> LineSegment<'a> {
         c.between(a, b) || d.between(a, b) || a.between(c, d) || b.between(c, d)
     }
     
-    
     pub fn intersects(&self, cd: &LineSegment) -> bool {
         self.proper_intersects(cd) || self.improper_intersects(cd)
+    }
+
+    pub fn connected_to(&self, cd: &LineSegment) -> bool {
+        self.incident_to(cd.v1) || self.incident_to(cd.v2)
+    }
+
+    pub fn incident_to(&self, v: &Vertex) -> bool {
+        self.v1 == v || self.v2 == v
     }
 }
 

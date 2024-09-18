@@ -54,16 +54,12 @@ impl Polygon {
     // TODO implement cone functions (used for diagonal check)
     // TODO implement public diagonal function after cone functions
 
-    fn _diagonal_internal_external(&self, _ab: &LineSegment) -> bool {
-        for _e in self.edges() {
-            // TODO continue algorithm, should check for intersection
-            // of edge against ab, skipping any that are incident to
-            // ab. Might be good to add an incident func on LineSegment
-            // for a vertex. This block will short-circuit return
-            // false if a non-incident edge (of a or b) intersects
-            // ab. 
-        }
-        
+    fn _diagonal_internal_external(&self, ab: &LineSegment) -> bool {
+        for e in self.edges() {
+            if !e.connected_to(ab) && e.intersects(ab) {
+                return false;
+            }
+        } 
         true
     }
 }
