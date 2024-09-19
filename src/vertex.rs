@@ -13,7 +13,7 @@ lazy_static!(
 
 // TODO make this type-generic?
 // TODO handle dimensionality of coordinates
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Vertex {
     pub x: i32,
     pub y: i32,
