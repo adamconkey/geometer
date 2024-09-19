@@ -1,9 +1,10 @@
-
 use unique_id::Generator;
 use unique_id::sequence::SequenceGenerator;
 
-use crate::line_segment::LineSegment;
-use crate::triangle::Triangle;
+use crate::{
+    line_segment::LineSegment,
+    triangle::Triangle,
+};
 
 
 lazy_static!(

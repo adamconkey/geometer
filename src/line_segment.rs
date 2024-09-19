@@ -1,6 +1,7 @@
-
-use crate::triangle::Triangle;
-use crate::vertex::Vertex;
+use crate::{
+    triangle::Triangle,
+    vertex::Vertex,
+};
 
 
 pub struct LineSegment<'a> {
