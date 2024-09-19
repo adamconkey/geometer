@@ -1,9 +1,11 @@
 use itertools::Itertools;
 use std::collections::HashMap;
 
-use crate::line_segment::LineSegment;
-use crate::triangle::Triangle;
-use crate::vertex::Vertex;
+use crate::{
+    line_segment::LineSegment,
+    triangle::Triangle,
+    vertex::Vertex,
+};
 
 
 pub struct Polygon<'a> {
