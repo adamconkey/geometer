@@ -1,5 +1,6 @@
+use std::str::FromStr;
 use unique_id::Generator;
-use unique_id::sequence::SequenceGenerator;
+use unique_id::string::StringGenerator;
 
 use crate::{
     line_segment::LineSegment,
@@ -8,7 +9,7 @@ use crate::{
 
 
 lazy_static!(
-    static ref ID_GENERATOR: SequenceGenerator = SequenceGenerator::default();
+    static ref ID_GENERATOR: StringGenerator = StringGenerator::default();
 );
 
 
@@ -18,13 +19,45 @@ lazy_static!(
 pub struct Vertex {
     pub x: i32,
     pub y: i32,
-    pub index: i64,
+    pub id: String,
+}
+
+
+#[derive(Debug, PartialEq)]
+pub struct ParseVertexError;
+
+
+impl FromStr for Vertex {
+    type Err = ParseVertexError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut split = s.split(" ");
+        let x = split
+            .next()
+            .ok_or(ParseVertexError)?
+            .parse::<i32>()
+            .map_err(|_| ParseVertexError)?;
+        let y = split
+            .next()
+            .ok_or(ParseVertexError)?
+            .parse::<i32>()
+            .map_err(|_| ParseVertexError)?;
+        let id = split.next().ok_or(ParseVertexError)?
+            .to_string();
+
+        Ok(Vertex::new_with_id(x, y, id))        
+    }
+    
 }
 
 
 impl Vertex {
     pub fn new(x: i32, y: i32) -> Vertex {
-        Vertex { x: x, y: y, index: ID_GENERATOR.next_id() }
+        Vertex { x: x, y: y, id: ID_GENERATOR.next_id() }
+    }
+
+    pub fn new_with_id(x: i32, y: i32, id: String) -> Vertex {
+        Vertex { x: x, y: y, id: id }
     }
 
     pub fn between(&self, a: &Vertex, b: &Vertex) -> bool {
@@ -55,12 +88,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_index() {
+    fn test_id() {
         let v0 = Vertex::new(1, 2);
         let v1 = Vertex::new(3, 4);
-        assert_ne!(v0.index, v1.index);
+        assert_ne!(v0.id, v1.id);
     }
 
+    #[test]
+    fn test_from_str() {
+        let expected = Ok(Vertex::new_with_id(1, 2, String::from("a")));
+        assert_eq!(Vertex::from_str("1 2 a"), expected);
+    }
+    
 
     // TODO might be nice to add custom macro for between asserts,
     // not sure how difficult it is to write macros at this stage
