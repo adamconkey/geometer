@@ -5,6 +5,7 @@ use crate::{
     line_segment::LineSegment,
     triangle::Triangle,
     vertex::Vertex,
+    vertex_set::VertexMap,
 };
 
 
@@ -120,10 +121,22 @@ mod tests {
 
     #[test]
     fn test_area_right_triangle() {
-        let a = Vertex::new(0, 0);
-        let b = Vertex::new(3, 0);
-        let c = Vertex::new(0, 4);
-        let vertices = vec![&a, &b, &c];
+        let a = Vertex::new_with_id(0, 0, String::from("a"));
+        let b = Vertex::new_with_id(3, 0, String::from("b"));
+        let c = Vertex::new_with_id(0, 4, String::from("c"));
+
+        // TODO trying this out, ultimately creating a version that will
+        // read from strings and then files. So need to implement from_str
+        // for vertex map, then you have an owner for "sets" of vertices
+        // and then can pass to arbitrary polygons as refs. Should hopefully
+        // sidestep ownership issues in polygons, and then allow for reading
+        // polygons more easily from file/strings to make tests lighter
+        // weight. Will want to implement string-based getter on the map
+        // struct so that you can easily retrieve for asserts based on id
+        let vertex_map = VertexMap::new(vec![a, b, c]);
+        let vertex_names = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        let vertices = vertex_map.get_vertices(vertex_names);
+        
         let polygon = Polygon::new(vertices);
         let double_area = polygon.double_area();
         assert_eq!(double_area, 12);
