@@ -1,4 +1,5 @@
-use std::collections::HashMap;
+// use std::collections::HashMap;
+use indexmap::IndexMap;
 use std::str::FromStr;
 
 use crate::vertex::Vertex;
@@ -6,7 +7,7 @@ use crate::vertex::Vertex;
 
 #[derive(Debug, PartialEq)]
 pub struct VertexMap {
-    vertices: HashMap<String, Vertex>,
+    vertices: IndexMap<String, Vertex>,
 }
 
 
@@ -16,17 +17,25 @@ pub struct ParseVertexMapError;
 
 impl VertexMap {
     pub fn new(vertices: Vec<Vertex>) -> VertexMap {
-        let mut vertex_map = HashMap::new();
+        let mut vertex_map = IndexMap::new();
         for vertex in vertices {
             vertex_map.insert(vertex.id.clone(), vertex);
         }
         VertexMap { vertices: vertex_map }
     }
 
+    pub fn get(&self, id: &str) -> Option<&Vertex> {
+        self.vertices.get(id)
+    }
+
+    pub fn all_vertices(&self) -> Vec<&Vertex> {
+        self.vertices.values().collect()
+    }
+    
     pub fn get_vertices(&self, names: Vec<String>) -> Vec<&Vertex> {
         // TODO do better than unwrap here
         names.iter()
-            .map(|n| self.vertices.get(n).unwrap())
+            .map(|id| self.get(id).unwrap())
             .collect()
     }
 }

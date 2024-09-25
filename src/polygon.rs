@@ -1,5 +1,6 @@
 use itertools::Itertools;
 use std::collections::HashMap;
+use std::str::FromStr;
 
 use crate::{
     line_segment::LineSegment,
@@ -40,6 +41,10 @@ impl<'a> Polygon<'a> {
         }
 
         Polygon { anchor: &vertices[0], neighbors: neighbors }
+    }
+
+    pub fn from_vmap(vmap: &'a VertexMap) -> Polygon<'a> {
+        Polygon::new(vmap.all_vertices())
     }
     
     pub fn double_area(&self) -> i32 {
@@ -121,40 +126,28 @@ mod tests {
 
     #[test]
     fn test_area_right_triangle() {
-        let a = Vertex::new_with_id(0, 0, String::from("a"));
-        let b = Vertex::new_with_id(3, 0, String::from("b"));
-        let c = Vertex::new_with_id(0, 4, String::from("c"));
-
-        // TODO trying this out, ultimately creating a version that will
-        // read from strings and then files. So need to implement from_str
-        // for vertex map, then you have an owner for "sets" of vertices
-        // and then can pass to arbitrary polygons as refs. Should hopefully
-        // sidestep ownership issues in polygons, and then allow for reading
-        // polygons more easily from file/strings to make tests lighter
-        // weight. Will want to implement string-based getter on the map
-        // struct so that you can easily retrieve for asserts based on id
-        let vertex_map = VertexMap::new(vec![a, b, c]);
-        let vertex_names = vec!["a".to_string(), "b".to_string(), "c".to_string()];
-        let vertices = vertex_map.get_vertices(vertex_names);
-        
-        let polygon = Polygon::new(vertices);
+        let vmap_str = "0 0 a\n3 0 b\n0 4 c";
+        let vmap = VertexMap::from_str(vmap_str).unwrap();        
+        let polygon = Polygon::from_vmap(&vmap);
         let double_area = polygon.double_area();
         assert_eq!(double_area, 12);
     }
 
     #[test]
     fn test_neighbors_square() {
-        let a = Vertex::new(0, 0);
-        let b = Vertex::new(4, 0);
-        let c = Vertex::new(4, 4);
-        let d = Vertex::new(0, 4);
-        let vertices = vec![&a, &b, &c, &d];
-        let polygon = Polygon::new(vertices);
+        let vmap_str = "0 0 a\n4 0 b\n4 4 c\n0 4 d";
+        let vmap = VertexMap::from_str(vmap_str).unwrap();
+        let polygon = Polygon::from_vmap(&vmap);
 
-        assert_eq!(polygon.neighbors(&a), (&d, &b));
-        assert_eq!(polygon.neighbors(&b), (&a, &c));
-        assert_eq!(polygon.neighbors(&c), (&b, &d));
-        assert_eq!(polygon.neighbors(&d), (&c, &a));
+        let a = vmap.get("a").unwrap();
+        let b = vmap.get("b").unwrap();
+        let c = vmap.get("c").unwrap();
+        let d = vmap.get("d").unwrap();
+        
+        assert_eq!(polygon.neighbors(a), (d, b));
+        assert_eq!(polygon.neighbors(b), (a, c));
+        assert_eq!(polygon.neighbors(c), (b, d));
+        assert_eq!(polygon.neighbors(d), (c, a));
     }
 
     #[test]
