@@ -7,4 +7,4 @@ pub mod line_segment;
 pub mod polygon;
 pub mod triangle;
 pub mod vertex;
-pub mod vertex_set;
+pub mod vertex_map;

@@ -5,7 +5,7 @@ use crate::{
     line_segment::LineSegment,
     triangle::Triangle,
     vertex::Vertex,
-    vertex_set::VertexMap,
+    vertex_map::VertexMap,
 };
 
 
