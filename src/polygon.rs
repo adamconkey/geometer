@@ -1,6 +1,5 @@
 use itertools::Itertools;
 use std::collections::HashMap;
-use std::str::FromStr;
 
 use crate::{
     line_segment::LineSegment,
@@ -123,7 +122,14 @@ impl<'a> Polygon<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::{fixture, rstest};
+    use std::str::FromStr;
 
+    #[fixture]
+    fn polygon_1() -> &'static str {
+        "0 0 a\n3 4 b\n6 2 c\n7 6 d\n3 9 e\n-2 7 f"
+    }
+    
     #[test]
     fn test_area_right_triangle() {
         let vmap_str = "0 0 a\n3 0 b\n0 4 c";
@@ -150,10 +156,9 @@ mod tests {
         assert_eq!(polygon.neighbors(d), (c, a));
     }
 
-    #[test]
-    fn test_neighbors_p1() {
-        let vmap_str = "0 0 a\n3 4 b\n6 2 c\n7 6 d\n3 9 e\n-2 7 f";
-        let vmap = VertexMap::from_str(vmap_str).unwrap();
+    #[rstest]
+    fn test_neighbors_p1(polygon_1: &str) {
+        let vmap = VertexMap::from_str(polygon_1).unwrap();
         let polygon = Polygon::from_vmap(&vmap);
 
         let a = vmap.get("a").unwrap();
@@ -171,10 +176,9 @@ mod tests {
         assert_eq!(polygon.neighbors(f), (e, a));
     }
     
-    #[test]
-    fn test_diagonal() {
-        let vmap_str = "0 0 a\n3 4 b\n6 2 c\n7 6 d\n3 9 e\n-2 7 f";
-        let vmap = VertexMap::from_str(vmap_str).unwrap();
+    #[rstest]
+    fn test_diagonal(polygon_1: &str) {
+        let vmap = VertexMap::from_str(polygon_1).unwrap();
         let polygon = Polygon::from_vmap(&vmap);
 
         let a = vmap.get("a").unwrap();
