@@ -129,20 +129,31 @@ mod tests {
     fn polygon_1() -> &'static str {
         "0 0 a\n3 4 b\n6 2 c\n7 6 d\n3 9 e\n-2 7 f"
     }
-    
-    #[test]
-    fn test_area_right_triangle() {
-        let vmap_str = "0 0 a\n3 0 b\n0 4 c";
-        let vmap = VertexMap::from_str(vmap_str).unwrap();        
-        let polygon = Polygon::from_vmap(&vmap);
-        let double_area = polygon.double_area();
-        assert_eq!(double_area, 12);
+
+    #[fixture]
+    fn right_triangle() -> &'static str {
+        "0 0 a\n3 0 b\n0 4 c"
     }
 
-    #[test]
-    fn test_neighbors_square() {
-        let vmap_str = "0 0 a\n4 0 b\n4 4 c\n0 4 d";
-        let vmap = VertexMap::from_str(vmap_str).unwrap();
+    #[fixture]
+    fn square_4x4() -> &'static str {
+        "0 0 a\n4 0 b\n4 4 c\n0 4 d"
+    }
+    
+    #[rstest]
+    // TODO now that this is parametrized, can add as many polygons
+    // here as possible to get meaningful tests on area
+    #[case(right_triangle(), 12)]
+    fn test_area(#[case] polygon_str: &str, #[case] expected_double_area: i32) {
+        let vmap = VertexMap::from_str(polygon_str).unwrap();        
+        let polygon = Polygon::from_vmap(&vmap);
+        let double_area = polygon.double_area();
+        assert_eq!(double_area, expected_double_area);
+    }
+
+    #[rstest]
+    fn test_neighbors_square(square_4x4: &str) {
+        let vmap = VertexMap::from_str(square_4x4).unwrap();
         let polygon = Polygon::from_vmap(&vmap);
 
         let a = vmap.get("a").unwrap();
