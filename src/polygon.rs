@@ -152,59 +152,61 @@ mod tests {
 
     #[test]
     fn test_neighbors_p1() {
-        // TODO will be using polygons across tests, would be great to
-        // have better way to configure this, not sure what fixtures
-        // Rust offers
-        let a = Vertex::new( 0, 0);
-        let b = Vertex::new( 3, 4);
-        let c = Vertex::new( 6, 2);
-        let d = Vertex::new( 7, 6);
-        let e = Vertex::new( 3, 9);
-        let f = Vertex::new(-2, 7);
-        let vertices = vec![&a, &b, &c, &d, &e, &f];
-        let polygon = Polygon::new(vertices);
+        let vmap_str = "0 0 a\n3 4 b\n6 2 c\n7 6 d\n3 9 e\n-2 7 f";
+        let vmap = VertexMap::from_str(vmap_str).unwrap();
+        let polygon = Polygon::from_vmap(&vmap);
 
-        assert_eq!(polygon.neighbors(&a), (&f, &b));
-        assert_eq!(polygon.neighbors(&b), (&a, &c));
-        assert_eq!(polygon.neighbors(&c), (&b, &d));
-        assert_eq!(polygon.neighbors(&d), (&c, &e));
-        assert_eq!(polygon.neighbors(&e), (&d, &f));
-        assert_eq!(polygon.neighbors(&f), (&e, &a));
+        let a = vmap.get("a").unwrap();
+        let b = vmap.get("b").unwrap();
+        let c = vmap.get("c").unwrap();
+        let d = vmap.get("d").unwrap();
+        let e = vmap.get("e").unwrap();
+        let f = vmap.get("f").unwrap();
+        
+        assert_eq!(polygon.neighbors(a), (f, b));
+        assert_eq!(polygon.neighbors(b), (a, c));
+        assert_eq!(polygon.neighbors(c), (b, d));
+        assert_eq!(polygon.neighbors(d), (c, e));
+        assert_eq!(polygon.neighbors(e), (d, f));
+        assert_eq!(polygon.neighbors(f), (e, a));
     }
     
     #[test]
     fn test_diagonal() {
-        let a = Vertex::new( 0, 0);
-        let b = Vertex::new( 3, 4);
-        let c = Vertex::new( 6, 2);
-        let d = Vertex::new( 7, 6);
-        let e = Vertex::new( 3, 9);
-        let f = Vertex::new(-2, 7);
-        let vertices = vec![&a, &b, &c, &d, &e, &f];
-        let polygon = Polygon::new(vertices);
+        let vmap_str = "0 0 a\n3 4 b\n6 2 c\n7 6 d\n3 9 e\n-2 7 f";
+        let vmap = VertexMap::from_str(vmap_str).unwrap();
+        let polygon = Polygon::from_vmap(&vmap);
 
+        let a = vmap.get("a").unwrap();
+        let b = vmap.get("b").unwrap();
+        let c = vmap.get("c").unwrap();
+        let d = vmap.get("d").unwrap();
+        let e = vmap.get("e").unwrap();
+        let f = vmap.get("f").unwrap();
+
+        
         // TODO obviously this is a pain, should think more about line
         // segment and whether it's going to be a pain to have as a
         // primitive, the alternative could be to just use ordered
         // vertices (or assume order on vertices when input to funcs)
-        let ac = LineSegment::new(&a, &c);
-        let ad = LineSegment::new(&a, &d);
-        let ae = LineSegment::new(&a, &e);
-        let bd = LineSegment::new(&b, &d);
-        let be = LineSegment::new(&b, &e);
-        let bf = LineSegment::new(&b, &f);
-        let ca = LineSegment::new(&c, &a);
-        let ce = LineSegment::new(&c, &e);
-        let cf = LineSegment::new(&c, &f);
-        let da = LineSegment::new(&d, &a);
-        let db = LineSegment::new(&d, &b);
-        let df = LineSegment::new(&d, &f);
-        let ea = LineSegment::new(&e, &a);
-        let eb = LineSegment::new(&e, &b);
-        let ec = LineSegment::new(&e, &c);
-        let fb = LineSegment::new(&f, &b);
-        let fc = LineSegment::new(&f, &c);
-        let fd = LineSegment::new(&f, &d);
+        let ac = LineSegment::new(a, c);
+        let ad = LineSegment::new(a, d);
+        let ae = LineSegment::new(a, e);
+        let bd = LineSegment::new(b, d);
+        let be = LineSegment::new(b, e);
+        let bf = LineSegment::new(b, f);
+        let ca = LineSegment::new(c, a);
+        let ce = LineSegment::new(c, e);
+        let cf = LineSegment::new(c, f);
+        let da = LineSegment::new(d, a);
+        let db = LineSegment::new(d, b);
+        let df = LineSegment::new(d, f);
+        let ea = LineSegment::new(e, a);
+        let eb = LineSegment::new(e, b);
+        let ec = LineSegment::new(e, c);
+        let fb = LineSegment::new(f, b);
+        let fc = LineSegment::new(f, c);
+        let fd = LineSegment::new(f, d);
 
         let internal = vec![&ae, &bd, &be, &bf, &ce, &db, &df, &ea, &eb, &ec, &fb, &fd];
         let external = vec![&ac, &ca];
