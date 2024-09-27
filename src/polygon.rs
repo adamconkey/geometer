@@ -91,10 +91,6 @@ impl<'a> Polygon<'a> {
         let ba = &ab.reverse();
         let (a0, a1) = self.neighbors(a);
 
-        // TODO I feel like 'reflexive' is perhaps a more meaningful
-        // property than left_on, maybe think about adding that to
-        // polylgon and reversing the checks here?
-        
         if a0.left_on(&LineSegment::new(a, a1)) {
             return a0.left(ab) && a1.left(ba);
         }
@@ -198,12 +194,7 @@ mod tests {
         let d = vmap.get("d").unwrap();
         let e = vmap.get("e").unwrap();
         let f = vmap.get("f").unwrap();
-
-        
-        // TODO obviously this is a pain, should think more about line
-        // segment and whether it's going to be a pain to have as a
-        // primitive, the alternative could be to just use ordered
-        // vertices (or assume order on vertices when input to funcs)
+    
         let ac = LineSegment::new(a, c);
         let ad = LineSegment::new(a, d);
         let ae = LineSegment::new(a, e);
