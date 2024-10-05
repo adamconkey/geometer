@@ -39,7 +39,7 @@ impl<'a> Polygon<'a> {
             }
         }
 
-        Polygon { anchor: &vertices[0], neighbors: neighbors }
+        Polygon { anchor: &vertices[0], neighbors }
     }
 
     pub fn from_vmap(vmap: &'a VertexMap) -> Polygon<'a> {
