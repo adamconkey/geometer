@@ -121,19 +121,22 @@ mod tests {
     use rstest::{fixture, rstest};
     use std::str::FromStr;
 
+    // TODO I think it will be better to ultimately read these
+    // from file since I'll likely have some with many vertices
+    // which will get a little unwieldy here.
     #[fixture]
     fn polygon_1() -> &'static str {
-        "0 0 a\n3 4 b\n6 2 c\n7 6 d\n3 9 e\n-2 7 f"
+        concat!("0 0 a\n", "3 4 b\n", "6 2 c\n", "7 6 d\n", "3 9 e\n", "-2 7 f")
     }
 
     #[fixture]
     fn right_triangle() -> &'static str {
-        "0 0 a\n3 0 b\n0 4 c"
+        concat!("0 0 a\n", "3 0 b\n", "0 4 c")
     }
 
     #[fixture]
     fn square_4x4() -> &'static str {
-        "0 0 a\n4 0 b\n4 4 c\n0 4 d"
+        concat!("0 0 a\n", "4 0 b\n", "4 4 c\n", "0 4 d")
     }
     
     #[rstest]
