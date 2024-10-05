@@ -130,6 +130,30 @@ mod tests {
     }
 
     #[fixture]
+    fn polygon_2() -> &'static str {
+        concat!(
+            "0 0 0\n",
+            "12 9 1\n",
+            "14 4 2\n",
+            "24 10 3\n",
+            "14 24 4\n",
+            "11 17 5\n",
+            "13 19 6\n",
+            "16 12 7\n",
+            "9 13 8\n",
+            "7 18 9\n",
+            "11 21 10\n",
+            "8 24 11\n",
+            "1 22 12\n",
+            "2 18 13\n",
+            "4 20 14\n",
+            "6 10 15\n",
+            "-2 11 16\n",
+            "6 6 17"
+        )
+    }
+
+    #[fixture]
     fn right_triangle() -> &'static str {
         concat!("0 0 a\n", "3 0 b\n", "0 4 c")
     }
@@ -143,6 +167,7 @@ mod tests {
     // TODO now that this is parametrized, can add as many polygons
     // here as possible to get meaningful tests on area
     #[case(right_triangle(), 12)]
+    #[case(polygon_2(), 454)]
     fn test_area(#[case] polygon_str: &str, #[case] expected_double_area: i32) {
         let vmap = VertexMap::from_str(polygon_str).unwrap();        
         let polygon = Polygon::from_vmap(&vmap);
