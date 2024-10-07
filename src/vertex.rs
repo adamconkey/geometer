@@ -53,11 +53,11 @@ impl FromStr for Vertex {
 
 impl Vertex {
     pub fn new(x: i32, y: i32) -> Vertex {
-        Vertex { x: x, y: y, id: ID_GENERATOR.next_id() }
+        Vertex { x, y, id: ID_GENERATOR.next_id() }
     }
 
     pub fn new_with_id(x: i32, y: i32, id: String) -> Vertex {
-        Vertex { x: x, y: y, id: id }
+        Vertex { x, y, id }
     }
 
     pub fn between(&self, a: &Vertex, b: &Vertex) -> bool {
