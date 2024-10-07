@@ -57,6 +57,63 @@ impl<'a> Polygon<'a> {
         area
     }
 
+    pub fn triangulation(&self) -> Vec<LineSegment> {
+        let mut triangulation = Vec::new();
+        let mut neighbors = self.neighbors.clone();
+
+        while neighbors.len() > 3 {
+            let mut v2 = self.anchor;
+            
+            loop {
+                let (v1, v3) = neighbors
+                    .get(v2)
+                    .expect("Every vertex should have neighbors stored");
+
+                if self.diagonal(&LineSegment::new(v1, v3)) {
+                    // We found an ear, need to add to the triangulation,
+                    // remove the vertex, and update the neighbor map
+
+                    let (_prev, v4) = neighbors
+                        .get(v3)
+                        .expect("Every vertex should have neighbors stored");
+                    let (v0, _next) = neighbors
+                        .get(v1)
+                        .expect("Every vertex should have neighbors stored");
+
+                    triangulation.push(LineSegment::new(v1, v2));
+
+                    // TODO I have some map issues all over here, not sure 
+                    // yet how to resolve it. Perhaps my map tricks are 
+                    // breaking down and need to rethink the data structure.
+                    // Also this is not ergonomic at all when you just need
+                    // to update the refs for just the prev or just the next 
+                    // so I think this data structure is misguided a bit. 
+                    // Will need to think more on what the best way to 
+                    // proceed here is.
+                    neighbors.insert(v1, (v0, v3));
+
+                    neighbors.insert(v3, (v1, v4));
+                }
+
+                // TODO this obviously seems a bit silly, would otherwise just want to 
+                // set v2 = v3 since we know v3 to be v2's next neighbor, but because
+                // of the possible insertion of v3 in the map above we have some
+                // borrowing issues. Not sure yet if there's a smarter way to go.
+                let (_prev, v2) = neighbors
+                    .get(v2)
+                    .expect("Every vertex should have neighbors stored");
+
+                if v2 == &self.anchor {
+                    // Made a full pass through all vertices, can advance to
+                    // next iter of outer loop
+                    break;
+                }
+            }
+        }
+
+        triangulation
+    }
+
     pub fn edges(&self) -> Vec<LineSegment> {
         // TODO would be cool to cache this
         let mut edges = Vec::new();
