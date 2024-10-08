@@ -4,6 +4,7 @@ use crate::{
 };
 
 
+#[derive(Debug)]
 pub struct LineSegment<'a> {
     pub v1: &'a Vertex,
     pub v2: &'a Vertex,
