@@ -66,6 +66,14 @@ impl<'a> Polygon<'a> {
             let mut v2 = anchor;
             
             loop {
+                // TODO I'm wondering if it makes sense to have some private
+                // getters that would effectively just panic if the gets here
+                // are violated, since in this case it just means the polygon 
+                // is malformed or we messed up the map, but in that case it 
+                // should be non-recoverable. Then in the usage here we 
+                // wouldn't need to have all these expects, it would just 
+                // directly return the value and just encapsulate the failure 
+                // in the private function. Not sure if that's good practice.
                 let (v1, v3) = *neighbors
                     .get(v2)
                     .expect("Every vertex should have neighbors stored");
@@ -74,6 +82,8 @@ impl<'a> Polygon<'a> {
                     // We found an ear, need to add to the triangulation,
                     // remove the vertex, and update the neighbor map
 
+                    // TODO would like to make retrieval of just prev or just next 
+                    // cleaner, maybe encapsulate in helpers?
                     let v4 = neighbors
                         .get(v3)
                         .expect("Every vertex should have neighbors stored")
@@ -88,7 +98,7 @@ impl<'a> Polygon<'a> {
                     neighbors.insert(v1, (v0, v3));
                     neighbors.insert(v3, (v1, v4));
                     neighbors.remove(v2);
-                    anchor = v3;
+                    anchor = v3;  // In case removed was anchor
                 }
 
                 v2 = v3;
