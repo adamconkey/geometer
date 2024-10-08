@@ -319,8 +319,57 @@ mod tests {
         let vmap = VertexMap::from_str(polygon_2).unwrap();        
         let polygon = Polygon::from_vmap(&vmap);
         let triangulation = polygon.triangulation();
-        for ls in triangulation.iter() {
-            println!("{:?}", ls);
-        }
+        
+        // TODO maybe add utility to just retrieve line segments from vmap 
+        // so you don't have to get all of the vertices here
+        let v1 = vmap.get("1").unwrap();
+        let v3 = vmap.get("3").unwrap();
+        let v4 = vmap.get("4").unwrap();
+        let v6 = vmap.get("6").unwrap();
+        let v7 = vmap.get("7").unwrap();
+        let v8 = vmap.get("8").unwrap();
+        let v9 = vmap.get("9").unwrap();
+        let v11 = vmap.get("11").unwrap();
+        let v12 = vmap.get("12").unwrap();
+        let v14 = vmap.get("14").unwrap();
+        let v15 = vmap.get("15").unwrap();
+        let v17 = vmap.get("17").unwrap();
+
+        let ls_17_1 = LineSegment::new(v17, v1);
+        let ls_1_3 = LineSegment::new(v1, v3);
+        let ls_4_6 = LineSegment::new(v4, v6);
+        let ls_4_7 = LineSegment::new(v4, v7);
+        let ls_9_11 = LineSegment::new(v9, v11);
+        let ls_12_14 = LineSegment::new(v12, v14);
+        let ls_15_17 = LineSegment::new(v15, v17);
+        let ls_15_1 = LineSegment::new(v15, v1);
+        let ls_15_3 = LineSegment::new(v15, v3);
+        let ls_3_7 = LineSegment::new(v3, v7);
+        let ls_11_14 = LineSegment::new(v11, v14);
+        let ls_15_7 = LineSegment::new(v15, v7);
+        let ls_15_8 = LineSegment::new(v15, v8);
+        let ls_15_9 = LineSegment::new(v15, v9);
+        let ls_9_14 = LineSegment::new(v9, v14);
+       
+        let expected = vec![
+            ls_17_1,
+            ls_1_3,
+            ls_4_6,
+            ls_4_7,
+            ls_9_11,
+            ls_12_14,
+            ls_15_17,
+            ls_15_1,
+            ls_15_3,
+            ls_3_7,
+            ls_11_14,
+            ls_15_7,
+            ls_15_8,
+            ls_15_9,
+            ls_9_14
+        ];
+
+        assert_eq!(expected, triangulation);
+
     }
 }
