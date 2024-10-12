@@ -66,24 +66,19 @@ impl<'a> Polygon<'a> {
             let mut v2 = anchor;
             
             loop {
-                // TODO I'm wondering if it makes sense to have some private
-                // getters that would effectively just panic if the gets here
-                // are violated, since in this case it just means the polygon 
-                // is malformed or we messed up the map, but in that case it 
-                // should be non-recoverable. Then in the usage here we 
-                // wouldn't need to have all these expects, it would just 
-                // directly return the value and just encapsulate the failure 
-                // in the private function. Not sure if that's good practice.
-                let (v1, v3) = *neighbors
-                    .get(v2)
+                // Removing instead of borrowing, so that we don't run into 
+                // immutable borrow problems. It will be inserted again if 
+                // we end up not finding an ear. May want to rethink this 
+                // if there's a better way to go about so we're not 
+                // unnecessarily removing things.
+                let (v1, v3) = neighbors
+                    .remove(v2)
                     .expect("Every vertex should have neighbors stored");
 
                 if self.diagonal(&LineSegment::new(v1, v3)) {
-                    // We found an ear, need to add to the triangulation,
-                    // remove the vertex, and update the neighbor map
+                    // We found an ear, add to the triangulation
+                    triangulation.push(LineSegment::new(v1, v3));
 
-                    // TODO would like to make retrieval of just prev or just next 
-                    // cleaner, maybe encapsulate in helpers?
                     let v4 = neighbors
                         .get(v3)
                         .expect("Every vertex should have neighbors stored")
@@ -93,15 +88,18 @@ impl<'a> Polygon<'a> {
                         .expect("Every vertex should have neighbors stored")
                         .0;
 
-                    triangulation.push(LineSegment::new(v1, v3));
-
+                    // The ear vertex has been removed, update its neighbors 
+                    // so that their neighbors point to the correct vertices
                     neighbors.insert(v1, (v0, v3));
                     neighbors.insert(v3, (v1, v4));
-                    neighbors.remove(v2);
                     anchor = v3;  // In case removed was anchor
                 }
+                else {
+                    // This wasn't an ear, so re-insert into neighbor map
+                    neighbors.insert(v2, (v1, v3));
+                }
 
-                v2 = v3;
+                v2 = v3;  // Advance to next vertex in chain
 
                 if v2 == anchor {
                     // Made a full pass through all vertices, can advance to
