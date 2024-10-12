@@ -2,6 +2,7 @@
 use indexmap::IndexMap;
 use std::str::FromStr;
 
+use crate::line_segment::LineSegment;
 use crate::vertex::Vertex;
 
 
@@ -37,6 +38,14 @@ impl VertexMap {
         names.iter()
             .map(|id| self.get(id).unwrap())
             .collect()
+    }
+
+    pub fn get_line_segment(&self, id_1: &str, id_2: &str) -> LineSegment {
+        // TODO this should return Option<LineSegment> and handle 
+        // the cases below instead of unwrap here
+        let v1 = self.get(id_1).unwrap();
+        let v2 = self.get(id_2).unwrap();
+        LineSegment::new(v1, v2)
     }
 }
 

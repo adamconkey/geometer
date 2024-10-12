@@ -271,31 +271,24 @@ mod tests {
         let vmap = VertexMap::from_str(polygon_1).unwrap();
         let polygon = Polygon::from_vmap(&vmap);
 
-        let a = vmap.get("a").unwrap();
-        let b = vmap.get("b").unwrap();
-        let c = vmap.get("c").unwrap();
-        let d = vmap.get("d").unwrap();
-        let e = vmap.get("e").unwrap();
-        let f = vmap.get("f").unwrap();
-    
-        let ac = LineSegment::new(a, c);
-        let ad = LineSegment::new(a, d);
-        let ae = LineSegment::new(a, e);
-        let bd = LineSegment::new(b, d);
-        let be = LineSegment::new(b, e);
-        let bf = LineSegment::new(b, f);
-        let ca = LineSegment::new(c, a);
-        let ce = LineSegment::new(c, e);
-        let cf = LineSegment::new(c, f);
-        let da = LineSegment::new(d, a);
-        let db = LineSegment::new(d, b);
-        let df = LineSegment::new(d, f);
-        let ea = LineSegment::new(e, a);
-        let eb = LineSegment::new(e, b);
-        let ec = LineSegment::new(e, c);
-        let fb = LineSegment::new(f, b);
-        let fc = LineSegment::new(f, c);
-        let fd = LineSegment::new(f, d);
+        let ac = vmap.get_line_segment("a", "c");
+        let ad = vmap.get_line_segment("a", "d");
+        let ae = vmap.get_line_segment("a", "e");
+        let bd = vmap.get_line_segment("b", "d");
+        let be = vmap.get_line_segment("b", "e");
+        let bf = vmap.get_line_segment("b", "f");
+        let ca = vmap.get_line_segment("c", "a");
+        let ce = vmap.get_line_segment("c", "e");
+        let cf = vmap.get_line_segment("c", "f");
+        let da = vmap.get_line_segment("d", "a");
+        let db = vmap.get_line_segment("d", "b");
+        let df = vmap.get_line_segment("d", "f");
+        let ea = vmap.get_line_segment("e", "a");
+        let eb = vmap.get_line_segment("e", "b");
+        let ec = vmap.get_line_segment("e", "c");
+        let fb = vmap.get_line_segment("f", "b");
+        let fc = vmap.get_line_segment("f", "c");
+        let fd = vmap.get_line_segment("f", "d");
 
         let internal = vec![&ae, &bd, &be, &bf, &ce, &db, &df, &ea, &eb, &ec, &fb, &fd];
         let external = vec![&ac, &ca];
@@ -328,36 +321,21 @@ mod tests {
         let polygon = Polygon::from_vmap(&vmap);
         let triangulation = polygon.triangulation();
         
-        // TODO maybe add utility to just retrieve line segments from vmap 
-        // so you don't have to get all of the vertices here
-        let v1 = vmap.get("1").unwrap();
-        let v3 = vmap.get("3").unwrap();
-        let v4 = vmap.get("4").unwrap();
-        let v6 = vmap.get("6").unwrap();
-        let v7 = vmap.get("7").unwrap();
-        let v8 = vmap.get("8").unwrap();
-        let v9 = vmap.get("9").unwrap();
-        let v11 = vmap.get("11").unwrap();
-        let v12 = vmap.get("12").unwrap();
-        let v14 = vmap.get("14").unwrap();
-        let v15 = vmap.get("15").unwrap();
-        let v17 = vmap.get("17").unwrap();
-
-        let ls_17_1 = LineSegment::new(v17, v1);
-        let ls_1_3 = LineSegment::new(v1, v3);
-        let ls_4_6 = LineSegment::new(v4, v6);
-        let ls_4_7 = LineSegment::new(v4, v7);
-        let ls_9_11 = LineSegment::new(v9, v11);
-        let ls_12_14 = LineSegment::new(v12, v14);
-        let ls_15_17 = LineSegment::new(v15, v17);
-        let ls_15_1 = LineSegment::new(v15, v1);
-        let ls_15_3 = LineSegment::new(v15, v3);
-        let ls_3_7 = LineSegment::new(v3, v7);
-        let ls_11_14 = LineSegment::new(v11, v14);
-        let ls_15_7 = LineSegment::new(v15, v7);
-        let ls_15_8 = LineSegment::new(v15, v8);
-        let ls_15_9 = LineSegment::new(v15, v9);
-        let ls_9_14 = LineSegment::new(v9, v14);
+        let ls_17_1 = vmap.get_line_segment("17", "1");
+        let ls_1_3 = vmap.get_line_segment("1", "3");
+        let ls_4_6 = vmap.get_line_segment("4", "6");
+        let ls_4_7 = vmap.get_line_segment("4", "7");
+        let ls_9_11 = vmap.get_line_segment("9", "11");
+        let ls_12_14 = vmap.get_line_segment("12", "14");
+        let ls_15_17 = vmap.get_line_segment("15", "17");
+        let ls_15_1 = vmap.get_line_segment("15", "1");
+        let ls_15_3 = vmap.get_line_segment("15", "3");
+        let ls_3_7 = vmap.get_line_segment("3", "7");
+        let ls_11_14 = vmap.get_line_segment("11", "14");
+        let ls_15_7 = vmap.get_line_segment("15", "7");
+        let ls_15_8 = vmap.get_line_segment("15", "8");
+        let ls_15_9 = vmap.get_line_segment("15", "9");
+        let ls_9_14 = vmap.get_line_segment("9", "14");
        
         let expected = vec![
             ls_17_1,
