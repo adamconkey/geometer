@@ -1,6 +1,6 @@
 # Computational Geometry in Rust
 
-![TEST](https://github.com/adamconkey/computational_geometry/actions/workflows/run_tests.yml/badge.svg)
+![TEST](https://github.com/adamconkey/computational_geometry/actions/workflows/tests.yml/badge.svg)
 
 Repo for playing around with implementing computational geometry algorithms from scratch in Rust.
 
