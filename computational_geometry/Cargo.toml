@@ -1,0 +1,16 @@
+# TODO TBH I don't really know what I'm doing
+# with the workspace thing, I did it so that
+# I can quickly run the egui code as their
+# demo code does, but if there's a smarter
+# way to organize things need to revist
+
+[package]
+name="computational_geometry"
+edition.workspace = true
+
+[dependencies]
+indexmap.workspace = true
+itertools.workspace = true
+lazy_static.workspace = true
+rstest.workspace = true
+unique_id.workspace = true

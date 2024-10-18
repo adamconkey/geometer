@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2" 
-members = ["demo"]
+members = ["computational_geometry", "demo"]
 
 [workspace.package]
 name = "computational_geometry"
