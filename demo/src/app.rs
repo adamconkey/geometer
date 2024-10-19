@@ -29,6 +29,26 @@ impl eframe::App for TemplateApp {
         // Put your widgets into a `SidePanel`, `TopBottomPanel`, `CentralPanel`, `Window` or `Area`.
         // For inspiration and more examples, go to https://emilk.github.io/egui
 
+        egui::SidePanel::left("test_result_browser")
+        .resizable(true)
+        .default_width(160.0)
+        .min_width(160.0)
+        .show(ctx, |ui| {
+            ui.vertical_centered(|ui| {
+                ui.heading("Test Results");
+            });
+            ui.separator();
+
+            // TODO need to figure out how to populate this
+            // with a tree of the test results, will be based
+            // on the directory structure of the saved test
+            // results, one folder per test file, and one
+            // entry per test (that has a visualization). 
+            // Will then want to make it so you click a test
+            // result and it brings up its visualization
+
+        });
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
 
