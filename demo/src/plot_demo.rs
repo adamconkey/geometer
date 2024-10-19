@@ -1,7 +1,7 @@
 use egui::Response;
 
 use egui_plot::{
-    CoordinatesFormatter, Corner, Plot, Polygon,
+    CoordinatesFormatter, Corner, Line, Plot, Points,
 };
 
 // ----------------------------------------------------------------------------
@@ -52,15 +52,29 @@ impl Default for PolygonDemo {
 }
 
 impl PolygonDemo {
-    fn poly(&self) -> Polygon {
-        Polygon::new(vec![
+    fn points(&self) -> Points {
+        Points::new(vec![
             [0.0, 0.0],
             [10.0, 0.0],
             [10.0, 10.0],
             [5.0, 5.0],
             [0.0, 10.0],
+            [0.0, 0.0],
         ])
+        .radius(10.0)
     }
+
+    fn line(&self) -> Line {
+        Line::new(vec![
+            [0.0, 0.0],
+            [10.0, 0.0],
+            [10.0, 10.0],
+            [5.0, 5.0],
+            [0.0, 10.0],
+            [0.0, 0.0],
+        ])
+        .width(4.0)
+    } 
 }
 
 impl PolygonDemo {
@@ -78,7 +92,8 @@ impl PolygonDemo {
         );
         
         plot.show(ui, |plot_ui| {
-            plot_ui.polygon(self.poly());
+            plot_ui.line(self.line());
+            plot_ui.points(self.points());
         }).response
     }
 }
