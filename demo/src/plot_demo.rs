@@ -27,11 +27,7 @@ pub struct PlotDemo {
 
 impl PlotDemo {
     pub fn ui(&mut self, ui: &mut egui::Ui) {
-        ui.horizontal_wrapped(|ui| {
-            ui.selectable_value(&mut self.open_panel, Panel::TestPolygon, "TestPolygon");
-        });
-        ui.separator();
-
+        
         match self.open_panel {
             Panel::TestPolygon => {
                 self.polygon_demo.ui(ui);
