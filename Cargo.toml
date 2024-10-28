@@ -7,8 +7,10 @@ edition = "2021"
 
 [dependencies]
 
-indexmap = "*"
+indexmap = "2.6.0"
 itertools = "*"
 lazy_static = "1.5.0"
-rstest = "*"
+rstest = "0.23.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 unique_id = "*"

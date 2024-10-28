@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use unique_id::Generator;
 use unique_id::string::StringGenerator;
@@ -15,7 +16,7 @@ lazy_static!(
 
 // TODO make this type-generic?
 // TODO handle dimensionality of coordinates
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Vertex {
     pub x: i32,
     pub y: i32,
@@ -86,6 +87,7 @@ impl Vertex {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json;
 
     #[test]
     fn test_id() {
@@ -100,6 +102,14 @@ mod tests {
         assert_eq!(Vertex::from_str("1 2 a"), expected);
     }
     
+    #[test]
+    fn test_serialize() {
+        let v = Vertex::new_with_id(1, 2, String::from("a"));
+        let serialized = serde_json::to_string(&v).unwrap();
+        assert_eq!(serialized, "{\"x\":1,\"y\":2,\"id\":\"a\"}");
+        let deserialized: Vertex = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, v);
+    }
 
     // TODO might be nice to add custom macro for between asserts,
     // not sure how difficult it is to write macros at this stage
