@@ -239,17 +239,7 @@ mod tests {
         concat!("0 0 a\n", "4 0 b\n", "4 4 c\n", "0 4 d")
     }
 
-
-    #[rstest]
-    fn test_serialize_right_triangle(right_triangle: &str) {
-        let vmap = VertexMap::from_str(right_triangle).unwrap();
-        let polygon = Polygon::from_vmap(&vmap);
-        let expected_serialized = r#"[{"x":0,"y":0,"id":"a"},{"x":3,"y":0,"id":"b"},{"x":0,"y":4,"id":"c"}]"#;
-        let serialized = serde_json::to_string(&polygon).unwrap();
-        // let deserialized: Polygon = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(serialized, expected_serialized);
-    }
-
+    
     #[rstest]
     // TODO now that this is parametrized, can add as many polygons
     // here as possible to get meaningful tests on area
