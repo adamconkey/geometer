@@ -199,7 +199,9 @@ mod tests {
 
     // TODO these are in transition, now that they return vmaps should
     // be able to incorporate the serde serialization, and then can just
-    // save these in files and load them
+    // save these in files and load them. Could try one first from a raw
+    // string (which should already be working) and then figure out the
+    // file loading aspect.
     #[fixture]
     fn polygon_1() -> VertexMap {
         let polygon_str = concat!("0 0 a\n", "3 4 b\n", "6 2 c\n", "7 6 d\n", "3 9 e\n", "-2 7 f");
