@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 
-indexmap = "2.6.0"
+indexmap = {version = "2.6.0", features = ["serde"]}
 itertools = "*"
 lazy_static = "1.5.0"
 rstest = "0.23.0"

@@ -1,26 +1,15 @@
-// use std::collections::HashMap;
 use indexmap::IndexMap;
 use std::str::FromStr;
+use serde::{Deserialize, Serialize};
 
 use crate::line_segment::LineSegment;
 use crate::vertex::Vertex;
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct VertexMap {
     vertices: IndexMap<String, Vertex>,
 }
-
-// TODO I think easiest way forward will be to (de)serialize this.
-// It might be a challenge trying to do it directly with polygon,
-// because of the way I've set that up with refs to vertices. This
-// one should be able to follow the example code closely, and then
-// can skip proper serialization of polygons for now and just do
-// deserialize of the vertex map, and do a straight-forward init
-// of the polygon from the vertex map. Can rethink this at some
-// point, but more interested now in getting the vis infra going
-
-
 
 #[derive(Debug, PartialEq)]
 pub struct ParseVertexMapError;
@@ -87,5 +76,21 @@ mod tests {
         let input = "1 2 a\n3 4 b";
         let vmap = VertexMap::from_str(input).unwrap();
         assert_eq!(vmap, expected_vmap);
+    }
+
+    #[test]
+    fn test_serialization() {
+        let a = Vertex::new_with_id(1, 2, String::from("a"));
+        let b = Vertex::new_with_id(3, 4, String::from("b"));
+        let vertices = vec![a, b];
+        let vmap = VertexMap::new(vertices);
+
+        let expected_serialized = r#"{"vertices":{"a":{"x":1,"y":2,"id":"a"},"b":{"x":3,"y":4,"id":"b"}}}"#;
+
+        let serialized = serde_json::to_string(&vmap).unwrap();
+        let deserialized: VertexMap = serde_json::from_str(&serialized).unwrap();
+        
+        assert_eq!(serialized, expected_serialized);
+        assert_eq!(deserialized, vmap);
     }
 }
