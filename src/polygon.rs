@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use serde::ser::{Serialize, Serializer, SerializeSeq};
 use std::collections::HashMap;
 
 use crate::{
@@ -191,19 +190,6 @@ impl<'a> Polygon<'a> {
     }
 }
 
-
-impl<'a> Serialize for Polygon<'a> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where S: Serializer,
-    {
-        let vertices = self.vertices();
-        let mut seq = serializer.serialize_seq(Some(vertices.len()))?;
-        for e in vertices {
-            seq.serialize_element(e)?;
-        }
-        seq.end()
-    }
-}
 
 #[cfg(test)]
 mod tests {
