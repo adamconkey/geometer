@@ -11,6 +11,16 @@ pub struct VertexMap {
     vertices: IndexMap<String, Vertex>,
 }
 
+// TODO I think easiest way forward will be to (de)serialize this.
+// It might be a challenge trying to do it directly with polygon,
+// because of the way I've set that up with refs to vertices. This
+// one should be able to follow the example code closely, and then
+// can skip proper serialization of polygons for now and just do
+// deserialize of the vertex map, and do a straight-forward init
+// of the polygon from the vertex map. Can rethink this at some
+// point, but more interested now in getting the vis infra going
+
+
 
 #[derive(Debug, PartialEq)]
 pub struct ParseVertexMapError;
