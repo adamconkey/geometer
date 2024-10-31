@@ -195,73 +195,43 @@ impl<'a> Polygon<'a> {
 mod tests {
     use super::*;
     use rstest::{fixture, rstest};
-    
-    // TODO save these in files and load here
+    use std::fs;
+    use std::path::PathBuf;
+
+    fn load_vmap(filename: &str) -> VertexMap {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("resources/test");
+        path.push(filename);
+        let polygon_str: String = fs::read_to_string(path)
+            .expect("file should exist and be parseable");
+        serde_json::from_str(&polygon_str).unwrap()
+    }
+
+    // TODO these fixtures are nice and compact now, but it has me
+    // wondering if this is the best way to support fixtures? Might
+    // get tedious specifying these as the test cases grow. Could
+    // just parameterize on filenames and then load vmap in the
+    // the test, maybe with some added machinery on vmap to load
+    // from file path, and can have the PathBuf fixture pointing
+    // to the test directory
     #[fixture]
     fn polygon_1() -> VertexMap {
-        let polygon_str = r#"{
-            "vertices": {
-                "a": {"x":  0, "y": 0, "id": "a"},
-                "b": {"x":  3, "y": 4, "id": "b"},
-                "c": {"x":  6, "y": 2, "id": "c"},
-                "d": {"x":  7, "y": 6, "id": "d"},
-                "e": {"x":  3, "y": 9, "id": "e"},
-                "f": {"x": -2, "y": 7, "id": "f"}
-            }
-        }"#;
-        serde_json::from_str(&polygon_str).unwrap()
+        load_vmap("polygon_1.json")
     }
 
     #[fixture]
     fn polygon_2() -> VertexMap {
-        let polygon_str = r#"{
-            "vertices": {
-                "0":  {"x":  0, "y":  0, "id": "0"},
-                "1":  {"x": 12, "y":  9, "id": "1"},
-                "2":  {"x": 14, "y":  4, "id": "2"},
-                "3":  {"x": 24, "y": 10, "id": "3"},
-                "4":  {"x": 14, "y": 24, "id": "4"},
-                "5":  {"x": 11, "y": 17, "id": "5"},
-                "6":  {"x": 13, "y": 19, "id": "6"},
-                "7":  {"x": 14, "y": 12, "id": "7"},
-                "8":  {"x":  9, "y": 13, "id": "8"},
-                "9":  {"x":  7, "y": 18, "id": "9"},
-                "10": {"x": 11, "y": 21, "id": "10"},
-                "11": {"x":  8, "y": 24, "id": "11"},
-                "12": {"x":  1, "y": 22, "id": "12"},
-                "13": {"x":  2, "y": 18, "id": "13"},
-                "14": {"x":  4, "y": 20, "id": "14"},
-                "15": {"x":  6, "y": 10, "id": "15"},
-                "16": {"x": -2, "y": 11, "id": "16"},
-                "17": {"x":  6, "y":  6, "id": "17"}
-            }
-        }"#;
-        serde_json::from_str(&polygon_str).unwrap()
+        load_vmap("polygon_2.json")
     }
 
     #[fixture]
     fn right_triangle() -> VertexMap {
-        let polygon_str = r#"{
-            "vertices": {
-                "a": {"x": 0, "y": 0, "id": "a"},
-                "b": {"x": 3, "y": 0, "id": "b"},
-                "c": {"x": 0, "y": 4, "id": "c"}
-            }
-        }"#;
-        serde_json::from_str(&polygon_str).unwrap()
+        load_vmap("right_triangle.json")
     }
 
     #[fixture]
     fn square_4x4() -> VertexMap {
-        let polygon_str = r#"{
-            "vertices": {
-                "a": {"x":  0, "y": 0, "id": "a"},
-                "b": {"x":  4, "y": 0, "id": "b"},
-                "c": {"x":  4, "y": 4, "id": "c"},
-                "d": {"x":  0, "y": 4, "id": "d"}
-            }
-        }"#;
-        serde_json::from_str(&polygon_str).unwrap()
+        load_vmap("square_4x4.json")
     }
 
 
