@@ -195,54 +195,73 @@ impl<'a> Polygon<'a> {
 mod tests {
     use super::*;
     use rstest::{fixture, rstest};
-    use std::str::FromStr;
-
-    // TODO these are in transition, now that they return vmaps should
-    // be able to incorporate the serde serialization, and then can just
-    // save these in files and load them. Could try one first from a raw
-    // string (which should already be working) and then figure out the
-    // file loading aspect.
+    
+    // TODO save these in files and load here
     #[fixture]
     fn polygon_1() -> VertexMap {
-        let polygon_str = concat!("0 0 a\n", "3 4 b\n", "6 2 c\n", "7 6 d\n", "3 9 e\n", "-2 7 f");
-        VertexMap::from_str(&polygon_str).unwrap()
+        let polygon_str = r#"{
+            "vertices": {
+                "a": {"x":  0, "y": 0, "id": "a"},
+                "b": {"x":  3, "y": 4, "id": "b"},
+                "c": {"x":  6, "y": 2, "id": "c"},
+                "d": {"x":  7, "y": 6, "id": "d"},
+                "e": {"x":  3, "y": 9, "id": "e"},
+                "f": {"x": -2, "y": 7, "id": "f"}
+            }
+        }"#;
+        serde_json::from_str(&polygon_str).unwrap()
     }
 
     #[fixture]
     fn polygon_2() -> VertexMap {
-        let polygon_str = concat!(
-            "0 0 0\n",
-            "12 9 1\n",
-            "14 4 2\n",
-            "24 10 3\n",
-            "14 24 4\n",
-            "11 17 5\n",
-            "13 19 6\n",
-            "14 12 7\n",
-            "9 13 8\n",
-            "7 18 9\n",
-            "11 21 10\n",
-            "8 24 11\n",
-            "1 22 12\n",
-            "2 18 13\n",
-            "4 20 14\n",
-            "6 10 15\n",
-            "-2 11 16\n",
-            "6 6 17"
-        );
-        VertexMap::from_str(&polygon_str).unwrap()
+        let polygon_str = r#"{
+            "vertices": {
+                "0":  {"x":  0, "y":  0, "id": "0"},
+                "1":  {"x": 12, "y":  9, "id": "1"},
+                "2":  {"x": 14, "y":  4, "id": "2"},
+                "3":  {"x": 24, "y": 10, "id": "3"},
+                "4":  {"x": 14, "y": 24, "id": "4"},
+                "5":  {"x": 11, "y": 17, "id": "5"},
+                "6":  {"x": 13, "y": 19, "id": "6"},
+                "7":  {"x": 14, "y": 12, "id": "7"},
+                "8":  {"x":  9, "y": 13, "id": "8"},
+                "9":  {"x":  7, "y": 18, "id": "9"},
+                "10": {"x": 11, "y": 21, "id": "10"},
+                "11": {"x":  8, "y": 24, "id": "11"},
+                "12": {"x":  1, "y": 22, "id": "12"},
+                "13": {"x":  2, "y": 18, "id": "13"},
+                "14": {"x":  4, "y": 20, "id": "14"},
+                "15": {"x":  6, "y": 10, "id": "15"},
+                "16": {"x": -2, "y": 11, "id": "16"},
+                "17": {"x":  6, "y":  6, "id": "17"}
+            }
+        }"#;
+        serde_json::from_str(&polygon_str).unwrap()
     }
 
     #[fixture]
     fn right_triangle() -> VertexMap {
-        let polygon_str = concat!("0 0 a\n", "3 0 b\n", "0 4 c");
-        VertexMap::from_str(&polygon_str).unwrap()
+        let polygon_str = r#"{
+            "vertices": {
+                "a": {"x": 0, "y": 0, "id": "a"},
+                "b": {"x": 3, "y": 0, "id": "b"},
+                "c": {"x": 0, "y": 4, "id": "c"}
+            }
+        }"#;
+        serde_json::from_str(&polygon_str).unwrap()
     }
 
     #[fixture]
     fn square_4x4() -> VertexMap {
-        let polygon_str = concat!("0 0 a\n", "4 0 b\n", "4 4 c\n", "0 4 d");
-        VertexMap::from_str(polygon_str).unwrap()
+        let polygon_str = r#"{
+            "vertices": {
+                "a": {"x":  0, "y": 0, "id": "a"},
+                "b": {"x":  4, "y": 0, "id": "b"},
+                "c": {"x":  4, "y": 4, "id": "c"},
+                "d": {"x":  0, "y": 4, "id": "d"}
+            }
+        }"#;
+        serde_json::from_str(&polygon_str).unwrap()
     }
 
 
@@ -259,7 +278,6 @@ mod tests {
 
     #[rstest]
     fn test_neighbors_square(square_4x4: VertexMap) {
-        // let vmap = VertexMap::from_str(square_4x4).unwrap();
         let polygon = Polygon::from_vmap(&square_4x4);
 
         let a = square_4x4.get("a").unwrap();
