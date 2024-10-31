@@ -1,4 +1,6 @@
 use indexmap::IndexMap;
+use std::fs;
+use std::path::Path;
 use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +24,13 @@ impl VertexMap {
             vertex_map.insert(vertex.id.clone(), vertex);
         }
         VertexMap { vertices: vertex_map }
+    }
+
+    pub fn from_json<P: AsRef<Path>>(path: P) -> VertexMap {
+        let polygon_str: String = fs::read_to_string(path)
+            .expect("file should exist and be parseable");
+        // TODO don't unwrap
+        serde_json::from_str(&polygon_str).unwrap()
     }
 
     pub fn get(&self, id: &str) -> Option<&Vertex> {

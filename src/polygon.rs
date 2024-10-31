@@ -195,25 +195,20 @@ impl<'a> Polygon<'a> {
 mod tests {
     use super::*;
     use rstest::{fixture, rstest};
-    use std::fs;
     use std::path::PathBuf;
 
     fn load_vmap(filename: &str) -> VertexMap {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test");
         path.push(filename);
-        let polygon_str: String = fs::read_to_string(path)
-            .expect("file should exist and be parseable");
-        serde_json::from_str(&polygon_str).unwrap()
+        VertexMap::from_json(path)
     }
 
     // TODO these fixtures are nice and compact now, but it has me
     // wondering if this is the best way to support fixtures? Might
     // get tedious specifying these as the test cases grow. Could
     // just parameterize on filenames and then load vmap in the
-    // the test, maybe with some added machinery on vmap to load
-    // from file path, and can have the PathBuf fixture pointing
-    // to the test directory
+    // the test
     #[fixture]
     fn polygon_1() -> VertexMap {
         load_vmap("polygon_1.json")
