@@ -1,7 +1,7 @@
 {
-    "vertices": {
-        "a": {"x": 0, "y": 0, "id": "a"},
-        "b": {"x": 3, "y": 0, "id": "b"},
-        "c": {"x": 0, "y": 4, "id": "c"}
+    "vertex_map": {
+        "a": {"x": 0, "y": 0, "id": "a", "prev": "c", "next": "b"},
+        "b": {"x": 3, "y": 0, "id": "b", "prev": "a", "next": "c"},
+        "c": {"x": 0, "y": 4, "id": "c", "prev": "b", "next": "a"}
     }
 }
