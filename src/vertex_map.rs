@@ -1,16 +1,17 @@
-// use std::collections::HashMap;
 use indexmap::IndexMap;
+use std::fs;
+use std::path::Path;
 use std::str::FromStr;
+use serde::{Deserialize, Serialize};
 
 use crate::line_segment::LineSegment;
 use crate::vertex::Vertex;
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct VertexMap {
     vertices: IndexMap<String, Vertex>,
 }
-
 
 #[derive(Debug, PartialEq)]
 pub struct ParseVertexMapError;
@@ -23,6 +24,13 @@ impl VertexMap {
             vertex_map.insert(vertex.id.clone(), vertex);
         }
         VertexMap { vertices: vertex_map }
+    }
+
+    pub fn from_json<P: AsRef<Path>>(path: P) -> VertexMap {
+        let polygon_str: String = fs::read_to_string(path)
+            .expect("file should exist and be parseable");
+        // TODO don't unwrap
+        serde_json::from_str(&polygon_str).unwrap()
     }
 
     pub fn get(&self, id: &str) -> Option<&Vertex> {
@@ -77,5 +85,21 @@ mod tests {
         let input = "1 2 a\n3 4 b";
         let vmap = VertexMap::from_str(input).unwrap();
         assert_eq!(vmap, expected_vmap);
+    }
+
+    #[test]
+    fn test_serialization() {
+        let a = Vertex::new_with_id(1, 2, String::from("a"));
+        let b = Vertex::new_with_id(3, 4, String::from("b"));
+        let vertices = vec![a, b];
+        let vmap = VertexMap::new(vertices);
+
+        let expected_serialized = r#"{"vertices":{"a":{"x":1,"y":2,"id":"a"},"b":{"x":3,"y":4,"id":"b"}}}"#;
+
+        let serialized = serde_json::to_string(&vmap).unwrap();
+        let deserialized: VertexMap = serde_json::from_str(&serialized).unwrap();
+        
+        assert_eq!(serialized, expected_serialized);
+        assert_eq!(deserialized, vmap);
     }
 }

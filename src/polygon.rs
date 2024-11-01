@@ -45,6 +45,27 @@ impl<'a> Polygon<'a> {
     pub fn from_vmap(vmap: &'a VertexMap) -> Polygon<'a> {
         Polygon::new(vmap.all_vertices())
     }
+
+    pub fn vertices(&self) -> Vec<&Vertex> {
+        // TODO can rethink edges method if this works
+
+        let mut vertices = Vec::new();
+        let mut current = self.anchor;
+
+        loop {
+            vertices.push(current);
+            current = self.neighbors
+                .get(current)
+                .expect("Every vertex should have neighbors stored")
+                .1;
+            
+            if current == self.anchor {
+                break;
+            }
+        }
+
+        vertices
+    }
     
     pub fn double_area(&self) -> i32 {
         // The first edge will include the anchor, but that area
@@ -174,71 +195,60 @@ impl<'a> Polygon<'a> {
 mod tests {
     use super::*;
     use rstest::{fixture, rstest};
-    use std::str::FromStr;
+    use std::path::PathBuf;
 
-    // TODO I think it will be better to ultimately read these
-    // from file since I'll likely have some with many vertices
-    // which will get a little unwieldy here.
+    fn load_vmap(filename: &str) -> VertexMap {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("resources/test");
+        path.push(filename);
+        VertexMap::from_json(path)
+    }
+
+    // TODO these fixtures are nice and compact now, but it has me
+    // wondering if this is the best way to support fixtures? Might
+    // get tedious specifying these as the test cases grow. Could
+    // just parameterize on filenames and then load vmap in the
+    // the test
     #[fixture]
-    fn polygon_1() -> &'static str {
-        concat!("0 0 a\n", "3 4 b\n", "6 2 c\n", "7 6 d\n", "3 9 e\n", "-2 7 f")
+    fn polygon_1() -> VertexMap {
+        load_vmap("polygon_1.json")
     }
 
     #[fixture]
-    fn polygon_2() -> &'static str {
-        concat!(
-            "0 0 0\n",
-            "12 9 1\n",
-            "14 4 2\n",
-            "24 10 3\n",
-            "14 24 4\n",
-            "11 17 5\n",
-            "13 19 6\n",
-            "14 12 7\n",
-            "9 13 8\n",
-            "7 18 9\n",
-            "11 21 10\n",
-            "8 24 11\n",
-            "1 22 12\n",
-            "2 18 13\n",
-            "4 20 14\n",
-            "6 10 15\n",
-            "-2 11 16\n",
-            "6 6 17"
-        )
+    fn polygon_2() -> VertexMap {
+        load_vmap("polygon_2.json")
     }
 
     #[fixture]
-    fn right_triangle() -> &'static str {
-        concat!("0 0 a\n", "3 0 b\n", "0 4 c")
+    fn right_triangle() -> VertexMap {
+        load_vmap("right_triangle.json")
     }
 
     #[fixture]
-    fn square_4x4() -> &'static str {
-        concat!("0 0 a\n", "4 0 b\n", "4 4 c\n", "0 4 d")
+    fn square_4x4() -> VertexMap {
+        load_vmap("square_4x4.json")
     }
-    
+
+
     #[rstest]
     // TODO now that this is parametrized, can add as many polygons
     // here as possible to get meaningful tests on area
     #[case(right_triangle(), 12)]
     #[case(polygon_2(), 466)]
-    fn test_area(#[case] polygon_str: &str, #[case] expected_double_area: i32) {
-        let vmap = VertexMap::from_str(polygon_str).unwrap();        
+    fn test_area(#[case] vmap: VertexMap, #[case] expected_double_area: i32) {
         let polygon = Polygon::from_vmap(&vmap);
         let double_area = polygon.double_area();
         assert_eq!(double_area, expected_double_area);
     }
 
     #[rstest]
-    fn test_neighbors_square(square_4x4: &str) {
-        let vmap = VertexMap::from_str(square_4x4).unwrap();
-        let polygon = Polygon::from_vmap(&vmap);
+    fn test_neighbors_square(square_4x4: VertexMap) {
+        let polygon = Polygon::from_vmap(&square_4x4);
 
-        let a = vmap.get("a").unwrap();
-        let b = vmap.get("b").unwrap();
-        let c = vmap.get("c").unwrap();
-        let d = vmap.get("d").unwrap();
+        let a = square_4x4.get("a").unwrap();
+        let b = square_4x4.get("b").unwrap();
+        let c = square_4x4.get("c").unwrap();
+        let d = square_4x4.get("d").unwrap();
         
         assert_eq!(polygon.neighbors(a), (d, b));
         assert_eq!(polygon.neighbors(b), (a, c));
@@ -247,16 +257,43 @@ mod tests {
     }
 
     #[rstest]
-    fn test_neighbors_p1(polygon_1: &str) {
-        let vmap = VertexMap::from_str(polygon_1).unwrap();
-        let polygon = Polygon::from_vmap(&vmap);
+    fn test_edges_square(square_4x4: VertexMap) {
+        let polygon = Polygon::from_vmap(&square_4x4);
 
-        let a = vmap.get("a").unwrap();
-        let b = vmap.get("b").unwrap();
-        let c = vmap.get("c").unwrap();
-        let d = vmap.get("d").unwrap();
-        let e = vmap.get("e").unwrap();
-        let f = vmap.get("f").unwrap();
+        let expected_edges = vec![
+            square_4x4.get_line_segment("a", "b"),
+            square_4x4.get_line_segment("b", "c"),
+            square_4x4.get_line_segment("c", "d"),
+            square_4x4.get_line_segment("d", "a"),
+        ];
+    
+        assert_eq!(polygon.edges(), expected_edges);
+    }
+
+    #[rstest]
+    fn test_vertices_square(square_4x4: VertexMap) {
+        let polygon = Polygon::from_vmap(&square_4x4);
+
+        let expected_vertices = vec![
+            square_4x4.get("a").unwrap(),
+            square_4x4.get("b").unwrap(),
+            square_4x4.get("c").unwrap(),
+            square_4x4.get("d").unwrap(),
+        ];
+    
+        assert_eq!(polygon.vertices(), expected_vertices);
+    }
+
+    #[rstest]
+    fn test_neighbors_p1(polygon_1: VertexMap) {
+        let polygon = Polygon::from_vmap(&polygon_1);
+
+        let a = polygon_1.get("a").unwrap();
+        let b = polygon_1.get("b").unwrap();
+        let c = polygon_1.get("c").unwrap();
+        let d = polygon_1.get("d").unwrap();
+        let e = polygon_1.get("e").unwrap();
+        let f = polygon_1.get("f").unwrap();
         
         assert_eq!(polygon.neighbors(a), (f, b));
         assert_eq!(polygon.neighbors(b), (a, c));
@@ -267,28 +304,59 @@ mod tests {
     }
     
     #[rstest]
-    fn test_diagonal(polygon_1: &str) {
-        let vmap = VertexMap::from_str(polygon_1).unwrap();
-        let polygon = Polygon::from_vmap(&vmap);
+    fn test_edges_p1(polygon_1: VertexMap) {
+        let polygon = Polygon::from_vmap(&polygon_1);
 
-        let ac = vmap.get_line_segment("a", "c");
-        let ad = vmap.get_line_segment("a", "d");
-        let ae = vmap.get_line_segment("a", "e");
-        let bd = vmap.get_line_segment("b", "d");
-        let be = vmap.get_line_segment("b", "e");
-        let bf = vmap.get_line_segment("b", "f");
-        let ca = vmap.get_line_segment("c", "a");
-        let ce = vmap.get_line_segment("c", "e");
-        let cf = vmap.get_line_segment("c", "f");
-        let da = vmap.get_line_segment("d", "a");
-        let db = vmap.get_line_segment("d", "b");
-        let df = vmap.get_line_segment("d", "f");
-        let ea = vmap.get_line_segment("e", "a");
-        let eb = vmap.get_line_segment("e", "b");
-        let ec = vmap.get_line_segment("e", "c");
-        let fb = vmap.get_line_segment("f", "b");
-        let fc = vmap.get_line_segment("f", "c");
-        let fd = vmap.get_line_segment("f", "d");
+        let expected_edges = vec![
+            polygon_1.get_line_segment("a", "b"),
+            polygon_1.get_line_segment("b", "c"),
+            polygon_1.get_line_segment("c", "d"),
+            polygon_1.get_line_segment("d", "e"),
+            polygon_1.get_line_segment("e", "f"),
+            polygon_1.get_line_segment("f", "a"),
+        ];
+        
+        assert_eq!(polygon.edges(), expected_edges);
+    }
+
+    #[rstest]
+    fn test_vertices_p1(polygon_1: VertexMap) {
+        let polygon = Polygon::from_vmap(&polygon_1);
+
+        let expected_vertices = vec![
+            polygon_1.get("a").unwrap(),
+            polygon_1.get("b").unwrap(),
+            polygon_1.get("c").unwrap(),
+            polygon_1.get("d").unwrap(),
+            polygon_1.get("e").unwrap(),
+            polygon_1.get("f").unwrap(),
+        ];
+        
+        assert_eq!(polygon.vertices(), expected_vertices);
+    }
+
+    #[rstest]
+    fn test_diagonal(polygon_1: VertexMap) {
+        let polygon = Polygon::from_vmap(&polygon_1);
+
+        let ac = polygon_1.get_line_segment("a", "c");
+        let ad = polygon_1.get_line_segment("a", "d");
+        let ae = polygon_1.get_line_segment("a", "e");
+        let bd = polygon_1.get_line_segment("b", "d");
+        let be = polygon_1.get_line_segment("b", "e");
+        let bf = polygon_1.get_line_segment("b", "f");
+        let ca = polygon_1.get_line_segment("c", "a");
+        let ce = polygon_1.get_line_segment("c", "e");
+        let cf = polygon_1.get_line_segment("c", "f");
+        let da = polygon_1.get_line_segment("d", "a");
+        let db = polygon_1.get_line_segment("d", "b");
+        let df = polygon_1.get_line_segment("d", "f");
+        let ea = polygon_1.get_line_segment("e", "a");
+        let eb = polygon_1.get_line_segment("e", "b");
+        let ec = polygon_1.get_line_segment("e", "c");
+        let fb = polygon_1.get_line_segment("f", "b");
+        let fc = polygon_1.get_line_segment("f", "c");
+        let fd = polygon_1.get_line_segment("f", "d");
 
         let internal = vec![&ae, &bd, &be, &bf, &ce, &db, &df, &ea, &eb, &ec, &fb, &fd];
         let external = vec![&ac, &ca];
@@ -316,26 +384,25 @@ mod tests {
     }
 
     #[rstest]
-    fn test_triangulation(polygon_2: &str) {
-        let vmap = VertexMap::from_str(polygon_2).unwrap();        
-        let polygon = Polygon::from_vmap(&vmap);
+    fn test_triangulation(polygon_2: VertexMap) {
+        let polygon = Polygon::from_vmap(&polygon_2);
         let triangulation = polygon.triangulation();
         
-        let ls_17_1 = vmap.get_line_segment("17", "1");
-        let ls_1_3 = vmap.get_line_segment("1", "3");
-        let ls_4_6 = vmap.get_line_segment("4", "6");
-        let ls_4_7 = vmap.get_line_segment("4", "7");
-        let ls_9_11 = vmap.get_line_segment("9", "11");
-        let ls_12_14 = vmap.get_line_segment("12", "14");
-        let ls_15_17 = vmap.get_line_segment("15", "17");
-        let ls_15_1 = vmap.get_line_segment("15", "1");
-        let ls_15_3 = vmap.get_line_segment("15", "3");
-        let ls_3_7 = vmap.get_line_segment("3", "7");
-        let ls_11_14 = vmap.get_line_segment("11", "14");
-        let ls_15_7 = vmap.get_line_segment("15", "7");
-        let ls_15_8 = vmap.get_line_segment("15", "8");
-        let ls_15_9 = vmap.get_line_segment("15", "9");
-        let ls_9_14 = vmap.get_line_segment("9", "14");
+        let ls_17_1 = polygon_2.get_line_segment("17", "1");
+        let ls_1_3 = polygon_2.get_line_segment("1", "3");
+        let ls_4_6 = polygon_2.get_line_segment("4", "6");
+        let ls_4_7 = polygon_2.get_line_segment("4", "7");
+        let ls_9_11 = polygon_2.get_line_segment("9", "11");
+        let ls_12_14 = polygon_2.get_line_segment("12", "14");
+        let ls_15_17 = polygon_2.get_line_segment("15", "17");
+        let ls_15_1 = polygon_2.get_line_segment("15", "1");
+        let ls_15_3 = polygon_2.get_line_segment("15", "3");
+        let ls_3_7 = polygon_2.get_line_segment("3", "7");
+        let ls_11_14 = polygon_2.get_line_segment("11", "14");
+        let ls_15_7 = polygon_2.get_line_segment("15", "7");
+        let ls_15_8 = polygon_2.get_line_segment("15", "8");
+        let ls_15_9 = polygon_2.get_line_segment("15", "9");
+        let ls_9_14 = polygon_2.get_line_segment("9", "14");
        
         let expected = vec![
             ls_17_1,
@@ -356,6 +423,5 @@ mod tests {
         ];
 
         assert_eq!(expected, triangulation);
-
     }
 }
