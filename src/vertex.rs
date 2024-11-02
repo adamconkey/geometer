@@ -29,7 +29,7 @@ pub struct Vertex {
 #[derive(Debug, PartialEq)]
 pub struct ParseVertexError;
 
-
+// TODO will need to decide if I want to support this, only if useful
 // impl FromStr for Vertex {
 //     type Err = ParseVertexError;
 
