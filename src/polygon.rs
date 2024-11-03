@@ -47,6 +47,12 @@ impl Polygon {
         area
     }
 
+    // TODO I think this should return set, there's really no
+    // benefit I think to enforcing any order on these. It's
+    // also possibly a pain using String type, need to look
+    // into best practices on this. I do a lot of ID clones
+    // throughout, and have to do to_string on raw strings,
+    // so there's likely a smarter way to hanlde this
     pub fn triangulation(&self) -> Vec<(String, String)> {
         let mut triangulation = Vec::new();
         let mut vmap = self.vertex_map.clone();
