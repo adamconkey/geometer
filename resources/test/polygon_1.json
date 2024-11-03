@@ -1,4 +1,5 @@
 {
+    "anchor": "a",
     "vertex_map": {
         "a": {"x":  0, "y": 0, "id": "a", "prev": "f", "next": "b"},
         "b": {"x":  3, "y": 4, "id": "b", "prev": "a", "next": "c"},

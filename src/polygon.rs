@@ -1,6 +1,5 @@
-use indexmap::IndexMap;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
@@ -13,18 +12,19 @@ use crate::{
 
 #[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct Polygon {
-    vertex_map: IndexMap<String, Vertex>,
+    vertex_map: HashMap<String, Vertex>,
+    anchor: String,
 }
 
 
 impl Polygon {
     pub fn new(vertices: Vec<Vertex>) -> Polygon {
-        let mut vertex_map = IndexMap::new();
+        let mut vertex_map = HashMap::new();
+        let anchor = vertices[0].id.clone();
         for vertex in vertices {
             vertex_map.insert(vertex.id.clone(), vertex);
         }
-
-        Polygon { vertex_map }
+        Polygon { vertex_map, anchor }
     }
 
     pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
@@ -39,7 +39,7 @@ impl Polygon {
         // ends up being zero since it will trivially be collinear
         // with anchor and thus doesn't affect the compuation
         let mut area = 0;
-        let anchor = self.vertex_map.first().expect("should have >0 elements").1;
+        let anchor = self.get_vertex(&self.anchor).unwrap();
         for v1 in self.vertex_map.values() {
             let v2 = self.vertex_map.get(&v1.next).expect("Neighbor should be in vmap"); 
             area += Triangle::new(anchor, v1, v2).double_area();
@@ -61,7 +61,7 @@ impl Polygon {
             if let Some(v2_key) = self.find_ear(&vmap) {
                 // TODO this is actually O(n) so there's a good chance
                 // IndexMap isn't worth it and I should just use HashMap
-                let v2 = vmap.shift_remove(&v2_key).unwrap();
+                let v2 = vmap.remove(&v2_key).unwrap();
                 triangulation.push((v2.prev.clone(), v2.next.clone()));
                 
                 let v1 = vmap.get_mut(&v2.prev).unwrap();
@@ -70,11 +70,6 @@ impl Polygon {
                 v3.prev = v2.prev.clone();
             }
             else {
-
-                // TODO currently hitting this spot, not sure why. I think
-                // on every iter there should definitely be at least one
-                // ear found 
-
                 panic!("BAD THINGS need to fix this")
                 // TODO this is actually an error and shouldn't actually
                 // happen if it's a valid polygon, so need to think of
@@ -84,7 +79,7 @@ impl Polygon {
         triangulation
     }
 
-    pub fn find_ear(&self, vmap: &IndexMap<String, Vertex>) -> Option<String> {
+    pub fn find_ear(&self, vmap: &HashMap<String, Vertex>) -> Option<String> {
         for v2 in vmap.values() {
             let v1 = vmap.get(&v2.prev).unwrap();
             let v3 = vmap.get(&v2.next).unwrap();
@@ -110,9 +105,15 @@ impl Polygon {
     pub fn edges(&self) -> Vec<LineSegment> {
         // TODO could cache this and clear on modification
         let mut edges = Vec::new();
-        for v in self.vertex_map.values() {
-            let next = self.get_vertex(&v.next).unwrap();
-            edges.push(LineSegment::new(v, next));
+        let mut current_id = &self.anchor;
+        loop {
+            let current = self.get_vertex(&current_id).unwrap();
+            let next = self.get_vertex(&current.next).unwrap();
+            edges.push(LineSegment::new(current, next));
+            current_id = &next.id;
+            if current_id == &self.anchor {
+                break;
+            }
         }
         edges
     }
@@ -270,33 +271,17 @@ mod tests {
     #[rstest]
     fn test_triangulation(polygon_2: Polygon) {
         let triangulation = polygon_2.triangulation();
-       
-        let expected = vec![
-            ("17".to_string(),  "1".to_string()),
-            ( "1".to_string(),  "3".to_string()),
-            ( "4".to_string(),  "6".to_string()),
-            ( "4".to_string(),  "7".to_string()),
-            ( "9".to_string(), "11".to_string()),
-            ("12".to_string(), "14".to_string()),
-            ("15".to_string(), "17".to_string()),
-            ("15".to_string(),  "1".to_string()),
-            ("15".to_string(),  "3".to_string()),
-            ( "3".to_string(),  "7".to_string()),
-            ("11".to_string(), "14".to_string()),
-            ("15".to_string(),  "7".to_string()),
-            ("15".to_string(),  "8".to_string()),
-            ("15".to_string(),  "9".to_string()),
-            ( "9".to_string(), "14".to_string()),
-        ];
 
-        // TODO I think this is running now, but the order is different
-        // since I've changed the implementation to search for an ear
-        // on each iter. There are generally smarter ways to handle that
-        // but I think in general it doesn't make sense to enforce
-        // that order. Should probably have the triangulation return
-        // a set and assert on that, since that order will likely
-        // change as the implementation evolves
+        // TODO will need to generally have better ways to assert
+        // on triangulations. Currently my implementation is a bit
+        // unstable and so not only can the order of line segments
+        // be different, you can get slightly different triangulations
+        // depending on the order things are visited. So it's 
+        // probably better to just have some asserts that show it's
+        // a valid triangulation, and then eventually if it's
+        // stable enough can do an assert on the specific
+        // triangulation achieved
 
-        // assert_eq!(expected, triangulation);
+        assert_eq!(triangulation.len(), 15);
     }
 }
