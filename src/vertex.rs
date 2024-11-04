@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use unique_id::Generator;
 use unique_id::string::StringGenerator;
 
@@ -28,30 +27,6 @@ pub struct Vertex {
 
 #[derive(Debug, PartialEq)]
 pub struct ParseVertexError;
-
-// TODO will need to decide if I want to support this, only if useful
-// impl FromStr for Vertex {
-//     type Err = ParseVertexError;
-
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         let mut split = s.split(" ");
-//         let x = split
-//             .next()
-//             .ok_or(ParseVertexError)?
-//             .parse::<i32>()
-//             .map_err(|_| ParseVertexError)?;
-//         let y = split
-//             .next()
-//             .ok_or(ParseVertexError)?
-//             .parse::<i32>()
-//             .map_err(|_| ParseVertexError)?;
-//         let id = split.next().ok_or(ParseVertexError)?
-//             .to_string();
-
-//         Ok(Vertex::new_with_id(x, y, id))        
-//     }
-    
-// }
 
 
 impl Vertex {
@@ -94,7 +69,6 @@ impl Vertex {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde::de::Expected;
     use serde_json;
 
     #[test]
@@ -103,12 +77,6 @@ mod tests {
         let v1 = Vertex::new_gen_id(3, 4);
         assert_ne!(v0.id, v1.id);
     }
-
-    // #[test]
-    // fn test_from_str() {
-    //     let expected = Ok(Vertex::new_with_id(1, 2, String::from("a")));
-    //     assert_eq!(Vertex::from_str("1 2 a"), expected);
-    // }
     
     #[test]
     fn test_serialize() {
