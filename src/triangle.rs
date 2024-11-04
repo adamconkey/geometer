@@ -41,9 +41,9 @@ mod tests {
 
     #[test]
     fn test_area_right_triangle() {
-        let a = Vertex::new_gen_id(0, 0);
-        let b = Vertex::new_gen_id(3, 0);
-        let c = Vertex::new_gen_id(0, 4);
+        let a = Vertex::new(0, 0);
+        let b = Vertex::new(3, 0);
+        let c = Vertex::new(0, 4);
         let triangle = Triangle::new(&a, &b, &c);
         let double_area = triangle.double_area();
         assert_eq!(double_area, 12);
@@ -53,9 +53,9 @@ mod tests {
 
     #[test]
     fn test_area_sign_clockwise() {
-        let a = Vertex::new_gen_id(0, 0);
-        let b = Vertex::new_gen_id(4, 3);
-        let c = Vertex::new_gen_id(1, 3);
+        let a = Vertex::new(0, 0);
+        let b = Vertex::new(4, 3);
+        let c = Vertex::new(1, 3);
         
         let cw = vec![
             Triangle::new(&a, &c, &b),
@@ -69,9 +69,9 @@ mod tests {
 
     #[test]
     fn test_area_sign_counter_clockwise() {
-        let a = Vertex::new_gen_id(0, 0);
-        let b = Vertex::new_gen_id(4, 3);
-        let c = Vertex::new_gen_id(1, 3);
+        let a = Vertex::new(0, 0);
+        let b = Vertex::new(4, 3);
+        let c = Vertex::new(1, 3);
 
         let ccw = vec![
             Triangle::new(&a, &b, &c),
@@ -85,9 +85,9 @@ mod tests {
 
     #[test]
     fn test_area_sign_collinear() {
-        let a = Vertex::new_gen_id(0, 0);
-        let b = Vertex::new_gen_id(4, 3);
-        let c = Vertex::new_gen_id(1, 3);
+        let a = Vertex::new(0, 0);
+        let b = Vertex::new(4, 3);
+        let c = Vertex::new(1, 3);
 
         // This is choice with replacement over a 3-tuple, so there are
         // 3 * 3 * 3 = 27 total options and this generates all of them.

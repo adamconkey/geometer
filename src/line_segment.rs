@@ -83,10 +83,10 @@ mod tests {
 
     #[test]
     fn test_proper_intersect() {
-        let a = Vertex::new_gen_id(6, 4);
-        let b = Vertex::new_gen_id(0, 4);
-        let c = Vertex::new_gen_id(1, 0);
-        let d = Vertex::new_gen_id(4, 6);
+        let a = Vertex::new(6, 4);
+        let b = Vertex::new(0, 4);
+        let c = Vertex::new(1, 0);
+        let d = Vertex::new(4, 6);
 
         let ab = LineSegment::new(&a, &b);
         let cd = LineSegment::new(&c, &d);
@@ -101,10 +101,10 @@ mod tests {
 
     #[test]
     fn test_improper_intersect() {
-        let a = Vertex::new_gen_id(6, 6);
-        let b = Vertex::new_gen_id(0, 6);
-        let c = Vertex::new_gen_id(1, 0);
-        let d = Vertex::new_gen_id(4, 6);
+        let a = Vertex::new(6, 6);
+        let b = Vertex::new(0, 6);
+        let c = Vertex::new(1, 0);
+        let d = Vertex::new(4, 6);
 
         let ab = LineSegment::new(&a, &b);
         let cd = LineSegment::new(&c, &d);
@@ -119,10 +119,10 @@ mod tests {
 
     #[test]
     fn test_no_intersect() {
-        let a = Vertex::new_gen_id(6, 4);
-        let b = Vertex::new_gen_id(4, 4);
-        let c = Vertex::new_gen_id(1, 0);
-        let d = Vertex::new_gen_id(4, 6);
+        let a = Vertex::new(6, 4);
+        let b = Vertex::new(4, 4);
+        let c = Vertex::new(1, 0);
+        let d = Vertex::new(4, 6);
 
         let ab = LineSegment::new(&a, &b);
         let cd = LineSegment::new(&c, &d);
@@ -137,8 +137,8 @@ mod tests {
 
     #[test]
     fn test_intersect_with_self() {
-        let a = Vertex::new_gen_id(6, 4);
-        let b = Vertex::new_gen_id(4, 4);
+        let a = Vertex::new(6, 4);
+        let b = Vertex::new(4, 4);
         let ab = LineSegment::new(&a, &b);
 
         assert!(!ab.proper_intersects(&ab));
@@ -148,8 +148,8 @@ mod tests {
 
     #[test]
     fn test_reverse() {
-        let a = Vertex::new_gen_id(0, 0);
-        let b = Vertex::new_gen_id(1, 2);
+        let a = Vertex::new(0, 0);
+        let b = Vertex::new(1, 2);
         let ab = LineSegment::new(&a, &b);
         let ba = ab.reverse();
         assert_eq!(ab.v1, &a);
