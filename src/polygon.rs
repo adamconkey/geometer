@@ -41,7 +41,7 @@ impl Polygon {
         let mut area = 0;
         let anchor = self.get_vertex(&self.anchor).unwrap();
         for v1 in self.vertex_map.values() {
-            let v2 = self.vertex_map.get(&v1.next).expect("Neighbor should be in vmap"); 
+            let v2 = self.get_vertex(&v1.next).unwrap(); 
             area += Triangle::new(anchor, v1, v2).double_area();
         }
         area
