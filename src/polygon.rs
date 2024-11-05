@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -20,17 +21,35 @@ pub struct Polygon {
 impl Polygon {
     pub fn new(vertices: Vec<Vertex>) -> Polygon {
         let mut vertex_map = HashMap::new();
-        let anchor = vertices.first().unwrap().id;
-        let last = vertices.last().unwrap().id;
+        let first_id = vertices.first().unwrap().id;
+        let last_id = vertices.last().unwrap().id;
 
         // TODO need to populate prev/next here while adding the vertices
         // to the map, otherwise they won't be registered so structure
         // isn't represented later.
 
-        for vertex in vertices {
-            vertex_map.insert(vertex.id, vertex);
+        for (v0, v1, v2) in vertices.iter().tuple_windows::<(_,_,_)>() {
+
+            let mut v = v1.clone();
+            v.prev = Some(v0.id);
+            v.next = Some(v2.id);
+            vertex_map.insert(v.id, v);
+
+            if v0.id == first_id {
+                let mut first = v0.clone();
+                first.prev = Some(last_id);
+                first.next = Some(v1.id);
+                vertex_map.insert(first.id, first);
+            }
+            if v2.id == last_id {
+                let mut last = v2.clone();
+                last.prev = Some(v1.id);
+                last.next = Some(first_id);
+                vertex_map.insert(last.id, last);
+            }
+            
         }
-        Polygon { vertex_map, anchor }
+        Polygon { vertex_map, anchor: first_id }
     }
 
     pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
