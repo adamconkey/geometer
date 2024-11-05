@@ -18,36 +18,47 @@ pub struct Polygon {
 }
 
 
+// TODO now that this is abstracted out like this, it makes me realize it
+// would make good sense to define a newtype wrapper around hashmap that
+// encapsulates this. It's also making me rethink vertex a bit. It's been
+// clumsy that I have to have the prev/next Option types, when really for
+// a polygon in the way I'm approaching it, those should _always_ be
+// defined for a valid polygon, you'll never have dangling vertices. So
+// perhaps it will make good sense then to not pass in a vec of vertices
+// to Polygon::new, but instead just points that store the x/y coordinates.
+// Then as you iterate over them, you can create Vertex instances that have
+// non-Option type prev/next, and an ID. The Point types could also have a
+// name which could be propagated to the vertex, so that it could serve as
+// an alias for look-up, which will be useful for tests/visualizations.
+// I think this solves most of my problems I've had, it gets rid of Option
+// so you don't have to unwrap a bunch of stuff, and the vmap operations
+// can enforce that prev/next are always defined and are valid IDs in the
+// map, so internally it could unwrap() on get operations while still
+// offering a public lookup that could optional.
+
+fn add_to_vertex_map(vmap: &mut HashMap<VertexId, Vertex>, vertex: &Vertex, prev_id: VertexId, next_id: VertexId) {
+    let mut v = vertex.clone();
+    v.prev = Some(prev_id);
+    v.next = Some(next_id);
+    vmap.insert(v.id, v);
+}
+
+
 impl Polygon {
     pub fn new(vertices: Vec<Vertex>) -> Polygon {
         let mut vertex_map = HashMap::new();
         let first_id = vertices.first().unwrap().id;
         let last_id = vertices.last().unwrap().id;
 
-        // TODO need to populate prev/next here while adding the vertices
-        // to the map, otherwise they won't be registered so structure
-        // isn't represented later.
-
         for (v0, v1, v2) in vertices.iter().tuple_windows::<(_,_,_)>() {
-
-            let mut v = v1.clone();
-            v.prev = Some(v0.id);
-            v.next = Some(v2.id);
-            vertex_map.insert(v.id, v);
-
+            add_to_vertex_map(&mut vertex_map, v1, v0.id, v2.id);
+            // Handle first/last elements that wrap around to close cycle
             if v0.id == first_id {
-                let mut first = v0.clone();
-                first.prev = Some(last_id);
-                first.next = Some(v1.id);
-                vertex_map.insert(first.id, first);
+                add_to_vertex_map(&mut vertex_map, v0, last_id, v1.id);
             }
             if v2.id == last_id {
-                let mut last = v2.clone();
-                last.prev = Some(v1.id);
-                last.next = Some(first_id);
-                vertex_map.insert(last.id, last);
+                add_to_vertex_map(&mut vertex_map, v2, v1.id, first_id);
             }
-            
         }
         Polygon { vertex_map, anchor: first_id }
     }
