@@ -7,6 +7,7 @@ use std::path::Path;
 
 use crate::{
     line_segment::LineSegment,
+    point::Point,
     triangle::Triangle,
     vertex::{Vertex, VertexId},
 };
@@ -45,30 +46,39 @@ fn add_to_vertex_map(vmap: &mut HashMap<VertexId, Vertex>, vertex: &Vertex, prev
 
 
 impl Polygon {
-    pub fn new(vertices: Vec<Vertex>) -> Polygon {
+    pub fn new(points: Vec<Point>) -> Polygon {
         let mut vertex_map = HashMap::new();
-        let first_id = vertices.first().unwrap().id;
-        let last_id = vertices.last().unwrap().id;
 
-        for (v0, v1, v2) in vertices.iter().tuple_windows::<(_,_,_)>() {
-            add_to_vertex_map(&mut vertex_map, v1, v0.id, v2.id);
-            // Handle first/last elements that wrap around to close cycle
-            if v0.id == first_id {
-                add_to_vertex_map(&mut vertex_map, v0, last_id, v1.id);
-            }
-            if v2.id == last_id {
-                add_to_vertex_map(&mut vertex_map, v2, v1.id, first_id);
-            }
+        let vertex_ids = (0..points.len())
+            .map(|_| VertexId::new(None))
+            .collect::<Vec<_>>();
+
+        for i in 0..vertex_ids.len() {
+            let prev_id = if i == 0 {
+                *vertex_ids.last().unwrap()
+            } else {
+                vertex_ids[i-1]
+            };
+            let curr_id = vertex_ids[i];
+            let next_id = if i == vertex_ids.len() - 1 {
+                *vertex_ids.first().unwrap()
+            } else {
+                vertex_ids[i+1]
+            };
+
+            let v = Vertex::new(points[i].clone(), curr_id, prev_id, next_id);
+            vertex_map.insert(curr_id, v);
         }
-        Polygon { vertex_map, anchor: first_id }
+
+        Polygon { vertex_map, anchor: *vertex_ids.first().unwrap() }
     }
 
-    pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
-        let polygon_str: String = fs::read_to_string(path)
-            .expect("file should exist and be parseable");
-        // TODO don't unwrap
-        serde_json::from_str(&polygon_str).unwrap()
-    }
+    // pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
+    //     let polygon_str: String = fs::read_to_string(path)
+    //         .expect("file should exist and be parseable");
+    //     // TODO don't unwrap
+    //     serde_json::from_str(&polygon_str).unwrap()
+    // }
     
     pub fn double_area(&self) -> i32 {
         // The first pair will include the anchor, but that area
@@ -77,7 +87,7 @@ impl Polygon {
         let mut area = 0;
         let anchor = self.get_vertex(&self.anchor).unwrap();
         for v1 in self.vertex_map.values() {
-            let v2 = self.get_vertex(&v1.next.unwrap()).unwrap(); 
+            let v2 = self.get_vertex(&v1.next).unwrap(); 
             area += Triangle::new(anchor, v1, v2).double_area();
         }
         area
@@ -90,11 +100,11 @@ impl Polygon {
         while vmap.len() > 3 {
             if let Some(v2_key) = self.find_ear(&vmap) {
                 let v2 = vmap.remove(&v2_key).unwrap();
-                triangulation.push((v2.prev.unwrap(), v2.next.unwrap()));
+                triangulation.push((v2.prev, v2.next));
                 
-                let v1 = vmap.get_mut(&v2.prev.unwrap()).unwrap();
+                let v1 = vmap.get_mut(&v2.prev).unwrap();
                 v1.next = v2.next;                
-                let v3 = vmap.get_mut(&v2.next.unwrap()).unwrap();
+                let v3 = vmap.get_mut(&v2.next).unwrap();
                 v3.prev = v2.prev;
             }
             else {
@@ -109,8 +119,8 @@ impl Polygon {
 
     pub fn find_ear(&self, vmap: &HashMap<VertexId, Vertex>) -> Option<VertexId> {
         for v2 in vmap.values() {
-            let v1 = vmap.get(&v2.prev.unwrap()).unwrap();
-            let v3 = vmap.get(&v2.next.unwrap()).unwrap();
+            let v1 = vmap.get(&v2.prev).unwrap();
+            let v3 = vmap.get(&v2.next).unwrap();
             if self.diagonal(&self.get_line_segment(&v1.id, &v3.id)) {
                 return Some(v2.id);
             }
@@ -136,7 +146,7 @@ impl Polygon {
         let mut current_id = &self.anchor;
         loop {
             let current = self.get_vertex(&current_id).unwrap();
-            let next = self.get_vertex(&current.next.unwrap()).unwrap();
+            let next = self.get_vertex(&current.next).unwrap();
             edges.push(LineSegment::new(current, next));
             current_id = &next.id;
             if current_id == &self.anchor {
@@ -150,8 +160,8 @@ impl Polygon {
         let a = ab.v1;
         let ba = &ab.reverse();
         // TODO do better than unwrap, prev and next should be optional
-        let a0 = self.get_vertex(&a.prev.unwrap()).unwrap();
-        let a1 = self.get_vertex(&a.next.unwrap()).unwrap();
+        let a0 = self.get_vertex(&a.prev).unwrap();
+        let a1 = self.get_vertex(&a.next).unwrap();
 
         if a0.left_on(&LineSegment::new(a, a1)) {
             return a0.left(ab) && a1.left(ba);
