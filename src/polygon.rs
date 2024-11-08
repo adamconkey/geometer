@@ -53,6 +53,11 @@ impl Polygon {
             .map(|_| VertexId::new(None))
             .collect::<Vec<_>>();
 
+
+        // TODO I'm fully aware this looks like a mess, just trying to
+        // get a version running with some test so that I can take 
+        // another pass knowing something works and try to make this
+        // cleaner
         for i in 0..vertex_ids.len() {
             let prev_id = if i == 0 {
                 *vertex_ids.last().unwrap()
