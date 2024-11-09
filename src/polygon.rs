@@ -1,6 +1,5 @@
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{hash_map, HashMap};
 use std::fs;
 use std::path::Path;
 
@@ -14,8 +13,7 @@ use crate::{
 
 #[derive(Debug, PartialEq)]
 pub struct Polygon {
-    vertex_map: HashMap<VertexId, Vertex>,
-    anchor: VertexId,
+    vertex_map: VertexMap,
 }
 
 
@@ -37,16 +35,13 @@ pub struct Polygon {
 // map, so internally it could unwrap() on get operations while still
 // offering a public lookup that could optional.
 
-fn add_to_vertex_map(vmap: &mut HashMap<VertexId, Vertex>, vertex: &Vertex, prev_id: VertexId, next_id: VertexId) {
-    let mut v = vertex.clone();
-    v.prev = prev_id;
-    v.next = next_id;
-    vmap.insert(v.id, v);
-}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VertexMap(HashMap<VertexId, Vertex>);
 
 
-impl Polygon {
-    pub fn new(points: Vec<Point>) -> Polygon {
+impl VertexMap {
+    pub fn new(points: Vec<Point>) -> Self {
         let mut vertex_map = HashMap::new();
 
         let num_points = points.len();
@@ -62,9 +57,60 @@ impl Polygon {
             vertex_map.insert(curr_id, v);
         }
 
-        Polygon { vertex_map, anchor: vertex_ids[0] }
+        Self(vertex_map)
     }
 
+    pub fn get(&self, k: &VertexId) -> &Vertex {
+        // Unwrapping since this is for internal use only
+        // and it will be assumed that internally we only 
+        // operate on valid IDs in the map
+        self.0.get(k).unwrap()
+    }
+
+    pub fn get_mut(&mut self, k: &VertexId) -> &mut Vertex{
+        self.0.get_mut(k).unwrap()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn remove(&mut self, k: &VertexId) -> Vertex {
+        self.0.remove(k).unwrap()
+    }
+
+    pub fn values(&self) -> hash_map::Values<'_, VertexId, Vertex> {
+        self.0.values()
+    }
+
+    pub fn anchor(&self) -> &Vertex {
+        // TODO I'm not yet convinced this is something I want, ultimately
+        // need something to initiate algorithms in the vertex chain.
+        // Could consider only exposing keys and then having polygon gen
+        // an anchor
+        self.values().collect::<Vec<_>>()[0]
+    }
+
+    pub fn update_next(&mut self, k: &VertexId, next: &VertexId) {
+        self.get_mut(k).next = next.clone();
+    }
+
+    pub fn update_prev(&mut self, k: &VertexId, prev: &VertexId) {
+        self.get_mut(k).prev = prev.clone();
+    }
+}
+
+
+impl Polygon {
+    pub fn new(points: Vec<Point>) -> Polygon {
+        let vertex_map = VertexMap::new(points);
+
+        Polygon { vertex_map }
+    }
+
+    // TODO want to bring this back doing deserialize from
+    // vec of points, so need to implement that and update JSON
+    
     // pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
     //     let polygon_str: String = fs::read_to_string(path)
     //         .expect("file should exist and be parseable");
@@ -73,13 +119,10 @@ impl Polygon {
     // }
     
     pub fn double_area(&self) -> i32 {
-        // The first pair will include the anchor, but that area
-        // ends up being zero since it will trivially be collinear
-        // with anchor and thus doesn't affect the compuation
         let mut area = 0;
-        let anchor = self.get_vertex(&self.anchor).unwrap();
+        let anchor = self.vertex_map.anchor();
         for v1 in self.vertex_map.values() {
-            let v2 = self.get_vertex(&v1.next).unwrap(); 
+            let v2 = self.get_vertex(&v1.next); 
             area += Triangle::new(anchor, v1, v2).double_area();
         }
         area
@@ -89,19 +132,12 @@ impl Polygon {
         let mut triangulation = Vec::new();
         let mut vmap = self.vertex_map.clone();
 
-        // TODO can work on adding the vertex_map wrapper class to have
-        // some convenience funcs like update_prev and update_next
-        // to hide these "low-level" ops on the hashmap. 
-
         while vmap.len() > 3 {
             if let Some(v2_key) = self.find_ear(&vmap) {
-                let v2 = vmap.remove(&v2_key).unwrap();
-                triangulation.push((v2.prev, v2.next));
-                
-                let v1 = vmap.get_mut(&v2.prev).unwrap();
-                v1.next = v2.next;                
-                let v3 = vmap.get_mut(&v2.next).unwrap();
-                v3.prev = v2.prev;
+                let v2 = vmap.remove(&v2_key);
+                triangulation.push((v2.prev, v2.next));                
+                vmap.update_next(&v2.prev, &v2.next);
+                vmap.update_prev(&v2.next, &v2.prev);
             }
             else {
                 panic!("BAD THINGS need to fix this")
@@ -113,51 +149,53 @@ impl Polygon {
         triangulation
     }
 
-    pub fn find_ear(&self, vmap: &HashMap<VertexId, Vertex>) -> Option<VertexId> {
+    fn find_ear(&self, vmap: &VertexMap) -> Option<VertexId> {
+        // TODO I think this should return Result instead of option
+        // because really it should always return an ear on N>=3
+        // vertices if it's a valid polygon, which the assumption
+        // should be internally it is a valid polygon after creation
+        // conserved by all internal ops on it. So if this returns
+        // result then can just do handling of that in triangulation
+        // and you won't have this awkware if else panic block
         for v2 in vmap.values() {
-            let v1 = vmap.get(&v2.prev).unwrap();
-            let v3 = vmap.get(&v2.next).unwrap();
-            if self.diagonal(&self.get_line_segment(&v1.id, &v3.id)) {
+            if self.diagonal(&self.get_line_segment(&v2.prev, &v2.next)) {
                 return Some(v2.id);
             }
         }
         None
     }
 
-    pub fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+    fn get_vertex(&self, id: &VertexId) -> &Vertex {
         self.vertex_map.get(id)
     }
 
-    pub fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> LineSegment {
-        // TODO this should return Option<LineSegment> and handle 
-        // the cases below instead of unwrap here
-        let v1 = self.get_vertex(id_1).unwrap();
-        let v2 = self.get_vertex(id_2).unwrap();
+    fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> LineSegment {
+        let v1 = self.get_vertex(id_1);
+        let v2 = self.get_vertex(id_2);
         LineSegment::new(v1, v2)
     }
 
     pub fn edges(&self) -> Vec<LineSegment> {
         // TODO could cache this and clear on modification
         let mut edges = Vec::new();
-        let mut current_id = &self.anchor;
+        let anchor_id = self.vertex_map.anchor().id;
+        let mut current = self.get_vertex(&anchor_id);
         loop {
-            let current = self.get_vertex(&current_id).unwrap();
-            let next = self.get_vertex(&current.next).unwrap();
-            edges.push(LineSegment::new(current, next));
-            current_id = &next.id;
-            if current_id == &self.anchor {
+            edges.push(self.get_line_segment(&current.id, &current.next));
+            current = self.get_vertex(&current.next);
+            if current.id == anchor_id {
                 break;
             }
         }
         edges
     }
     
-    pub fn in_cone(&self, ab: &LineSegment) -> bool {
+    fn in_cone(&self, ab: &LineSegment) -> bool {
         let a = ab.v1;
         let ba = &ab.reverse();
         // TODO do better than unwrap, prev and next should be optional
-        let a0 = self.get_vertex(&a.prev).unwrap();
-        let a1 = self.get_vertex(&a.next).unwrap();
+        let a0 = self.get_vertex(&a.prev);
+        let a1 = self.get_vertex(&a.next);
 
         if a0.left_on(&LineSegment::new(a, a1)) {
             return a0.left(ab) && a1.left(ba);
