@@ -12,7 +12,7 @@ use crate::{
     vertex::{Vertex, VertexId},
 };
 
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Debug, PartialEq)]
 pub struct Polygon {
     vertex_map: HashMap<VertexId, Vertex>,
     anchor: VertexId,
@@ -39,8 +39,8 @@ pub struct Polygon {
 
 fn add_to_vertex_map(vmap: &mut HashMap<VertexId, Vertex>, vertex: &Vertex, prev_id: VertexId, next_id: VertexId) {
     let mut v = vertex.clone();
-    v.prev = Some(prev_id);
-    v.next = Some(next_id);
+    v.prev = prev_id;
+    v.next = next_id;
     vmap.insert(v.id, v);
 }
 
@@ -49,33 +49,20 @@ impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {
         let mut vertex_map = HashMap::new();
 
-        let vertex_ids = (0..points.len())
+        let num_points = points.len();
+        let vertex_ids = (0..num_points)
             .map(|_| VertexId::new(None))
             .collect::<Vec<_>>();
 
-
-        // TODO I'm fully aware this looks like a mess, just trying to
-        // get a version running with some test so that I can take 
-        // another pass knowing something works and try to make this
-        // cleaner
-        for i in 0..vertex_ids.len() {
-            let prev_id = if i == 0 {
-                *vertex_ids.last().unwrap()
-            } else {
-                vertex_ids[i-1]
-            };
+        for (i, point) in points.into_iter().enumerate() {
+            let prev_id = vertex_ids[(i + num_points - 1) % num_points];
             let curr_id = vertex_ids[i];
-            let next_id = if i == vertex_ids.len() - 1 {
-                *vertex_ids.first().unwrap()
-            } else {
-                vertex_ids[i+1]
-            };
-
-            let v = Vertex::new(points[i].clone(), curr_id, prev_id, next_id);
+            let next_id = vertex_ids[(i + num_points + 1) % num_points];
+            let v = Vertex::new(point, curr_id, prev_id, next_id);
             vertex_map.insert(curr_id, v);
         }
 
-        Polygon { vertex_map, anchor: *vertex_ids.first().unwrap() }
+        Polygon { vertex_map, anchor: vertex_ids[0] }
     }
 
     // pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
@@ -101,6 +88,10 @@ impl Polygon {
     pub fn triangulation(&self) -> Vec<(VertexId, VertexId)> {
         let mut triangulation = Vec::new();
         let mut vmap = self.vertex_map.clone();
+
+        // TODO can work on adding the vertex_map wrapper class to have
+        // some convenience funcs like update_prev and update_next
+        // to hide these "low-level" ops on the hashmap. 
 
         while vmap.len() > 3 {
             if let Some(v2_key) = self.find_ear(&vmap) {
@@ -198,43 +189,43 @@ mod tests {
     use rstest::{fixture, rstest};
     use std::path::PathBuf;
 
-    fn load_polygon(filename: &str) -> Polygon {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("resources/test");
-        path.push(filename);
-        Polygon::from_json(path)
-    }
+    // fn load_polygon(filename: &str) -> Polygon {
+    //     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    //     path.push("resources/test");
+    //     path.push(filename);
+    //     Polygon::from_json(path)
+    // }
 
     // TODO these fixtures are nice and compact now, but it has me
     // wondering if this is the best way to support fixtures? Might
     // get tedious specifying these as the test cases grow. Could
     // just parameterize on filenames and then load vmap in the
     // the test
-    #[fixture]
-    fn polygon_1() -> Polygon {
-        load_polygon("polygon_1.json")
-    }
+    // #[fixture]
+    // fn polygon_1() -> Polygon {
+    //     load_polygon("polygon_1.json")
+    // }
 
-    #[fixture]
-    fn polygon_2() -> Polygon {
-        load_polygon("polygon_2.json")
-    }
+    // #[fixture]
+    // fn polygon_2() -> Polygon {
+    //     load_polygon("polygon_2.json")
+    // }
 
     #[fixture]
     fn right_triangle() -> Polygon {
         // TODO manually creating until I fix file stuff
         // load_polygon("right_triangle.json")
-        let v0 = Vertex::new(0, 0);
-        let v1 = Vertex::new(3, 0);
-        let v2 = Vertex::new(0, 4);
-        let vertices = vec![v0, v1, v2];
-        Polygon::new(vertices)
+        let p0 = Point::new(0, 0);
+        let p1 = Point::new(3, 0);
+        let p2 = Point::new(0, 4);
+        let points = vec![p0, p1, p2];
+        Polygon::new(points)
     }
 
-    #[fixture]
-    fn square_4x4() -> Polygon {
-        load_polygon("square_4x4.json")
-    }
+    // #[fixture]
+    // fn square_4x4() -> Polygon {
+    //     load_polygon("square_4x4.json")
+    // }
 
 
     #[rstest]
