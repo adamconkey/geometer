@@ -180,28 +180,22 @@ mod tests {
     }
 
     #[rstest]
-    fn test_edges_square(square_4x4: Polygon) {
+    #[case(right_triangle(), 3)]
+    #[case(square_4x4(), 4)]
+    #[case(polygon_1(), 6)]
+    #[case(polygon_2(), 18)]
+    fn test_edges_square(#[case] polygon: Polygon, #[case] num_edges: usize) {
         let mut expected_edges = HashSet::new();
-        // TODO this should be deterministic if it's just created from
-        // new. Could easily parametrize this for these simple tests.
+        // TODO 
         // A more interesting test would be removing vertices and
         // checking updates. But this one can be parameterized and
         // determined by num vertices, subsume test below
-        expected_edges.insert((VertexId::from(0u32), VertexId::from(1u32)));
-        expected_edges.insert((VertexId::from(1u32), VertexId::from(2u32)));
-        expected_edges.insert((VertexId::from(2u32), VertexId::from(3u32)));
-        expected_edges.insert((VertexId::from(3u32), VertexId::from(0u32)));
+        for i in 0usize..num_edges {
+            expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % num_edges)));
+        }
 
-        let edges = square_4x4.edges();
+        let edges = polygon.edges();
         assert_eq!(edges, expected_edges);
-    }
-    
-    #[rstest]
-    fn test_edges_p1(polygon_1: Polygon) {
-        // TODO can assert on presence of edge but I haven't fixed
-        // the public API for line segment retrieval yet
-        let edges = polygon_1.edges();
-        assert_eq!(edges.len(), 6);
     }
 
     // #[rstest]
