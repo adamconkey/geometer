@@ -51,7 +51,10 @@ impl VertexMap {
     }
 
     pub fn remove(&mut self, k: &VertexId) -> Vertex {
-        self.map.remove(k).unwrap()
+        let v = self.map.remove(k).unwrap();
+        self.update_next(&v.prev, &v.next);
+        self.update_prev(&v.next, &v.prev);
+        v
     }
 
     pub fn values(&self) -> hash_map::Values<'_, VertexId, Vertex> {

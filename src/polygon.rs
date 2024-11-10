@@ -47,9 +47,7 @@ impl Polygon {
         while vmap.len() > 3 {
             if let Some(v2_key) = self.find_ear(&vmap) {
                 let v2 = vmap.remove(&v2_key);
-                triangulation.insert((v2.prev, v2.next));                
-                vmap.update_next(&v2.prev, &v2.next);
-                vmap.update_prev(&v2.next, &v2.prev);
+                triangulation.insert((v2.prev, v2.next));
             }
             else {
                 panic!("BAD THINGS need to fix this")
