@@ -28,6 +28,12 @@ impl VertexId {
     }
 }
 
+impl From<i64> for VertexId {
+    fn from(raw: i64) -> Self {
+        Self(raw)
+    }
+}
+
 
 // TODO make this type-generic?
 // TODO handle dimensionality of coordinates
@@ -76,22 +82,21 @@ impl Vertex {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
-
-    // #[test]
-    // fn test_id() {
-    //     let v0 = Vertex::new(1, 2);
-    //     let v1 = Vertex::new(3, 4);
-    //     assert_ne!(v0.id, v1.id);
-    // }
     
-    // #[test]
-    // fn test_serialize() {
-    //     let v = Vertex::new(1, 2);
-    //     let serialized = serde_json::to_string(&v).unwrap();
-    //     let deserialized: Vertex = serde_json::from_str(&serialized).unwrap();
-    //     assert_eq!(deserialized, v);
-    // }
+    #[test]
+    fn test_ids_distinct() {
+        let id1 = VertexId::new(None);
+        let id2 = VertexId::new(None);
+        assert_ne!(id1, id2);
+    }
+
+    #[test]
+    fn test_id_with_input_value() {
+        let val: i64 = 1234;
+        let new_id = VertexId::new(Some(val));
+        let from_id = VertexId::from(val);
+        assert_eq!(from_id, new_id);
+    }
 
     // // TODO might be nice to add custom macro for between asserts,
     // // not sure how difficult it is to write macros at this stage
