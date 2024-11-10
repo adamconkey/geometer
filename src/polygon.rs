@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use std::collections::{hash_map, HashMap};
 use std::fs;
 use std::path::Path;
@@ -108,15 +107,13 @@ impl Polygon {
         Polygon { vertex_map }
     }
 
-    // TODO want to bring this back doing deserialize from
-    // vec of points, so need to implement that and update JSON
-    
-    // pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
-    //     let polygon_str: String = fs::read_to_string(path)
-    //         .expect("file should exist and be parseable");
-    //     // TODO don't unwrap
-    //     serde_json::from_str(&polygon_str).unwrap()
-    // }
+    pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
+        let polygon_str: String = fs::read_to_string(path)
+            .expect("file should exist and be parseable");
+        // TODO don't unwrap
+        let points: Vec<Point> = serde_json::from_str(&polygon_str).unwrap();
+        Polygon::new(points)
+    }
     
     pub fn double_area(&self) -> i32 {
         let mut area = 0;
@@ -227,50 +224,40 @@ mod tests {
     use rstest::{fixture, rstest};
     use std::path::PathBuf;
 
-    // fn load_polygon(filename: &str) -> Polygon {
-    //     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    //     path.push("resources/test");
-    //     path.push(filename);
-    //     Polygon::from_json(path)
-    // }
+    fn load_polygon(filename: &str) -> Polygon {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("resources/test");
+        path.push(filename);
+        Polygon::from_json(path)
+    }
 
-    // TODO these fixtures are nice and compact now, but it has me
-    // wondering if this is the best way to support fixtures? Might
-    // get tedious specifying these as the test cases grow. Could
-    // just parameterize on filenames and then load vmap in the
-    // the test
-    // #[fixture]
-    // fn polygon_1() -> Polygon {
-    //     load_polygon("polygon_1.json")
-    // }
+    #[fixture]
+    fn polygon_1() -> Polygon {
+        load_polygon("polygon_1.json")
+    }
 
-    // #[fixture]
-    // fn polygon_2() -> Polygon {
-    //     load_polygon("polygon_2.json")
-    // }
+    #[fixture]
+    fn polygon_2() -> Polygon {
+        load_polygon("polygon_2.json")
+    }
 
     #[fixture]
     fn right_triangle() -> Polygon {
-        // TODO manually creating until I fix file stuff
-        // load_polygon("right_triangle.json")
-        let p0 = Point::new(0, 0);
-        let p1 = Point::new(3, 0);
-        let p2 = Point::new(0, 4);
-        let points = vec![p0, p1, p2];
-        Polygon::new(points)
+        load_polygon("right_triangle.json")
     }
 
-    // #[fixture]
-    // fn square_4x4() -> Polygon {
-    //     load_polygon("square_4x4.json")
-    // }
+    #[fixture]
+    fn square_4x4() -> Polygon {
+        load_polygon("square_4x4.json")
+    }
 
 
     #[rstest]
     // TODO now that this is parametrized, can add as many polygons
     // here as possible to get meaningful tests on area
     #[case(right_triangle(), 12)]
-    // #[case(polygon_2(), 466)]
+    #[case(square_4x4(), 32)]
+    #[case(polygon_2(), 466)]
     fn test_area(#[case] polygon: Polygon, #[case] expected_double_area: i32) {
         let double_area = polygon.double_area();
         assert_eq!(double_area, expected_double_area);
@@ -289,15 +276,15 @@ mod tests {
     
     // #[rstest]
     // fn test_edges_p1(polygon_1: Polygon) {
-    //     // let expected_edges = vec![
-    //     //     polygon_1.get_line_segment("a", "b"),
-    //     //     polygon_1.get_line_segment("b", "c"),
-    //     //     polygon_1.get_line_segment("c", "d"),
-    //     //     polygon_1.get_line_segment("d", "e"),
-    //     //     polygon_1.get_line_segment("e", "f"),
-    //     //     polygon_1.get_line_segment("f", "a"),
-    //     // ];
-    //     // assert_eq!(polygon_1.edges(), expected_edges);
+    //     let expected_edges = vec![
+    //         polygon_1.get_line_segment("a", "b"),
+    //         polygon_1.get_line_segment("b", "c"),
+    //         polygon_1.get_line_segment("c", "d"),
+    //         polygon_1.get_line_segment("d", "e"),
+    //         polygon_1.get_line_segment("e", "f"),
+    //         polygon_1.get_line_segment("f", "a"),
+    //     ];
+    //     assert_eq!(polygon_1.edges(), expected_edges);
     // }
 
     // #[rstest]
@@ -346,20 +333,20 @@ mod tests {
     //     // }
     // }
 
-    // #[rstest]
-    // fn test_triangulation(polygon_2: Polygon) {
-    //     let triangulation = polygon_2.triangulation();
+    #[rstest]
+    fn test_triangulation(polygon_2: Polygon) {
+        let triangulation = polygon_2.triangulation();
 
-    //     // TODO will need to generally have better ways to assert
-    //     // on triangulations. Currently my implementation is a bit
-    //     // unstable and so not only can the order of line segments
-    //     // be different, you can get slightly different triangulations
-    //     // depending on the order things are visited. So it's 
-    //     // probably better to just have some asserts that show it's
-    //     // a valid triangulation, and then eventually if it's
-    //     // stable enough can do an assert on the specific
-    //     // triangulation achieved
+        // TODO will need to generally have better ways to assert
+        // on triangulations. Currently my implementation is a bit
+        // unstable and so not only can the order of line segments
+        // be different, you can get slightly different triangulations
+        // depending on the order things are visited. So it's 
+        // probably better to just have some asserts that show it's
+        // a valid triangulation, and then eventually if it's
+        // stable enough can do an assert on the specific
+        // triangulation achieved
 
-    //     assert_eq!(triangulation.len(), 15);
-    // }
+        assert_eq!(triangulation.len(), 15);
+    }
 }
