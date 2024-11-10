@@ -1,3 +1,4 @@
+use core::fmt;
 use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
@@ -9,6 +10,16 @@ use crate::{
     vertex::{Vertex, VertexId},
     vertex_map::VertexMap,
 };
+
+
+#[derive(Debug, Clone)]
+struct EarNotFoundError;
+
+impl fmt::Display for EarNotFoundError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "polygon is likely invalid")
+    }
+}
 
 
 #[derive(Debug)]
@@ -45,34 +56,21 @@ impl Polygon {
         let mut vmap = self.vertex_map.clone();
 
         while vmap.len() > 3 {
-            if let Some(v2_key) = self.find_ear(&vmap) {
-                let v2 = vmap.remove(&v2_key);
-                triangulation.insert((v2.prev, v2.next));
-            }
-            else {
-                panic!("BAD THINGS need to fix this")
-                // TODO this is actually an error and shouldn't actually
-                // happen if it's a valid polygon, so need to think of
-                // how this case should be handled
-            }
+            let id = self.find_ear(&vmap)
+                .expect("valid polygons with 3 or more vertices should have ears");
+            let v = vmap.remove(&id);
+            triangulation.insert((v.prev, v.next));
         }
         triangulation
     }
 
-    fn find_ear(&self, vmap: &VertexMap) -> Option<VertexId> {
-        // TODO I think this should return Result instead of option
-        // because really it should always return an ear on N>=3
-        // vertices if it's a valid polygon, which the assumption
-        // should be internally it is a valid polygon after creation
-        // conserved by all internal ops on it. So if this returns
-        // result then can just do handling of that in triangulation
-        // and you won't have this awkware if else panic block
-        for v2 in vmap.values() {
-            if self.diagonal(&self.get_vertex(&v2.prev), self.get_vertex(&v2.next)) {
-                return Some(v2.id);
+    fn find_ear(&self, vmap: &VertexMap) -> Result<VertexId, EarNotFoundError> {
+        for v in vmap.values() {
+            if self.diagonal(&self.get_vertex(&v.prev), self.get_vertex(&v.next)) {
+                return Ok(v.id);
             }
         }
-        None
+        Err(EarNotFoundError)
     }
 
     fn get_vertex(&self, id: &VertexId) -> &Vertex {
@@ -103,7 +101,6 @@ impl Polygon {
     fn in_cone(&self, a: &Vertex, b: &Vertex) -> bool {
         let ab = LineSegment::from_vertices(a, b);
         let ba = &ab.reverse();
-        // TODO do better than unwrap, prev and next should be optional
         let a0 = self.get_vertex(&a.prev);
         let a1 = self.get_vertex(&a.next);
 
