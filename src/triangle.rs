@@ -45,6 +45,9 @@ mod tests {
     use super::*;
     use itertools::Itertools;
 
+    // TODO add test for from vertices (will need to create vertex
+    // ids to populate prev/next and such)
+
     #[test]
     fn test_area_right_triangle() {
         let a = Point::new(0, 0);
