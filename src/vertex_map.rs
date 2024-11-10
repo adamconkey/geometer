@@ -4,17 +4,24 @@ use crate::point::Point;
 use crate::vertex::{Vertex, VertexId};
 
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct VertexMap(HashMap<VertexId, Vertex>);
+#[derive(Clone, Debug)]
+pub struct VertexMap {
+    map: HashMap<VertexId, Vertex>,
+}
 
 
 impl VertexMap {
     pub fn new(points: Vec<Point>) -> Self {
-        let mut vertex_map = HashMap::new();
+        let mut map = HashMap::new();
 
+        // TODO currently the IDs are simply generated starting
+        // at 0 and incrementing. If you want to keep this route,
+        // will need to track index on self so that new vertices
+        // could be added. Tried using unique_id::SequenceGenerator
+        // but it was global which was harder to test with
         let num_points = points.len();
         let vertex_ids = (0..num_points)
-            .map(|_| VertexId::new(None))
+            .map(|id| VertexId::from(id))
             .collect::<Vec<_>>();
 
         for (i, point) in points.into_iter().enumerate() {
@@ -22,33 +29,33 @@ impl VertexMap {
             let curr_id = vertex_ids[i];
             let next_id = vertex_ids[(i + num_points + 1) % num_points];
             let v = Vertex::new(point, curr_id, prev_id, next_id);
-            vertex_map.insert(curr_id, v);
+            map.insert(curr_id, v);
         }
 
-        Self(vertex_map)
+        VertexMap { map }
     }
 
     pub fn get(&self, k: &VertexId) -> &Vertex {
         // Unwrapping since this is for internal use only
         // and it will be assumed that internally we only 
         // operate on valid IDs in the map
-        self.0.get(k).unwrap()
+        self.map.get(k).unwrap()
     }
 
     pub fn get_mut(&mut self, k: &VertexId) -> &mut Vertex{
-        self.0.get_mut(k).unwrap()
+        self.map.get_mut(k).unwrap()
     }
 
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.map.len()
     }
 
     pub fn remove(&mut self, k: &VertexId) -> Vertex {
-        self.0.remove(k).unwrap()
+        self.map.remove(k).unwrap()
     }
 
     pub fn values(&self) -> hash_map::Values<'_, VertexId, Vertex> {
-        self.0.values()
+        self.map.values()
     }
 
     pub fn anchor(&self) -> &Vertex {

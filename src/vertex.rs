@@ -1,6 +1,4 @@
 use serde::{Deserialize, Serialize};
-use unique_id::Generator;
-use unique_id::sequence::SequenceGenerator;
 
 use crate::{
     line_segment::LineSegment,
@@ -8,28 +6,24 @@ use crate::{
 };
 
 
-lazy_static!(
-    static ref ID_GENERATOR: SequenceGenerator = SequenceGenerator::default();
-);
-
-
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-pub struct VertexId(i64);
+pub struct VertexId(u32);
 
 impl VertexId {
-    pub fn new(id: Option<i64>) -> Self{
-        if let Some(id_val) = id {
-            VertexId(id_val)
-        }
-        else {
-            VertexId(ID_GENERATOR.next_id())
-        }
+    pub fn new(id: u32) -> Self {
+        VertexId(id)
     }
 }
 
-impl From<i64> for VertexId {
-    fn from(raw: i64) -> Self {
+impl From<u32> for VertexId {
+    fn from(raw: u32) -> Self {
         Self(raw)
+    }
+}
+
+impl From<usize> for VertexId {
+    fn from(raw: usize) -> Self {
+        Self(raw.try_into().unwrap())
     }
 }
 
@@ -59,26 +53,5 @@ impl Vertex {
 
     pub fn left_on(&self, ab: &LineSegment) -> bool {
         self.coords.left_on(ab)
-    }
-}
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_ids_distinct() {
-        let id1 = VertexId::new(None);
-        let id2 = VertexId::new(None);
-        assert_ne!(id1, id2);
-    }
-
-    #[test]
-    fn test_id_with_input_value() {
-        let val: i64 = 1234;
-        let new_id = VertexId::new(Some(val));
-        let from_id = VertexId::from(val);
-        assert_eq!(from_id, new_id);
     }
 }

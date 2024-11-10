@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
@@ -10,7 +11,7 @@ use crate::{
 };
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct Polygon {
     vertex_map: VertexMap,
 }
@@ -18,7 +19,6 @@ pub struct Polygon {
 impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {
         let vertex_map = VertexMap::new(points);
-
         Polygon { vertex_map }
     }
 
@@ -40,14 +40,14 @@ impl Polygon {
         area
     }
 
-    pub fn triangulation(&self) -> Vec<(VertexId, VertexId)> {
-        let mut triangulation = Vec::new();
+    pub fn triangulation(&self) -> HashSet<(VertexId, VertexId)> {
+        let mut triangulation = HashSet::new();
         let mut vmap = self.vertex_map.clone();
 
         while vmap.len() > 3 {
             if let Some(v2_key) = self.find_ear(&vmap) {
                 let v2 = vmap.remove(&v2_key);
-                triangulation.push((v2.prev, v2.next));                
+                triangulation.insert((v2.prev, v2.next));                
                 vmap.update_next(&v2.prev, &v2.next);
                 vmap.update_prev(&v2.next, &v2.prev);
             }
@@ -87,13 +87,13 @@ impl Polygon {
         LineSegment::from_vertices(v1, v2)
     }
 
-    pub fn edges(&self) -> Vec<LineSegment> {
+    pub fn edges(&self) -> HashSet<(VertexId, VertexId)> {
         // TODO could cache this and clear on modification
-        let mut edges = Vec::new();
+        let mut edges = HashSet::new();
         let anchor_id = self.vertex_map.anchor().id;
         let mut current = self.get_vertex(&anchor_id);
         loop {
-            edges.push(self.get_line_segment(&current.id, &current.next));
+            edges.insert((current.id, current.next));
             current = self.get_vertex(&current.next);
             if current.id == anchor_id {
                 break;
@@ -123,7 +123,8 @@ impl Polygon {
 
     fn diagonal_internal_external(&self, a: &Vertex, b: &Vertex) -> bool {
         let ab = &LineSegment::from_vertices(a, b);
-        for e in self.edges() {
+        for (id1, id2) in self.edges() {
+            let e = self.get_line_segment(&id1, &id2);
             if !e.connected_to(ab) && e.intersects(ab) {
                 return false;
             }
@@ -180,10 +181,19 @@ mod tests {
 
     #[rstest]
     fn test_edges_square(square_4x4: Polygon) {
-        // TODO can assert on presence of edge but I haven't fixed
-        // the public API for line segment retrieval yet
+        let mut expected_edges = HashSet::new();
+        // TODO this should be deterministic if it's just created from
+        // new. Could easily parametrize this for these simple tests.
+        // A more interesting test would be removing vertices and
+        // checking updates. But this one can be parameterized and
+        // determined by num vertices, subsume test below
+        expected_edges.insert((VertexId::from(0u32), VertexId::from(1u32)));
+        expected_edges.insert((VertexId::from(1u32), VertexId::from(2u32)));
+        expected_edges.insert((VertexId::from(2u32), VertexId::from(3u32)));
+        expected_edges.insert((VertexId::from(3u32), VertexId::from(0u32)));
+
         let edges = square_4x4.edges();
-        assert_eq!(edges.len(), 4);
+        assert_eq!(edges, expected_edges);
     }
     
     #[rstest]
