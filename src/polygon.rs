@@ -179,29 +179,21 @@ mod tests {
         assert_eq!(double_area, expected_double_area);
     }
 
-    // #[rstest]
-    // fn test_edges_square(square_4x4: Polygon) {
-    //     // let expected_edges = vec![
-    //     //     square_4x4.get_line_segment("a", "b"),
-    //     //     square_4x4.get_line_segment("b", "c"),
-    //     //     square_4x4.get_line_segment("c", "d"),
-    //     //     square_4x4.get_line_segment("d", "a"),
-    //     // ];
-    //     // assert_eq!(square_4x4.edges(), expected_edges);
-    // }
+    #[rstest]
+    fn test_edges_square(square_4x4: Polygon) {
+        // TODO can assert on presence of edge but I haven't fixed
+        // the public API for line segment retrieval yet
+        let edges = square_4x4.edges();
+        assert_eq!(edges.len(), 4);
+    }
     
-    // #[rstest]
-    // fn test_edges_p1(polygon_1: Polygon) {
-    //     let expected_edges = vec![
-    //         polygon_1.get_line_segment("a", "b"),
-    //         polygon_1.get_line_segment("b", "c"),
-    //         polygon_1.get_line_segment("c", "d"),
-    //         polygon_1.get_line_segment("d", "e"),
-    //         polygon_1.get_line_segment("e", "f"),
-    //         polygon_1.get_line_segment("f", "a"),
-    //     ];
-    //     assert_eq!(polygon_1.edges(), expected_edges);
-    // }
+    #[rstest]
+    fn test_edges_p1(polygon_1: Polygon) {
+        // TODO can assert on presence of edge but I haven't fixed
+        // the public API for line segment retrieval yet
+        let edges = polygon_1.edges();
+        assert_eq!(edges.len(), 6);
+    }
 
     // #[rstest]
     // fn test_diagonal(polygon_1: Polygon) {
