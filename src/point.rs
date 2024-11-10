@@ -7,7 +7,6 @@ use crate::{
 
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-
 pub struct Point {
     pub x: i32,
     pub y: i32,
@@ -64,8 +63,6 @@ mod tests {
         assert_eq!(deserialized, points);
     }
 
-    // TODO might be nice to add custom macro for between asserts,
-    // not sure how difficult it is to write macros at this stage
     #[test]
     fn test_between() {
         let p0 = Point::new(0, 0);

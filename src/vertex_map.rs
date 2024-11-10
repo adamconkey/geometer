@@ -9,7 +9,6 @@ pub struct VertexMap {
     map: HashMap<VertexId, Vertex>,
 }
 
-
 impl VertexMap {
     pub fn new(points: Vec<Point>) -> Self {
         let mut map = HashMap::new();
@@ -36,9 +35,6 @@ impl VertexMap {
     }
 
     pub fn get(&self, k: &VertexId) -> &Vertex {
-        // Unwrapping since this is for internal use only
-        // and it will be assumed that internally we only 
-        // operate on valid IDs in the map
         self.map.get(k).unwrap()
     }
 

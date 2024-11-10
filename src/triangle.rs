@@ -44,9 +44,21 @@ impl<'a> Triangle<'a> {
 mod tests {
     use super::*;
     use itertools::Itertools;
+    use crate::vertex::VertexId;
 
-    // TODO add test for from vertices (will need to create vertex
-    // ids to populate prev/next and such)
+    #[test]
+    fn test_from_vertices() {
+        let id1 = VertexId::from(1u32);
+        let id2 = VertexId::from(2u32);
+        let id3 = VertexId::from(3u32);
+        let v1 = Vertex::new(Point::new(0, 0), id1, id3, id2);
+        let v2 = Vertex::new(Point::new(3, 0), id2, id1, id3);
+        let v3 = Vertex::new(Point::new(0, 4), id3, id2, id1);
+        let triangle = Triangle::from_vertices(&v1, &v2, &v3);
+        assert_eq!(Point::new(0, 0), *triangle.p1);   
+        assert_eq!(Point::new(3, 0), *triangle.p2);   
+        assert_eq!(Point::new(0, 4), *triangle.p3);   
+    }
 
     #[test]
     fn test_area_right_triangle() {
@@ -104,10 +116,10 @@ mod tests {
             .take(3)
             .multi_cartesian_product();
         
-        for vertices in all_combos {
-            let p0 = vertices[0];
-            let p1 = vertices[1];
-            let p2 = vertices[2];
+        for points in all_combos {
+            let p0 = points[0];
+            let p1 = points[1];
+            let p2 = points[2];
             let triangle = Triangle::new(p0, p1, p2);
             
             if p0 == p1 || p0 == p2 || p1 == p2 {

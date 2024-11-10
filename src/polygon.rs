@@ -57,7 +57,7 @@ impl Polygon {
 
         while vmap.len() > 3 {
             let id = self.find_ear(&vmap)
-                .expect("valid polygons with 3 or more vertices should have ears");
+                .expect("valid polygons with 3 or more vertices should have an ear");
             let v = vmap.remove(&id);
             triangulation.insert((v.prev, v.next));
         }
@@ -164,8 +164,6 @@ mod tests {
 
 
     #[rstest]
-    // TODO now that this is parametrized, can add as many polygons
-    // here as possible to get meaningful tests on area
     #[case(right_triangle(), 12)]
     #[case(square_4x4(), 32)]
     #[case(polygon_2(), 466)]
@@ -181,63 +179,12 @@ mod tests {
     #[case(polygon_2(), 18)]
     fn test_edges_square(#[case] polygon: Polygon, #[case] num_edges: usize) {
         let mut expected_edges = HashSet::new();
-        // TODO 
-        // A more interesting test would be removing vertices and
-        // checking updates. But this one can be parameterized and
-        // determined by num vertices, subsume test below
         for i in 0usize..num_edges {
             expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % num_edges)));
         }
-
         let edges = polygon.edges();
         assert_eq!(edges, expected_edges);
     }
-
-    // #[rstest]
-    // fn test_diagonal(polygon_1: Polygon) {
-    //     // let ac = polygon_1.get_line_segment("a", "c");
-    //     // let ad = polygon_1.get_line_segment("a", "d");
-    //     // let ae = polygon_1.get_line_segment("a", "e");
-    //     // let bd = polygon_1.get_line_segment("b", "d");
-    //     // let be = polygon_1.get_line_segment("b", "e");
-    //     // let bf = polygon_1.get_line_segment("b", "f");
-    //     // let ca = polygon_1.get_line_segment("c", "a");
-    //     // let ce = polygon_1.get_line_segment("c", "e");
-    //     // let cf = polygon_1.get_line_segment("c", "f");
-    //     // let da = polygon_1.get_line_segment("d", "a");
-    //     // let db = polygon_1.get_line_segment("d", "b");
-    //     // let df = polygon_1.get_line_segment("d", "f");
-    //     // let ea = polygon_1.get_line_segment("e", "a");
-    //     // let eb = polygon_1.get_line_segment("e", "b");
-    //     // let ec = polygon_1.get_line_segment("e", "c");
-    //     // let fb = polygon_1.get_line_segment("f", "b");
-    //     // let fc = polygon_1.get_line_segment("f", "c");
-    //     // let fd = polygon_1.get_line_segment("f", "d");
-
-    //     // let internal = vec![&ae, &bd, &be, &bf, &ce, &db, &df, &ea, &eb, &ec, &fb, &fd];
-    //     // let external = vec![&ac, &ca];
-    //     // let not_diagonal = vec![&ad, &cf, &da, &fc];
-        
-    //     // for ls in internal {
-    //     //     assert!(polygon_1.in_cone(ls));
-    //     //     assert!(polygon_1.diagonal_internal_external(ls));
-    //     //     assert!(polygon_1.diagonal(ls));
-    //     // }
-
-    //     // for ls in external {
-    //     //     // TODO might want to think of another example and think carefully
-    //     //     // about the in_cone, I think there'd be examples where at least
-    //     //     // one of the directions fails
-    //     //     assert!(!polygon_1.in_cone(ls));
-    //     //     assert!( polygon_1.diagonal_internal_external(ls));
-    //     //     assert!(!polygon_1.diagonal(ls));
-    //     // }
-
-    //     // for ls in not_diagonal {
-    //     //     assert!(!polygon_1.diagonal_internal_external(ls));
-    //     //     assert!(!polygon_1.diagonal(ls));
-    //     // }
-    // }
 
     #[rstest]
     fn test_triangulation(polygon_2: Polygon) {

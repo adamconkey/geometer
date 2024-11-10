@@ -1,19 +1,11 @@
-use serde::{Deserialize, Serialize};
-
 use crate::{
     line_segment::LineSegment,
     point::Point,
 };
 
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct VertexId(u32);
-
-impl VertexId {
-    pub fn new(id: u32) -> Self {
-        VertexId(id)
-    }
-}
 
 impl From<u32> for VertexId {
     fn from(raw: u32) -> Self {
@@ -28,8 +20,6 @@ impl From<usize> for VertexId {
 }
 
 
-// TODO make this type-generic?
-// TODO handle dimensionality of coordinates
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Vertex {
     pub coords: Point,

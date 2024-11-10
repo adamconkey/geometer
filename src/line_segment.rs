@@ -11,7 +11,6 @@ pub struct LineSegment<'a> {
     pub p2: &'a Point,
 }
 
-
 impl<'a> LineSegment<'a> {
     pub fn new(p1: &'a Point, p2: &'a Point) -> Self {
         LineSegment { p1, p2 }
