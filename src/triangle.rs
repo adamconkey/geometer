@@ -1,25 +1,32 @@
 use std::cell::OnceCell;
 
-use crate::vertex::Vertex;
+use crate::{
+    point::Point,
+    vertex::Vertex,
+};
 
 
 pub struct Triangle<'a> {
-    pub a: &'a Vertex,
-    pub b: &'a Vertex,
-    pub c: &'a Vertex,
+    pub a: &'a Point,
+    pub b: &'a Point,
+    pub c: &'a Point,
     double_area: OnceCell<i32>,
 }
 
 
 impl<'a> Triangle<'a> {
-    pub fn new(a: &'a Vertex, b: &'a Vertex, c: &'a Vertex) -> Triangle<'a> {
-        Triangle { a: a, b: b, c: c, double_area: OnceCell::new() }
+    pub fn new(a: &'a Point, b: &'a Point, c: &'a Point) -> Triangle<'a> {
+        Triangle { a, b, c, double_area: OnceCell::new() }
+    }
+
+    pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex, v3: &'a Vertex) -> Triangle<'a> {
+        Triangle::new(&v1.coords, &v2.coords, &v3.coords)
     }
 
     pub fn double_area(&self) -> i32 {
         *self.double_area.get_or_init(|| {
-            let t1 = (self.b.coords.x - self.a.coords.x) * (self.c.coords.y - self.a.coords.y);
-            let t2 = (self.c.coords.x - self.a.coords.x) * (self.b.coords.y - self.a.coords.y);
+            let t1 = (self.b.x - self.a.x) * (self.c.y - self.a.y);
+            let t2 = (self.c.x - self.a.x) * (self.b.y - self.a.y);
             t1 - t2
         })
     }
@@ -39,15 +46,15 @@ mod tests {
     use super::*;
     use itertools::Itertools;
 
-    // #[test]
-    // fn test_area_right_triangle() {
-    //     let a = Vertex::new(0, 0);
-    //     let b = Vertex::new(3, 0);
-    //     let c = Vertex::new(0, 4);
-    //     let triangle = Triangle::new(&a, &b, &c);
-    //     let double_area = triangle.double_area();
-    //     assert_eq!(double_area, 12);
-    // }
+    #[test]
+    fn test_area_right_triangle() {
+        let a = Point::new(0, 0);
+        let b = Point::new(3, 0);
+        let c = Point::new(0, 4);
+        let triangle = Triangle::new(&a, &b, &c);
+        let double_area = triangle.double_area();
+        assert_eq!(double_area, 12);
+    }
 
     // // TODO want some better unit tests for the triangle area
 

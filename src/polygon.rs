@@ -36,7 +36,7 @@ impl Polygon {
         let anchor = self.vertex_map.anchor();
         for v1 in self.vertex_map.values() {
             let v2 = self.get_vertex(&v1.next); 
-            area += Triangle::new(anchor, v1, v2).double_area();
+            area += Triangle::from_vertices(anchor, v1, v2).double_area();
         }
         area
     }
@@ -71,7 +71,7 @@ impl Polygon {
         // result then can just do handling of that in triangulation
         // and you won't have this awkware if else panic block
         for v2 in vmap.values() {
-            if self.diagonal(&self.get_line_segment(&v2.prev, &v2.next)) {
+            if self.diagonal(&self.get_vertex(&v2.prev), self.get_vertex(&v2.next)) {
                 return Some(v2.id);
             }
         }
@@ -85,7 +85,7 @@ impl Polygon {
     fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> LineSegment {
         let v1 = self.get_vertex(id_1);
         let v2 = self.get_vertex(id_2);
-        LineSegment::new(v1, v2)
+        LineSegment::from_vertices(v1, v2)
     }
 
     pub fn edges(&self) -> Vec<LineSegment> {
@@ -103,27 +103,27 @@ impl Polygon {
         edges
     }
     
-    fn in_cone(&self, ab: &LineSegment) -> bool {
-        let a = ab.v1;
+    fn in_cone(&self, a: &Vertex, b: &Vertex) -> bool {
+        let ab = LineSegment::from_vertices(a, b);
         let ba = &ab.reverse();
         // TODO do better than unwrap, prev and next should be optional
         let a0 = self.get_vertex(&a.prev);
         let a1 = self.get_vertex(&a.next);
 
-        if a0.left_on(&LineSegment::new(a, a1)) {
-            return a0.left(ab) && a1.left(ba);
+        if a0.left_on(&LineSegment::from_vertices(a, a1)) {
+            return a0.left(&ab) && a1.left(ba);
         }
         
         // Otherwise a is reflexive
-        !(a1.left_on(ab) && a0.left_on(ba))
+        !(a1.left_on(&ab) && a0.left_on(ba))
     }
     
-    pub fn diagonal(&self, ab: &LineSegment) -> bool {
-        let ba = &ab.reverse();
-        self.in_cone(ab) && self.in_cone(ba) && self.diagonal_internal_external(ab)
+    pub fn diagonal(&self, a: &Vertex, b: &Vertex) -> bool {
+        self.in_cone(a, b) && self.in_cone(b, a) && self.diagonal_internal_external(a, b)
     }
 
-    fn diagonal_internal_external(&self, ab: &LineSegment) -> bool {
+    fn diagonal_internal_external(&self, a: &Vertex, b: &Vertex) -> bool {
+        let ab = &LineSegment::from_vertices(a, b);
         for e in self.edges() {
             if !e.connected_to(ab) && e.intersects(ab) {
                 return false;
