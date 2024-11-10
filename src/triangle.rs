@@ -7,16 +7,16 @@ use crate::{
 
 
 pub struct Triangle<'a> {
-    pub a: &'a Point,
-    pub b: &'a Point,
-    pub c: &'a Point,
+    pub p1: &'a Point,
+    pub p2: &'a Point,
+    pub p3: &'a Point,
     double_area: OnceCell<i32>,
 }
 
 
 impl<'a> Triangle<'a> {
-    pub fn new(a: &'a Point, b: &'a Point, c: &'a Point) -> Triangle<'a> {
-        Triangle { a, b, c, double_area: OnceCell::new() }
+    pub fn new(p1: &'a Point, p2: &'a Point, p3: &'a Point) -> Triangle<'a> {
+        Triangle { p1, p2, p3, double_area: OnceCell::new() }
     }
 
     pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex, v3: &'a Vertex) -> Triangle<'a> {
@@ -25,8 +25,8 @@ impl<'a> Triangle<'a> {
 
     pub fn double_area(&self) -> i32 {
         *self.double_area.get_or_init(|| {
-            let t1 = (self.b.x - self.a.x) * (self.c.y - self.a.y);
-            let t2 = (self.c.x - self.a.x) * (self.b.y - self.a.y);
+            let t1 = (self.p2.x - self.p1.x) * (self.p3.y - self.p1.y);
+            let t2 = (self.p3.x - self.p1.x) * (self.p2.y - self.p1.y);
             t1 - t2
         })
     }
@@ -44,7 +44,7 @@ impl<'a> Triangle<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use itertools::Itertools;
+    // use itertools::Itertools;
 
     #[test]
     fn test_area_right_triangle() {

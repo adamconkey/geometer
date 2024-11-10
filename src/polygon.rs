@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::Path;
 
-
 use crate::{
     line_segment::LineSegment,
     point::Point,
@@ -10,11 +9,11 @@ use crate::{
     vertex_map::VertexMap,
 };
 
+
 #[derive(Debug, PartialEq)]
 pub struct Polygon {
     vertex_map: VertexMap,
 }
-
 
 impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {

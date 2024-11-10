@@ -5,7 +5,6 @@ use unique_id::sequence::SequenceGenerator;
 use crate::{
     line_segment::LineSegment,
     point::Point,
-    triangle::Triangle,
 };
 
 
@@ -45,9 +44,7 @@ pub struct Vertex {
     pub next: VertexId,
 }
 
-
-impl Vertex {
-    
+impl Vertex {    
     pub fn new(coords: Point, id: VertexId, prev: VertexId, next: VertexId) -> Vertex {
        Vertex { coords, id, prev, next }
     }
