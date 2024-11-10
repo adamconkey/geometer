@@ -1,25 +1,31 @@
 use std::cell::OnceCell;
 
-use crate::vertex::Vertex;
+use crate::{
+    point::Point,
+    vertex::Vertex,
+};
 
 
 pub struct Triangle<'a> {
-    pub a: &'a Vertex,
-    pub b: &'a Vertex,
-    pub c: &'a Vertex,
+    pub p1: &'a Point,
+    pub p2: &'a Point,
+    pub p3: &'a Point,
     double_area: OnceCell<i32>,
 }
 
-
 impl<'a> Triangle<'a> {
-    pub fn new(a: &'a Vertex, b: &'a Vertex, c: &'a Vertex) -> Triangle<'a> {
-        Triangle { a: a, b: b, c: c, double_area: OnceCell::new() }
+    pub fn new(p1: &'a Point, p2: &'a Point, p3: &'a Point) -> Triangle<'a> {
+        Triangle { p1, p2, p3, double_area: OnceCell::new() }
+    }
+
+    pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex, v3: &'a Vertex) -> Triangle<'a> {
+        Triangle::new(&v1.coords, &v2.coords, &v3.coords)
     }
 
     pub fn double_area(&self) -> i32 {
         *self.double_area.get_or_init(|| {
-            let t1 = (self.b.x - self.a.x) * (self.c.y - self.a.y);
-            let t2 = (self.c.x - self.a.x) * (self.b.y - self.a.y);
+            let t1 = (self.p2.x - self.p1.x) * (self.p3.y - self.p1.y);
+            let t2 = (self.p3.x - self.p1.x) * (self.p2.y - self.p1.y);
             t1 - t2
         })
     }
@@ -38,12 +44,27 @@ impl<'a> Triangle<'a> {
 mod tests {
     use super::*;
     use itertools::Itertools;
+    use crate::vertex::VertexId;
+
+    #[test]
+    fn test_from_vertices() {
+        let id1 = VertexId::from(1u32);
+        let id2 = VertexId::from(2u32);
+        let id3 = VertexId::from(3u32);
+        let v1 = Vertex::new(Point::new(0, 0), id1, id3, id2);
+        let v2 = Vertex::new(Point::new(3, 0), id2, id1, id3);
+        let v3 = Vertex::new(Point::new(0, 4), id3, id2, id1);
+        let triangle = Triangle::from_vertices(&v1, &v2, &v3);
+        assert_eq!(Point::new(0, 0), *triangle.p1);   
+        assert_eq!(Point::new(3, 0), *triangle.p2);   
+        assert_eq!(Point::new(0, 4), *triangle.p3);   
+    }
 
     #[test]
     fn test_area_right_triangle() {
-        let a = Vertex::new(0, 0);
-        let b = Vertex::new(3, 0);
-        let c = Vertex::new(0, 4);
+        let a = Point::new(0, 0);
+        let b = Point::new(3, 0);
+        let c = Point::new(0, 4);
         let triangle = Triangle::new(&a, &b, &c);
         let double_area = triangle.double_area();
         assert_eq!(double_area, 12);
@@ -53,9 +74,9 @@ mod tests {
 
     #[test]
     fn test_area_sign_clockwise() {
-        let a = Vertex::new(0, 0);
-        let b = Vertex::new(4, 3);
-        let c = Vertex::new(1, 3);
+        let a = Point::new(0, 0);
+        let b = Point::new(4, 3);
+        let c = Point::new(1, 3);
         
         let cw = vec![
             Triangle::new(&a, &c, &b),
@@ -69,9 +90,9 @@ mod tests {
 
     #[test]
     fn test_area_sign_counter_clockwise() {
-        let a = Vertex::new(0, 0);
-        let b = Vertex::new(4, 3);
-        let c = Vertex::new(1, 3);
+        let a = Point::new(0, 0);
+        let b = Point::new(4, 3);
+        let c = Point::new(1, 3);
 
         let ccw = vec![
             Triangle::new(&a, &b, &c),
@@ -85,9 +106,9 @@ mod tests {
 
     #[test]
     fn test_area_sign_collinear() {
-        let a = Vertex::new(0, 0);
-        let b = Vertex::new(4, 3);
-        let c = Vertex::new(1, 3);
+        let a = Point::new(0, 0);
+        let b = Point::new(4, 3);
+        let c = Point::new(1, 3);
 
         // This is choice with replacement over a 3-tuple, so there are
         // 3 * 3 * 3 = 27 total options and this generates all of them.
@@ -95,10 +116,10 @@ mod tests {
             .take(3)
             .multi_cartesian_product();
         
-        for vertices in all_combos {
-            let p0 = vertices[0];
-            let p1 = vertices[1];
-            let p2 = vertices[2];
+        for points in all_combos {
+            let p0 = points[0];
+            let p1 = points[1];
+            let p2 = points[2];
             let triangle = Triangle::new(p0, p1, p2);
             
             if p0 == p1 || p0 == p2 || p1 == p2 {

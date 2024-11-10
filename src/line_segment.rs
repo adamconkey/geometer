@@ -1,4 +1,5 @@
 use crate::{
+    point::Point,
     triangle::Triangle,
     vertex::Vertex,
 };
@@ -6,33 +7,36 @@ use crate::{
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct LineSegment<'a> {
-    pub v1: &'a Vertex,
-    pub v2: &'a Vertex,
+    pub p1: &'a Point,
+    pub p2: &'a Point,
 }
 
-
 impl<'a> LineSegment<'a> {
-    pub fn new(v1: &'a Vertex, v2: &'a Vertex) -> Self {
-        LineSegment { v1: v1, v2: v2 }
+    pub fn new(p1: &'a Point, p2: &'a Point) -> Self {
+        LineSegment { p1, p2 }
+    }
+
+    pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex) -> Self {
+        LineSegment::new(&v1.coords, &v2.coords)
     }
 
     pub fn reverse(&self) -> LineSegment {
-        LineSegment::new(self.v2, self.v1)
+        LineSegment::new(self.p2, self.p1)
     }
     
     pub fn is_vertical(&self) -> bool {
-        self.v1.x == self.v2.x
+        self.p1.x == self.p2.x
     }
 
     pub fn is_horizontal(&self) -> bool {
-        self.v1.y == self.v2.y
+        self.p1.y == self.p2.y
     }
 
     pub fn proper_intersects(&self, cd: &LineSegment) -> bool {    
-        let a = self.v1;
-        let b = self.v2;
-        let c = cd.v1;
-        let d = cd.v2;
+        let a = self.p1;
+        let b = self.p2;
+        let c = cd.p1;
+        let d = cd.p2;
     
         let abc = Triangle::new(a, b, c);
         let abd = Triangle::new(a, b, d);
@@ -56,10 +60,10 @@ impl<'a> LineSegment<'a> {
     }
         
     pub fn improper_intersects(&self, cd: &LineSegment) -> bool {
-        let a = self.v1;
-        let b = self.v2;
-        let c = cd.v1;
-        let d = cd.v2;
+        let a = self.p1;
+        let b = self.p2;
+        let c = cd.p1;
+        let d = cd.p2;
     
         c.between(a, b) || d.between(a, b) || a.between(c, d) || b.between(c, d)
     }
@@ -69,24 +73,25 @@ impl<'a> LineSegment<'a> {
     }
 
     pub fn connected_to(&self, cd: &LineSegment) -> bool {
-        self.incident_to(cd.v1) || self.incident_to(cd.v2)
+        self.incident_to(cd.p1) || self.incident_to(cd.p2)
     }
 
-    pub fn incident_to(&self, v: &Vertex) -> bool {
-        self.v1 == v || self.v2 == v
+    pub fn incident_to(&self, p: &Point) -> bool {
+        self.p1 == p || self.p2 == p
     }
 }
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[test]
     fn test_proper_intersect() {
-        let a = Vertex::new(6, 4);
-        let b = Vertex::new(0, 4);
-        let c = Vertex::new(1, 0);
-        let d = Vertex::new(4, 6);
+        let a = Point::new(6, 4);
+        let b = Point::new(0, 4);
+        let c = Point::new(1, 0);
+        let d = Point::new(4, 6);
 
         let ab = LineSegment::new(&a, &b);
         let cd = LineSegment::new(&c, &d);
@@ -101,10 +106,10 @@ mod tests {
 
     #[test]
     fn test_improper_intersect() {
-        let a = Vertex::new(6, 6);
-        let b = Vertex::new(0, 6);
-        let c = Vertex::new(1, 0);
-        let d = Vertex::new(4, 6);
+        let a = Point::new(6, 6);
+        let b = Point::new(0, 6);
+        let c = Point::new(1, 0);
+        let d = Point::new(4, 6);
 
         let ab = LineSegment::new(&a, &b);
         let cd = LineSegment::new(&c, &d);
@@ -119,10 +124,10 @@ mod tests {
 
     #[test]
     fn test_no_intersect() {
-        let a = Vertex::new(6, 4);
-        let b = Vertex::new(4, 4);
-        let c = Vertex::new(1, 0);
-        let d = Vertex::new(4, 6);
+        let a = Point::new(6, 4);
+        let b = Point::new(4, 4);
+        let c = Point::new(1, 0);
+        let d = Point::new(4, 6);
 
         let ab = LineSegment::new(&a, &b);
         let cd = LineSegment::new(&c, &d);
@@ -137,8 +142,8 @@ mod tests {
 
     #[test]
     fn test_intersect_with_self() {
-        let a = Vertex::new(6, 4);
-        let b = Vertex::new(4, 4);
+        let a = Point::new(6, 4);
+        let b = Point::new(4, 4);
         let ab = LineSegment::new(&a, &b);
 
         assert!(!ab.proper_intersects(&ab));
@@ -148,13 +153,13 @@ mod tests {
 
     #[test]
     fn test_reverse() {
-        let a = Vertex::new(0, 0);
-        let b = Vertex::new(1, 2);
+        let a = Point::new(0, 0);
+        let b = Point::new(1, 2);
         let ab = LineSegment::new(&a, &b);
         let ba = ab.reverse();
-        assert_eq!(ab.v1, &a);
-        assert_eq!(ab.v2, &b);
-        assert_eq!(ba.v1, &b);
-        assert_eq!(ba.v2, &a);
+        assert_eq!(ab.p1, &a);
+        assert_eq!(ab.p2, &b);
+        assert_eq!(ba.p1, &b);
+        assert_eq!(ba.p2, &a);
     }
 }

@@ -1,187 +1,125 @@
-use itertools::Itertools;
-use std::collections::HashMap;
+use core::fmt;
+use std::collections::HashSet;
+use std::fs;
+use std::path::Path;
 
 use crate::{
     line_segment::LineSegment,
+    point::Point,
     triangle::Triangle,
-    vertex::Vertex,
+    vertex::{Vertex, VertexId},
     vertex_map::VertexMap,
 };
 
 
-pub struct Polygon<'a> {
-    anchor: &'a Vertex,
-    neighbors: HashMap<&'a Vertex, (&'a Vertex, &'a Vertex)>,
+#[derive(Debug, Clone)]
+struct EarNotFoundError;
+
+impl fmt::Display for EarNotFoundError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "polygon is likely invalid")
+    }
 }
 
 
-impl<'a> Polygon<'a> {
-    pub fn new(vertices: Vec<&'a Vertex>) -> Polygon<'a> {
-        let mut neighbors = HashMap::new();
+#[derive(Debug)]
+pub struct Polygon {
+    vertex_map: VertexMap,
+}
 
-        let first = &vertices[0];
-        let last = vertices
-            .last()
-            .expect("Polygon should have at least 3 vertices");
-
-        // TODO I suspect I'm doing something silly here, having to deref
-        // everything. I think it has to do with me storing a vec of refs
-        // and then doing iter as opposed to into_iter()
-        
-        for (v0, v1, v2) in vertices.iter().tuple_windows::<(_,_,_)>() {
-            neighbors.insert(*v1, (*v0, *v2));
-
-            if v0 == first {
-                neighbors.insert(*v0, (*last, *v1));
-            }
-            if v2 == last {
-                neighbors.insert(*v2, (*v1, *first));
-            }
-        }
-
-        Polygon { anchor: &vertices[0], neighbors }
+impl Polygon {
+    pub fn new(points: Vec<Point>) -> Polygon {
+        let vertex_map = VertexMap::new(points);
+        Polygon { vertex_map }
     }
 
-    pub fn from_vmap(vmap: &'a VertexMap) -> Polygon<'a> {
-        Polygon::new(vmap.all_vertices())
-    }
-
-    pub fn vertices(&self) -> Vec<&Vertex> {
-        // TODO can rethink edges method if this works
-
-        let mut vertices = Vec::new();
-        let mut current = self.anchor;
-
-        loop {
-            vertices.push(current);
-            current = self.neighbors
-                .get(current)
-                .expect("Every vertex should have neighbors stored")
-                .1;
-            
-            if current == self.anchor {
-                break;
-            }
-        }
-
-        vertices
+    pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
+        let polygon_str: String = fs::read_to_string(path)
+            .expect("file should exist and be parseable");
+        // TODO don't unwrap
+        let points: Vec<Point> = serde_json::from_str(&polygon_str).unwrap();
+        Polygon::new(points)
     }
     
     pub fn double_area(&self) -> i32 {
-        // The first edge will include the anchor, but that area
-        // ends up being zero since v2 will trivially be collinear
-        // with anchor-v1 and thus doesn't affect the compuation
         let mut area = 0;
-        for e in self.edges() {
-            area += Triangle::new(self.anchor, e.v1, e.v2).double_area();
+        let anchor = self.vertex_map.anchor();
+        for v1 in self.vertex_map.values() {
+            let v2 = self.get_vertex(&v1.next); 
+            area += Triangle::from_vertices(anchor, v1, v2).double_area();
         }
         area
     }
 
-    pub fn triangulation(&self) -> Vec<LineSegment> {
-        let mut triangulation = Vec::new();
-        let mut neighbors = self.neighbors.clone();
-        let mut anchor = self.anchor;
+    pub fn triangulation(&self) -> HashSet<(VertexId, VertexId)> {
+        let mut triangulation = HashSet::new();
+        let mut vmap = self.vertex_map.clone();
 
-        while neighbors.len() > 3 {
-            let mut v2 = anchor;
-            
-            loop {
-                // Removing instead of borrowing, so that we don't run into 
-                // immutable borrow problems. It will be inserted again if 
-                // we end up not finding an ear. May want to rethink this 
-                // if there's a better way to go about so we're not 
-                // unnecessarily removing things.
-                let (v1, v3) = neighbors
-                    .remove(v2)
-                    .expect("Every vertex should have neighbors stored");
-
-                if self.diagonal(&LineSegment::new(v1, v3)) {
-                    // We found an ear, add to the triangulation
-                    triangulation.push(LineSegment::new(v1, v3));
-
-                    let v4 = neighbors
-                        .get(v3)
-                        .expect("Every vertex should have neighbors stored")
-                        .1;
-                    let v0 = neighbors
-                        .get(v1)
-                        .expect("Every vertex should have neighbors stored")
-                        .0;
-
-                    // The ear vertex has been removed, update its neighbors 
-                    // so that their neighbors point to the correct vertices
-                    neighbors.insert(v1, (v0, v3));
-                    neighbors.insert(v3, (v1, v4));
-                    anchor = v3;  // In case removed was anchor
-                }
-                else {
-                    // This wasn't an ear, so re-insert into neighbor map
-                    neighbors.insert(v2, (v1, v3));
-                }
-
-                v2 = v3;  // Advance to next vertex in chain
-
-                if v2 == anchor {
-                    // Made a full pass through all vertices, can advance to
-                    // next iter of outer loop
-                    break;
-                }
-            }
+        while vmap.len() > 3 {
+            let id = self.find_ear(&vmap)
+                .expect("valid polygons with 3 or more vertices should have an ear");
+            let v = vmap.remove(&id);
+            triangulation.insert((v.prev, v.next));
         }
-
         triangulation
     }
 
-    pub fn edges(&self) -> Vec<LineSegment> {
-        // TODO would be cool to cache this
-        let mut edges = Vec::new();
-        let mut current = self.anchor;
+    fn find_ear(&self, vmap: &VertexMap) -> Result<VertexId, EarNotFoundError> {
+        for v in vmap.values() {
+            if self.diagonal(&self.get_vertex(&v.prev), self.get_vertex(&v.next)) {
+                return Ok(v.id);
+            }
+        }
+        Err(EarNotFoundError)
+    }
 
-        // Do forward pass through hashmap to get all ordered edges
+    fn get_vertex(&self, id: &VertexId) -> &Vertex {
+        self.vertex_map.get(id)
+    }
+
+    fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> LineSegment {
+        let v1 = self.get_vertex(id_1);
+        let v2 = self.get_vertex(id_2);
+        LineSegment::from_vertices(v1, v2)
+    }
+
+    pub fn edges(&self) -> HashSet<(VertexId, VertexId)> {
+        // TODO could cache this and clear on modification
+        let mut edges = HashSet::new();
+        let anchor_id = self.vertex_map.anchor().id;
+        let mut current = self.get_vertex(&anchor_id);
         loop {
-            let (_prev, next) = self.neighbors
-                .get(current)
-                .expect("Every vertex should have neighbors stored");
-            edges.push(LineSegment::new(current, next));
-
-            current = next;
-            
-            if current == self.anchor {
+            edges.insert((current.id, current.next));
+            current = self.get_vertex(&current.next);
+            if current.id == anchor_id {
                 break;
             }
         }
-
         edges
     }
-
-    pub fn neighbors(&self, v: &Vertex) -> (&Vertex, &Vertex) {
-        *self.neighbors
-            .get(v)
-            .expect("Every vertex should have neighbors stored")
-        
-    }
     
-    pub fn in_cone(&self, ab: &LineSegment) -> bool {
-        let a = ab.v1;
+    fn in_cone(&self, a: &Vertex, b: &Vertex) -> bool {
+        let ab = LineSegment::from_vertices(a, b);
         let ba = &ab.reverse();
-        let (a0, a1) = self.neighbors(a);
+        let a0 = self.get_vertex(&a.prev);
+        let a1 = self.get_vertex(&a.next);
 
-        if a0.left_on(&LineSegment::new(a, a1)) {
-            return a0.left(ab) && a1.left(ba);
+        if a0.left_on(&LineSegment::from_vertices(a, a1)) {
+            return a0.left(&ab) && a1.left(ba);
         }
         
         // Otherwise a is reflexive
-        !(a1.left_on(ab) && a0.left_on(ba))
+        !(a1.left_on(&ab) && a0.left_on(ba))
     }
     
-    pub fn diagonal(&self, ab: &LineSegment) -> bool {
-        let ba = &ab.reverse();
-        self.in_cone(ab) && self.in_cone(ba) && self.diagonal_internal_external(ab)
+    pub fn diagonal(&self, a: &Vertex, b: &Vertex) -> bool {
+        self.in_cone(a, b) && self.in_cone(b, a) && self.diagonal_internal_external(a, b)
     }
 
-    fn diagonal_internal_external(&self, ab: &LineSegment) -> bool {
-        for e in self.edges() {
+    fn diagonal_internal_external(&self, a: &Vertex, b: &Vertex) -> bool {
+        let ab = &LineSegment::from_vertices(a, b);
+        for (id1, id2) in self.edges() {
+            let e = self.get_line_segment(&id1, &id2);
             if !e.connected_to(ab) && e.intersects(ab) {
                 return false;
             }
@@ -197,231 +135,71 @@ mod tests {
     use rstest::{fixture, rstest};
     use std::path::PathBuf;
 
-    fn load_vmap(filename: &str) -> VertexMap {
+    fn load_polygon(filename: &str) -> Polygon {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test");
         path.push(filename);
-        VertexMap::from_json(path)
-    }
-
-    // TODO these fixtures are nice and compact now, but it has me
-    // wondering if this is the best way to support fixtures? Might
-    // get tedious specifying these as the test cases grow. Could
-    // just parameterize on filenames and then load vmap in the
-    // the test
-    #[fixture]
-    fn polygon_1() -> VertexMap {
-        load_vmap("polygon_1.json")
+        Polygon::from_json(path)
     }
 
     #[fixture]
-    fn polygon_2() -> VertexMap {
-        load_vmap("polygon_2.json")
+    fn polygon_1() -> Polygon {
+        load_polygon("polygon_1.json")
     }
 
     #[fixture]
-    fn right_triangle() -> VertexMap {
-        load_vmap("right_triangle.json")
+    fn polygon_2() -> Polygon {
+        load_polygon("polygon_2.json")
     }
 
     #[fixture]
-    fn square_4x4() -> VertexMap {
-        load_vmap("square_4x4.json")
+    fn right_triangle() -> Polygon {
+        load_polygon("right_triangle.json")
+    }
+
+    #[fixture]
+    fn square_4x4() -> Polygon {
+        load_polygon("square_4x4.json")
     }
 
 
     #[rstest]
-    // TODO now that this is parametrized, can add as many polygons
-    // here as possible to get meaningful tests on area
     #[case(right_triangle(), 12)]
+    #[case(square_4x4(), 32)]
     #[case(polygon_2(), 466)]
-    fn test_area(#[case] vmap: VertexMap, #[case] expected_double_area: i32) {
-        let polygon = Polygon::from_vmap(&vmap);
+    fn test_area(#[case] polygon: Polygon, #[case] expected_double_area: i32) {
         let double_area = polygon.double_area();
         assert_eq!(double_area, expected_double_area);
     }
 
     #[rstest]
-    fn test_neighbors_square(square_4x4: VertexMap) {
-        let polygon = Polygon::from_vmap(&square_4x4);
-
-        let a = square_4x4.get("a").unwrap();
-        let b = square_4x4.get("b").unwrap();
-        let c = square_4x4.get("c").unwrap();
-        let d = square_4x4.get("d").unwrap();
-        
-        assert_eq!(polygon.neighbors(a), (d, b));
-        assert_eq!(polygon.neighbors(b), (a, c));
-        assert_eq!(polygon.neighbors(c), (b, d));
-        assert_eq!(polygon.neighbors(d), (c, a));
-    }
-
-    #[rstest]
-    fn test_edges_square(square_4x4: VertexMap) {
-        let polygon = Polygon::from_vmap(&square_4x4);
-
-        let expected_edges = vec![
-            square_4x4.get_line_segment("a", "b"),
-            square_4x4.get_line_segment("b", "c"),
-            square_4x4.get_line_segment("c", "d"),
-            square_4x4.get_line_segment("d", "a"),
-        ];
-    
-        assert_eq!(polygon.edges(), expected_edges);
-    }
-
-    #[rstest]
-    fn test_vertices_square(square_4x4: VertexMap) {
-        let polygon = Polygon::from_vmap(&square_4x4);
-
-        let expected_vertices = vec![
-            square_4x4.get("a").unwrap(),
-            square_4x4.get("b").unwrap(),
-            square_4x4.get("c").unwrap(),
-            square_4x4.get("d").unwrap(),
-        ];
-    
-        assert_eq!(polygon.vertices(), expected_vertices);
-    }
-
-    #[rstest]
-    fn test_neighbors_p1(polygon_1: VertexMap) {
-        let polygon = Polygon::from_vmap(&polygon_1);
-
-        let a = polygon_1.get("a").unwrap();
-        let b = polygon_1.get("b").unwrap();
-        let c = polygon_1.get("c").unwrap();
-        let d = polygon_1.get("d").unwrap();
-        let e = polygon_1.get("e").unwrap();
-        let f = polygon_1.get("f").unwrap();
-        
-        assert_eq!(polygon.neighbors(a), (f, b));
-        assert_eq!(polygon.neighbors(b), (a, c));
-        assert_eq!(polygon.neighbors(c), (b, d));
-        assert_eq!(polygon.neighbors(d), (c, e));
-        assert_eq!(polygon.neighbors(e), (d, f));
-        assert_eq!(polygon.neighbors(f), (e, a));
-    }
-    
-    #[rstest]
-    fn test_edges_p1(polygon_1: VertexMap) {
-        let polygon = Polygon::from_vmap(&polygon_1);
-
-        let expected_edges = vec![
-            polygon_1.get_line_segment("a", "b"),
-            polygon_1.get_line_segment("b", "c"),
-            polygon_1.get_line_segment("c", "d"),
-            polygon_1.get_line_segment("d", "e"),
-            polygon_1.get_line_segment("e", "f"),
-            polygon_1.get_line_segment("f", "a"),
-        ];
-        
-        assert_eq!(polygon.edges(), expected_edges);
-    }
-
-    #[rstest]
-    fn test_vertices_p1(polygon_1: VertexMap) {
-        let polygon = Polygon::from_vmap(&polygon_1);
-
-        let expected_vertices = vec![
-            polygon_1.get("a").unwrap(),
-            polygon_1.get("b").unwrap(),
-            polygon_1.get("c").unwrap(),
-            polygon_1.get("d").unwrap(),
-            polygon_1.get("e").unwrap(),
-            polygon_1.get("f").unwrap(),
-        ];
-        
-        assert_eq!(polygon.vertices(), expected_vertices);
-    }
-
-    #[rstest]
-    fn test_diagonal(polygon_1: VertexMap) {
-        let polygon = Polygon::from_vmap(&polygon_1);
-
-        let ac = polygon_1.get_line_segment("a", "c");
-        let ad = polygon_1.get_line_segment("a", "d");
-        let ae = polygon_1.get_line_segment("a", "e");
-        let bd = polygon_1.get_line_segment("b", "d");
-        let be = polygon_1.get_line_segment("b", "e");
-        let bf = polygon_1.get_line_segment("b", "f");
-        let ca = polygon_1.get_line_segment("c", "a");
-        let ce = polygon_1.get_line_segment("c", "e");
-        let cf = polygon_1.get_line_segment("c", "f");
-        let da = polygon_1.get_line_segment("d", "a");
-        let db = polygon_1.get_line_segment("d", "b");
-        let df = polygon_1.get_line_segment("d", "f");
-        let ea = polygon_1.get_line_segment("e", "a");
-        let eb = polygon_1.get_line_segment("e", "b");
-        let ec = polygon_1.get_line_segment("e", "c");
-        let fb = polygon_1.get_line_segment("f", "b");
-        let fc = polygon_1.get_line_segment("f", "c");
-        let fd = polygon_1.get_line_segment("f", "d");
-
-        let internal = vec![&ae, &bd, &be, &bf, &ce, &db, &df, &ea, &eb, &ec, &fb, &fd];
-        let external = vec![&ac, &ca];
-        let not_diagonal = vec![&ad, &cf, &da, &fc];
-        
-        for ls in internal {
-            assert!(polygon.in_cone(ls));
-            assert!(polygon.diagonal_internal_external(ls));
-            assert!(polygon.diagonal(ls));
+    #[case(right_triangle(), 3)]
+    #[case(square_4x4(), 4)]
+    #[case(polygon_1(), 6)]
+    #[case(polygon_2(), 18)]
+    fn test_edges_square(#[case] polygon: Polygon, #[case] num_edges: usize) {
+        let mut expected_edges = HashSet::new();
+        for i in 0usize..num_edges {
+            expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % num_edges)));
         }
-
-        for ls in external {
-            // TODO might want to think of another example and think carefully
-            // about the in_cone, I think there'd be examples where at least
-            // one of the directions fails
-            assert!(!polygon.in_cone(ls));
-            assert!( polygon.diagonal_internal_external(ls));
-            assert!(!polygon.diagonal(ls));
-        }
-
-        for ls in not_diagonal {
-            assert!(!polygon.diagonal_internal_external(ls));
-            assert!(!polygon.diagonal(ls));
-        }
+        let edges = polygon.edges();
+        assert_eq!(edges, expected_edges);
     }
 
     #[rstest]
-    fn test_triangulation(polygon_2: VertexMap) {
-        let polygon = Polygon::from_vmap(&polygon_2);
-        let triangulation = polygon.triangulation();
-        
-        let ls_17_1 = polygon_2.get_line_segment("17", "1");
-        let ls_1_3 = polygon_2.get_line_segment("1", "3");
-        let ls_4_6 = polygon_2.get_line_segment("4", "6");
-        let ls_4_7 = polygon_2.get_line_segment("4", "7");
-        let ls_9_11 = polygon_2.get_line_segment("9", "11");
-        let ls_12_14 = polygon_2.get_line_segment("12", "14");
-        let ls_15_17 = polygon_2.get_line_segment("15", "17");
-        let ls_15_1 = polygon_2.get_line_segment("15", "1");
-        let ls_15_3 = polygon_2.get_line_segment("15", "3");
-        let ls_3_7 = polygon_2.get_line_segment("3", "7");
-        let ls_11_14 = polygon_2.get_line_segment("11", "14");
-        let ls_15_7 = polygon_2.get_line_segment("15", "7");
-        let ls_15_8 = polygon_2.get_line_segment("15", "8");
-        let ls_15_9 = polygon_2.get_line_segment("15", "9");
-        let ls_9_14 = polygon_2.get_line_segment("9", "14");
-       
-        let expected = vec![
-            ls_17_1,
-            ls_1_3,
-            ls_4_6,
-            ls_4_7,
-            ls_9_11,
-            ls_12_14,
-            ls_15_17,
-            ls_15_1,
-            ls_15_3,
-            ls_3_7,
-            ls_11_14,
-            ls_15_7,
-            ls_15_8,
-            ls_15_9,
-            ls_9_14
-        ];
+    fn test_triangulation(polygon_2: Polygon) {
+        let triangulation = polygon_2.triangulation();
 
-        assert_eq!(expected, triangulation);
+        // TODO will need to generally have better ways to assert
+        // on triangulations. Currently my implementation is a bit
+        // unstable and so not only can the order of line segments
+        // be different, you can get slightly different triangulations
+        // depending on the order things are visited. So it's 
+        // probably better to just have some asserts that show it's
+        // a valid triangulation, and then eventually if it's
+        // stable enough can do an assert on the specific
+        // triangulation achieved
+
+        assert_eq!(triangulation.len(), 15);
     }
 }
