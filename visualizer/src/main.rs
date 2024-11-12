@@ -24,7 +24,7 @@ fn main() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(demo::TemplateApp::new(cc)))),
+                Box::new(|cc| Ok(Box::new(visualizer::TemplateApp::new(cc)))),
             )
             .await;
 

@@ -1,11 +1,11 @@
 [package]
 edition.workspace = true
 include = ["**/*.rs", "Cargo.toml"]
-name = "demo"
+name = "visualizer"
 publish = false
 rust-version.workspace = true
 version.workspace = true
-default-run = "demo"
+default-run = "visualizer"
 
 
 [dependencies]
