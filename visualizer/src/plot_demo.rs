@@ -3,9 +3,10 @@ use egui_plot::{
     CoordinatesFormatter, Corner, Line, Plot, Points,
 };
 use std::collections::HashMap;
-use std::fs;
 
 use computational_geometry::point::Point;
+
+use crate::app::RESULT_DIR;
 
 
 #[derive(Clone, PartialEq, serde::Deserialize, serde::Serialize)]
@@ -16,41 +17,17 @@ pub struct PolygonDemo {
 
 impl Default for PolygonDemo {
     fn default() -> Self {
-        Self { paths: HashMap::new() }
-    }
-}
+        let mut paths = HashMap::new();
+        for file in RESULT_DIR.files() {
+            let stem = String::from(file.path().file_stem().unwrap().to_str().unwrap());
+            let path_str = String::from(file.contents_utf8().unwrap());
+            paths.insert(stem, path_str);
+        }
 
-
-impl PolygonDemo {
-
-    pub fn new(paths: HashMap<String, String>) -> Self {
         Self { paths }
     }
-
-    fn points(&self) -> Points {
-        Points::new(vec![
-            [0.0, 0.0],
-            [10.0, 0.0],
-            [10.0, 10.0],
-            [5.0, 5.0],
-            [0.0, 10.0],
-            [0.0, 0.0],
-        ])
-        .radius(10.0)
-    }
-
-    fn line(&self) -> Line {
-        Line::new(vec![
-            [0.0, 0.0],
-            [10.0, 0.0],
-            [10.0, 10.0],
-            [5.0, 5.0],
-            [0.0, 10.0],
-            [0.0, 0.0],
-        ])
-        .width(4.0)
-    } 
 }
+
 
 impl PolygonDemo {
     pub fn ui(&mut self, ui: &mut egui::Ui, name: &String) -> Response {
