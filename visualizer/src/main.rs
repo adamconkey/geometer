@@ -1,3 +1,7 @@
+use path_clean::{clean, PathClean};
+use std::fs;
+
+
 
 #[cfg(target_arch = "wasm32")]
 fn main() {
@@ -7,6 +11,8 @@ fn main() {
     eframe::WebLogger::init(log::LevelFilter::Debug).ok();
 
     let web_options = eframe::WebOptions::default();
+
+    wasm_logger::init(wasm_logger::Config::default());
 
     wasm_bindgen_futures::spawn_local(async {
         let document = web_sys::window()
@@ -43,4 +49,10 @@ fn main() {
             }
         }
     });
+}
+
+
+#[cfg(not(target_arch = "wasm32"))]
+fn main() {
+    panic!("Only supported for web app")
 }
