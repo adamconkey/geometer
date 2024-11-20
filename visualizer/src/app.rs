@@ -14,7 +14,7 @@ pub struct TemplateApp {
 
 impl TemplateApp {
     /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new() -> Self {
         let mut filenames = Vec::new();
         let mut paths = HashMap::new();
         
