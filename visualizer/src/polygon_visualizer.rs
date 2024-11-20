@@ -10,11 +10,11 @@ use crate::app::RESULT_DIR;
 
 
 #[derive(Clone, PartialEq, serde::Deserialize, serde::Serialize)]
-pub struct PolygonDemo {
+pub struct PolygonVisualizer {
     points: HashMap<String, Vec<[f64; 2]>>,
 }
 
-impl Default for PolygonDemo {
+impl Default for PolygonVisualizer {
     fn default() -> Self {
         let mut points = HashMap::new();
         
@@ -38,10 +38,10 @@ impl Default for PolygonDemo {
 }
 
 
-impl PolygonDemo {
+impl PolygonVisualizer {
     pub fn ui(&mut self, ui: &mut egui::Ui, name: &String) -> Response {
         
-        let mut plot = Plot::new("polygon_demo")
+        let mut plot = Plot::new("polygon_visualizer")
             .show_axes(true)
             .show_grid(true);
         

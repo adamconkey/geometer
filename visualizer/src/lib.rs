@@ -5,7 +5,7 @@
 #![warn(clippy::all, rust_2018_idioms)]
 
 mod app;
-mod plot_demo;
+mod polygon_visualizer;
 
 pub use app::TemplateApp;
 

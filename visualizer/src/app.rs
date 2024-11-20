@@ -5,7 +5,7 @@ pub const RESULT_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/results");
 
 #[derive(Default)]
 pub struct TemplateApp {
-    demo: crate::plot_demo::PolygonDemo,
+    demo: crate::polygon_visualizer::PolygonVisualizer,
     filenames: Vec<String>,
     selected: String,
 }
@@ -19,7 +19,7 @@ impl TemplateApp {
             .collect();
         let selected = filenames[0].clone();
         
-        Self { demo: crate::plot_demo::PolygonDemo::default(), filenames, selected}
+        Self { demo: crate::polygon_visualizer::PolygonVisualizer::default(), filenames, selected}
     }
 }
 
