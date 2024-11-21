@@ -23,7 +23,7 @@ fn main() {
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(visualizer::TemplateApp::new()))),
+                Box::new(|_cc| Ok(Box::new(visualizer::TemplateApp::new()))),
             )
             .await;
 
