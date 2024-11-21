@@ -12,7 +12,7 @@ default-run = "visualizer"
 computational_geometry = { path = "../computational_geometry" }
 egui = { version = "0.29.0", default-features = false }
 egui_plot = { version = "0.29.0", default-features = false, features = ["serde"] }
-env_logger = { version = "0.10", default-features = false, features = [
+env_logger = { version = "0.11.5", default-features = false, features = [
     "auto-color",
     "humantime",
 ] }
@@ -27,8 +27,6 @@ log = "0.4"
 path-clean = "1.0.1"
 serde = { version = "1", features = ["derive"] }
 serde_json.workspace = true
-wasm-logger = "0.2.0"
-
 
 # web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]

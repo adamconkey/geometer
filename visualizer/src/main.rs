@@ -1,8 +1,3 @@
-use path_clean::{clean, PathClean};
-use std::fs;
-
-
-
 #[cfg(target_arch = "wasm32")]
 fn main() {
     use eframe::wasm_bindgen::JsCast as _;
@@ -11,8 +6,6 @@ fn main() {
     eframe::WebLogger::init(log::LevelFilter::Debug).ok();
 
     let web_options = eframe::WebOptions::default();
-
-    wasm_logger::init(wasm_logger::Config::default());
 
     wasm_bindgen_futures::spawn_local(async {
         let document = web_sys::window()
