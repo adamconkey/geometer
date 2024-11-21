@@ -12,6 +12,8 @@ use crate::app::RESULT_DIR;
 #[derive(Clone, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct PolygonVisualizer {
     points: HashMap<String, Vec<[f64; 2]>>,
+    line_width: f32,
+    point_radius: f32,
 }
 
 impl Default for PolygonVisualizer {
@@ -33,7 +35,7 @@ impl Default for PolygonVisualizer {
             points.insert(stem, point_vec);
         }
 
-        Self { points }
+        Self { points, line_width: 4.0, point_radius: 8.0 }
     }
 }
 
@@ -54,9 +56,9 @@ impl PolygonVisualizer {
         
         let points = self.points.get(name).unwrap();
         let line = Line::new(points.clone())
-            .width(4.0);
+            .width(self.line_width);
         let points = Points::new(points.clone())
-            .radius(8.0);
+            .radius(self.point_radius);
 
         plot.show(ui, |plot_ui| {
             plot_ui.line(line);
