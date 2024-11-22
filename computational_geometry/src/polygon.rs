@@ -215,7 +215,7 @@ mod tests {
     #[case(square_4x4(), 4)]
     #[case(polygon_1(), 6)]
     #[case(polygon_2(), 18)]
-    fn test_edges_square(#[case] polygon: Polygon, #[case] num_edges: usize) {
+    fn test_edges(#[case] polygon: Polygon, #[case] num_edges: usize) {
         let mut expected_edges = HashSet::new();
         for i in 0usize..num_edges {
             expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % num_edges)));
