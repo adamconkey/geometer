@@ -225,12 +225,16 @@ mod tests {
     }
 
     #[rstest]
-    fn test_triangulation(polygon_2: Polygon) {
-        let triangulation = polygon_2.triangulation();
-        assert_eq!(triangulation.len(), 16);
+    #[case(polygon_2(), 16, 466)]
+    fn test_triangulation(
+        #[case] polygon: Polygon, 
+        #[case] expected_num_triangles: usize, 
+        #[case] expected_double_area: i32,
+    ) {
+        let triangulation = polygon.triangulation();
+        assert_eq!(triangulation.len(), expected_num_triangles);
 
-        let double_area = polygon_2.double_area();
-        let triangulation_double_area = polygon_2.double_area_from_triangulation(&triangulation);
-        assert_eq!(double_area, triangulation_double_area);
+        let triangulation_double_area = polygon.double_area_from_triangulation(&triangulation);
+        assert_eq!(triangulation_double_area, expected_double_area);
     }
 }
