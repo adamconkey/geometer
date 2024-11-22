@@ -225,6 +225,8 @@ mod tests {
     }
 
     #[rstest]
+    #[case(right_triangle(), 1, 12)]
+    #[case(square_4x4(), 2, 32)]
     #[case(polygon_2(), 16, 466)]
     fn test_triangulation(
         #[case] polygon: Polygon, 
