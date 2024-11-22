@@ -1,5 +1,6 @@
 use core::fmt;
 use std::collections::HashSet;
+use std::collections::hash_set::Iter;
 use std::fs;
 use std::path::Path;
 
@@ -18,6 +19,27 @@ struct EarNotFoundError;
 impl fmt::Display for EarNotFoundError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "polygon is likely invalid")
+    }
+}
+
+
+pub struct Triangulation(HashSet<(VertexId, VertexId, VertexId)>);
+
+impl Triangulation {
+    fn insert(&mut self, value: (VertexId, VertexId, VertexId)) -> bool {
+        self.0.insert(value)
+    }
+
+    fn iter(&self) -> Iter<'_, (VertexId, VertexId, VertexId)> { 
+        self.0.iter()
+    }
+
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    fn new() -> Self {
+        Self(HashSet::new())
     }
 }
 
@@ -51,16 +73,32 @@ impl Polygon {
         area
     }
 
-    pub fn triangulation(&self) -> HashSet<(VertexId, VertexId)> {
-        let mut triangulation = HashSet::new();
+    pub fn double_area_from_triangulation(&self, triangulation: &Triangulation) -> i32 {
+        let mut area = 0;
+        for (id1, id2, id3) in triangulation.iter() {
+            let v1 = self.vertex_map.get(id1);
+            let v2 = self.vertex_map.get(id2);
+            let v3 = self.vertex_map.get(id3);
+            area += Triangle::from_vertices(v1, v2, v3).double_area();
+        }
+        area
+    }
+
+    pub fn triangulation(&self) -> Triangulation {
+        let mut triangulation = Triangulation::new();
         let mut vmap = self.vertex_map.clone();
 
         while vmap.len() > 3 {
             let id = self.find_ear(&vmap)
                 .expect("valid polygons with 3 or more vertices should have an ear");
             let v = vmap.remove(&id);
-            triangulation.insert((v.prev, v.next));
+            triangulation.insert((v.prev, id, v.next));
         }
+        // At this stage there should be exactly 3 vertices left,
+        // which form the final triangle of the triangulation
+        let v = vmap.anchor();
+        triangulation.insert((v.prev, v.id, v.next));
+
         triangulation
     }
 
@@ -189,17 +227,10 @@ mod tests {
     #[rstest]
     fn test_triangulation(polygon_2: Polygon) {
         let triangulation = polygon_2.triangulation();
+        assert_eq!(triangulation.len(), 16);
 
-        // TODO will need to generally have better ways to assert
-        // on triangulations. Currently my implementation is a bit
-        // unstable and so not only can the order of line segments
-        // be different, you can get slightly different triangulations
-        // depending on the order things are visited. So it's 
-        // probably better to just have some asserts that show it's
-        // a valid triangulation, and then eventually if it's
-        // stable enough can do an assert on the specific
-        // triangulation achieved
-
-        assert_eq!(triangulation.len(), 15);
+        let double_area = polygon_2.double_area();
+        let triangulation_double_area = polygon_2.double_area_from_triangulation(&triangulation);
+        assert_eq!(double_area, triangulation_double_area);
     }
 }
