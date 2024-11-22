@@ -68,6 +68,11 @@ impl Polygon {
     }
     
     pub fn double_area(&self) -> i32 {
+        // Computes double area of the polygon.
+        //
+        // NOTE: This is computing double area so that I can stick to
+        // i32 return types in this preliminary implementation and
+        // not worry about floating point issues.
         let mut area = 0;
         let anchor = self.vertex_map.anchor();
         for v1 in self.vertex_map.values() {
@@ -78,6 +83,11 @@ impl Polygon {
     }
 
     pub fn double_area_from_triangulation(&self, triangulation: &Triangulation) -> i32 {
+        // Computes double area from a triangulation as the sum of
+        // the double area of the individual triangles that 
+        // constitute the triangulation.
+        // 
+        // This value should always be exactly equal to `self.double_area()`.
         let mut area = 0;
         for ids in triangulation.iter() {
             let v1 = self.vertex_map.get(&ids.0);
