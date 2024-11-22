@@ -23,14 +23,18 @@ impl fmt::Display for EarNotFoundError {
 }
 
 
-pub struct Triangulation(HashSet<(VertexId, VertexId, VertexId)>);
+#[derive(Eq, Hash, PartialEq)]
+pub struct TriangleVertexIds(VertexId, VertexId, VertexId);
+
+
+pub struct Triangulation(HashSet<TriangleVertexIds>);
 
 impl Triangulation {
-    fn insert(&mut self, value: (VertexId, VertexId, VertexId)) -> bool {
+    fn insert(&mut self, value: TriangleVertexIds) -> bool {
         self.0.insert(value)
     }
 
-    fn iter(&self) -> Iter<'_, (VertexId, VertexId, VertexId)> { 
+    fn iter(&self) -> Iter<'_, TriangleVertexIds> { 
         self.0.iter()
     }
 
@@ -75,10 +79,10 @@ impl Polygon {
 
     pub fn double_area_from_triangulation(&self, triangulation: &Triangulation) -> i32 {
         let mut area = 0;
-        for (id1, id2, id3) in triangulation.iter() {
-            let v1 = self.vertex_map.get(id1);
-            let v2 = self.vertex_map.get(id2);
-            let v3 = self.vertex_map.get(id3);
+        for ids in triangulation.iter() {
+            let v1 = self.vertex_map.get(&ids.0);
+            let v2 = self.vertex_map.get(&ids.1);
+            let v3 = self.vertex_map.get(&ids.2);
             area += Triangle::from_vertices(v1, v2, v3).double_area();
         }
         area
@@ -92,12 +96,12 @@ impl Polygon {
             let id = self.find_ear(&vmap)
                 .expect("valid polygons with 3 or more vertices should have an ear");
             let v = vmap.remove(&id);
-            triangulation.insert((v.prev, id, v.next));
+            triangulation.insert(TriangleVertexIds(v.prev, id, v.next));
         }
         // At this stage there should be exactly 3 vertices left,
         // which form the final triangle of the triangulation
         let v = vmap.anchor();
-        triangulation.insert((v.prev, v.id, v.next));
+        triangulation.insert(TriangleVertexIds(v.prev, v.id, v.next));
 
         triangulation
     }
