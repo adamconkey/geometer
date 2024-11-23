@@ -61,7 +61,6 @@ impl Default for PolygonVisualizer {
     }
 }
 
-
 impl PolygonVisualizer {
     pub fn ui(&mut self, ui: &mut egui::Ui, name: &String) -> Response {
         
@@ -78,47 +77,61 @@ impl PolygonVisualizer {
             );
         });
         ui.separator();
-
-
-        let mut plot = Plot::new("polygon_visualizer")
-            .show_axes(true)
-            .show_grid(true);
-        
-        plot = plot.view_aspect(1.0);
-        plot = plot.data_aspect(1.0);
-        plot = plot.coordinates_formatter(
-            Corner::LeftBottom, 
-            CoordinatesFormatter::default()
-        );
         
         match self.selected_visualization {
             Visualization::Polygon => {
-                let points = self.points.get(name).unwrap();
-                let line = Line::new(points.clone())
-                    .width(self.line_width);
-                let points = Points::new(points.clone())
-                    .radius(self.point_radius);
-
-                plot.show(ui, |plot_ui| {
-                    plot_ui.line(line);
-                    plot_ui.points(points);
-                }).response
+                self.draw_polygon(ui, name)
             }
             Visualization::Triangulation => {
-
-                // TODO need to update for triangulation 
-
-                let points = self.points.get(name).unwrap();
-                let line = Line::new(points.clone())
-                    .width(self.line_width);
-                let points = Points::new(points.clone())
-                    .radius(self.point_radius);
-
-                plot.show(ui, |plot_ui| {
-                    plot_ui.line(line);
-                    plot_ui.points(points);
-                }).response
+                self.draw_triangulation(ui, name)
             }
         }
+    }
+
+    fn draw_polygon(&self, ui: &mut egui::Ui, name: &String) -> Response {
+        let points = self.points.get(name).unwrap();
+        let line = self.create_line(name);
+        let points = Points::new(points.clone())
+            .radius(self.point_radius);
+        let plot = self.create_plot();
+        
+        plot.show(ui, |plot_ui| {
+            plot_ui.line(line);
+            plot_ui.points(points);
+        }).response
+    }
+
+    fn draw_triangulation(&self, ui: &mut egui::Ui, name: &String) -> Response {
+        // TODO need to update for triangulation 
+        let plot = self.create_plot();
+
+        let points = self.points.get(name).unwrap();
+        let line = Line::new(points.clone())
+            .width(self.line_width);
+        let points = Points::new(points.clone())
+            .radius(self.point_radius);
+
+        plot.show(ui, |plot_ui| {
+            plot_ui.line(line);
+            plot_ui.points(points);
+        }).response
+    }
+
+    fn create_plot(&self) -> Plot<'_> {
+        Plot::new("polygon_visualizer")
+            .show_axes(true)
+            .show_grid(true)
+            .view_aspect(1.0)
+            .data_aspect(1.0)
+            .coordinates_formatter(
+                Corner::LeftBottom, 
+                CoordinatesFormatter::default()
+            )
+    }
+
+    fn create_line(&self, name: &String) -> Line {
+        let points = self.points.get(name).unwrap();
+        Line::new(points.clone())
+            .width(self.line_width)
     }
 }
