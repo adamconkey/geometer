@@ -5,9 +5,9 @@ pub const RESULT_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/results");
 
 #[derive(Default)]
 pub struct TemplateApp {
-    demo: crate::polygon_visualizer::PolygonVisualizer,
+    visualizer: crate::polygon_visualizer::PolygonVisualizer,
     filenames: Vec<String>,
-    selected: String,
+    selected_polygon: String,
 }
 
 impl TemplateApp {
@@ -17,42 +17,47 @@ impl TemplateApp {
             .files()
             .map(|f| String::from(f.path().file_stem().unwrap().to_str().unwrap()))
             .collect();
-        let selected = filenames[0].clone();
+        let selected_polygon = filenames[0].clone();
         
-        Self { demo: crate::polygon_visualizer::PolygonVisualizer::default(), filenames, selected}
+        Self { 
+            visualizer: crate::polygon_visualizer::PolygonVisualizer::default(), 
+            filenames, 
+            selected_polygon,
+        }
     }
 }
 
 impl eframe::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::SidePanel::left("test_result_browser")
-        .resizable(true)
-        .default_width(160.0)
-        .min_width(160.0)
-        .show(ctx, |ui| {
-            ui.vertical_centered(|ui| {
-                ui.heading("Test Results");
-            });
-            ui.separator();
-
-            for name in self.filenames.iter() {
-                ui.selectable_value(
-                    &mut self.selected, 
-                    name.to_string(), 
-                    name
-                );
-            }
-        });
-
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+        
+        egui::TopBottomPanel::bottom("theme_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 egui::widgets::global_theme_preference_buttons(ui);
             });
         });
 
+        egui::SidePanel::left("polygon_browser")
+            .resizable(true)
+            .default_width(100.0)
+            .min_width(100.0)
+            .show(ctx, |ui| {
+                ui.vertical_centered(|ui| {
+                    ui.heading("Polygons");
+                });
+                ui.separator();
+
+                for name in self.filenames.iter() {
+                    ui.selectable_value(
+                        &mut self.selected_polygon, 
+                        name.to_string(), 
+                        name
+                    );
+                }
+            });
+
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.demo.ui(ui, &self.selected);
+            self.visualizer.ui(ui, &self.selected_polygon);
         });
     }
 }

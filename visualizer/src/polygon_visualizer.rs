@@ -3,17 +3,34 @@ use egui_plot::{
     CoordinatesFormatter, Corner, Line, Plot, Points,
 };
 use std::collections::HashMap;
+use std::fmt;
 
 use computational_geometry::point::Point;
 
 use crate::app::RESULT_DIR;
 
 
-#[derive(Clone, PartialEq, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, PartialEq, serde::Deserialize, serde::Serialize)]
+enum Visualization {
+    Polygon,
+    Triangulation,
+}
+
+impl fmt::Display for Visualization {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+        // or, alternatively:
+        // fmt::Debug::fmt(self, f)
+    }
+}
+
+
+#[derive(PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct PolygonVisualizer {
     points: HashMap<String, Vec<[f64; 2]>>,
     line_width: f32,
     point_radius: f32,
+    selected_visualization: Visualization,
 }
 
 impl Default for PolygonVisualizer {
@@ -35,7 +52,12 @@ impl Default for PolygonVisualizer {
             points.insert(stem, point_vec);
         }
 
-        Self { points, line_width: 4.0, point_radius: 8.0 }
+        Self { 
+            points, 
+            line_width: 4.0, 
+            point_radius: 8.0, 
+            selected_visualization: Visualization::Polygon, 
+        }
     }
 }
 
@@ -43,6 +65,21 @@ impl Default for PolygonVisualizer {
 impl PolygonVisualizer {
     pub fn ui(&mut self, ui: &mut egui::Ui, name: &String) -> Response {
         
+        ui.horizontal_wrapped(|ui| {
+            ui.selectable_value(
+                &mut self.selected_visualization, 
+                Visualization::Polygon,
+                Visualization::Polygon.to_string(),
+            );
+            ui.selectable_value(
+                &mut self.selected_visualization, 
+                Visualization::Triangulation,
+                Visualization::Triangulation.to_string(),
+            );
+        });
+        ui.separator();
+
+
         let mut plot = Plot::new("polygon_visualizer")
             .show_axes(true)
             .show_grid(true);
@@ -54,15 +91,34 @@ impl PolygonVisualizer {
             CoordinatesFormatter::default()
         );
         
-        let points = self.points.get(name).unwrap();
-        let line = Line::new(points.clone())
-            .width(self.line_width);
-        let points = Points::new(points.clone())
-            .radius(self.point_radius);
+        match self.selected_visualization {
+            Visualization::Polygon => {
+                let points = self.points.get(name).unwrap();
+                let line = Line::new(points.clone())
+                    .width(self.line_width);
+                let points = Points::new(points.clone())
+                    .radius(self.point_radius);
 
-        plot.show(ui, |plot_ui| {
-            plot_ui.line(line);
-            plot_ui.points(points);
-        }).response
+                plot.show(ui, |plot_ui| {
+                    plot_ui.line(line);
+                    plot_ui.points(points);
+                }).response
+            }
+            Visualization::Triangulation => {
+
+                // TODO need to update for triangulation 
+
+                let points = self.points.get(name).unwrap();
+                let line = Line::new(points.clone())
+                    .width(self.line_width);
+                let points = Points::new(points.clone())
+                    .radius(self.point_radius);
+
+                plot.show(ui, |plot_ui| {
+                    plot_ui.line(line);
+                    plot_ui.points(points);
+                }).response
+            }
+        }
     }
 }
