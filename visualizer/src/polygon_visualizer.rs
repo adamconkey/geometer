@@ -3,7 +3,7 @@ use egui_plot::{
     CoordinatesFormatter, Corner, Line, 
     Plot, PlotPoints, Points, Polygon as PlotPolygon
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 use computational_geometry::{
@@ -33,6 +33,7 @@ impl fmt::Display for Visualization {
 pub struct PolygonVisualizer {
     points: HashMap<String, Vec<[f64; 2]>>,
     polygons: HashMap<String, Polygon>,
+    triangulations: HashMap<String, HashSet<(Point, Point, Point)>>,
     line_width: f32,
     point_radius: f32,
     selected_visualization: Visualization,
@@ -42,6 +43,7 @@ impl Default for PolygonVisualizer {
     fn default() -> Self {
         let mut points = HashMap::new();
         let mut polygons = HashMap::new();
+        let mut triangulations = HashMap::new();
         
         for file in RESULT_DIR.files() {
             let stem = String::from(file.path().file_stem().unwrap().to_str().unwrap());
@@ -60,12 +62,18 @@ impl Default for PolygonVisualizer {
             points.insert(stem.clone(), plot_points);
 
             let polygon = Polygon::new(polygon_points);
+            let triangulation_points = polygon.triangulation()
+                .to_points();
+            triangulations.insert(stem.clone(), triangulation_points);
+
+
             polygons.insert(stem, polygon);
         }
 
         Self { 
             points, 
             polygons,
+            triangulations,
             line_width: 4.0, 
             point_radius: 8.0, 
             selected_visualization: Visualization::Polygon,
@@ -114,9 +122,8 @@ impl PolygonVisualizer {
     fn draw_triangulation(&self, ui: &mut egui::Ui, name: &String) -> Response {
         let plot = self.create_plot();
         let polygon = self.polygons.get(name).unwrap();
-        let triangulation = polygon.triangulation();
+        let triangulation = self.triangulations.get(name).unwrap();
         let triangles: Vec<_> = triangulation
-            .to_points()
             .iter()
             .map(|(p1, p2, p3)|
                 PlotPolygon::new(
