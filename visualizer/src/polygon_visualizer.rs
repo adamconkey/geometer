@@ -1,7 +1,7 @@
 use egui::Response;
 use egui_plot::{
     CoordinatesFormatter, Corner, Line, 
-    Plot, PlotPoints, Points, Polygon as PlotPolygon
+    Plot, Points, Polygon as PlotPolygon
 };
 use std::collections::{HashMap, HashSet};
 use std::fmt;
@@ -23,8 +23,6 @@ enum Visualization {
 impl fmt::Display for Visualization {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
-        // or, alternatively:
-        // fmt::Debug::fmt(self, f)
     }
 }
 
