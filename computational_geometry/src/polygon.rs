@@ -27,23 +27,37 @@ impl fmt::Display for EarNotFoundError {
 pub struct TriangleVertexIds(VertexId, VertexId, VertexId);
 
 
-pub struct Triangulation(HashSet<TriangleVertexIds>);
+pub struct Triangulation<'a> {
+    triangles: HashSet<TriangleVertexIds>,
+    vmap: &'a VertexMap,
+}
 
-impl Triangulation {
-    fn insert(&mut self, value: TriangleVertexIds) -> bool {
-        self.0.insert(value)
+impl<'a> Triangulation<'a> {
+    pub fn new(vmap: &'a VertexMap) -> Self {
+        Self { triangles: HashSet::new(), vmap }
+    }    
+    
+    pub fn insert(&mut self, value: TriangleVertexIds) -> bool {
+        self.triangles.insert(value)
     }
 
-    fn iter(&self) -> Iter<'_, TriangleVertexIds> { 
-        self.0.iter()
+    pub fn iter(&self) -> Iter<'_, TriangleVertexIds> { 
+        self.triangles.iter()
     }
 
-    fn len(&self) -> usize {
-        self.0.len()
+    pub fn len(&self) -> usize {
+        self.triangles.len()
     }
 
-    fn new() -> Self {
-        Self(HashSet::new())
+    pub fn to_points(&self) -> HashSet<(Point, Point, Point)> {
+        self.triangles.iter()
+            .map(|ids| 
+                (
+                    self.vmap.get(&ids.0).coords.clone(),
+                    self.vmap.get(&ids.1).coords.clone(),
+                    self.vmap.get(&ids.2).coords.clone()
+                )
+            ).collect()        
     }
 }
 
@@ -89,17 +103,14 @@ impl Polygon {
         // 
         // This value should always be exactly equal to `self.double_area()`.
         let mut area = 0;
-        for ids in triangulation.iter() {
-            let v1 = self.vertex_map.get(&ids.0);
-            let v2 = self.vertex_map.get(&ids.1);
-            let v3 = self.vertex_map.get(&ids.2);
-            area += Triangle::from_vertices(v1, v2, v3).double_area();
+        for (p1, p2, p3) in triangulation.to_points().iter() {
+            area += Triangle::new(p1, p2, p3).double_area();
         }
         area
     }
 
     pub fn triangulation(&self) -> Triangulation {
-        let mut triangulation = Triangulation::new();
+        let mut triangulation = Triangulation::new(&self.vertex_map);
         let mut vmap = self.vertex_map.clone();
 
         while vmap.len() > 3 {
