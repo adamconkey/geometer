@@ -16,6 +16,23 @@ My goal for this repo is to eventually have a complete implementation of the alg
 
 ---
 
+## Features 
+### Currently Supported
+- Area of 2D polygons
+- Triangulation ($O(n^2)$)
+
+### In the Works
+- https://github.com/adamconkey/computational_geometry/issues/14: Fournier Montuno Triangulation ($O(n \log n)$)
+- [https://github.com/adamconkey/computational_geometry/issues/2, https://github.com/adamconkey/computational_geometry/issues/3]: More diverse polygon definitions
+
+### On the Roadmap
+- Convex Hull (2D and 3D)
+- Voronoi Diagram
+- Benchmarking of different triangulation algorithms
+- Animated visualizations of algorithms
+
+---
+
 ## Running the Visualizer
 
 A simple visualizer is provided using the [`egui_plot`](https://github.com/emilk/egui_plot) crate. This provides a local webapp to visualize polygons. Currently this is _very_ simple, and just visualizes the polygons themselves as well as a triangulation. Once more algorithms are implemented I plan to add animations so that one can view the different algorithms in action.
@@ -34,3 +51,5 @@ You can then direct your browser to `localhost:8080` and you'll hopefully see so
 
 ### Triangulation Visualization
 ![Screen Shot 2024-11-23 at 10 47 30 PM](https://github.com/user-attachments/assets/ddeb1724-dde7-4769-b2db-3f48293c4135)
+
+---
