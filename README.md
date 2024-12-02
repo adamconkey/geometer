@@ -14,9 +14,11 @@ This is very much a work in progress, I'm just stepping through the text and imp
 
 My goal for this repo is to eventually have a complete implementation of the algorithms described in the text, which will serve as the basis of a computational geometry library in Rust. I will then build from there, exploring more modern concepts and algorithms. My priorities are to have relatively easy-to-read code, a great test suite, and nice visualizations. I will have these three objectives in mind as I build out this repo.
 
+---
+
 ## Running the Visualizer
 
-A simple visualizer is provided using the [`egui_plot`](https://github.com/emilk/egui_plot) crate. This provides a local webapp to visualize polygons. Currently this is _very_ simple, and just visualizes the polygons themselves. I have plans to support visualizations of results from the tests.
+A simple visualizer is provided using the [`egui_plot`](https://github.com/emilk/egui_plot) crate. This provides a local webapp to visualize polygons. Currently this is _very_ simple, and just visualizes the polygons themselves as well as a triangulation. Once more algorithms are implemented I plan to add animations so that one can view the different algorithms in action.
 
 To run the visualizer, simply do:
 ```bash
@@ -24,6 +26,11 @@ cd visualizer
 trunk serve
 ```
 
-You can then direct your browser to `localhost:8080` and you'll hopefully see some polygons! If you're in VSCode, it can be handy to use the `SimpleBrowser` offered in the IDE:
+You can then direct your browser to `localhost:8080` and you'll hopefully see some polygons! If you're in VSCode, it can be handy to use the `SimpleBrowser` offered in the IDE.
 
-![Screen Shot 2024-11-20 at 8 17 22 PM](https://github.com/user-attachments/assets/013225ce-f524-4a37-9cec-46643451858e)
+### Polygon Visualization
+![Screen Shot 2024-11-23 at 10 48 05 PM](https://github.com/user-attachments/assets/6ebf47f0-57e1-4b9f-9e0f-ffb25827a02c)
+
+
+### Triangulation Visualization
+![Screen Shot 2024-11-23 at 10 47 30 PM](https://github.com/user-attachments/assets/ddeb1724-dde7-4769-b2db-3f48293c4135)
