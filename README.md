@@ -19,10 +19,10 @@ My goal for this repo is to eventually have a complete implementation of the alg
 ## Features 
 ### Currently Supported
 - Area of 2D polygons
-- Triangulation ($O(n^2)$)
+- Triangulation - $O(n^2)$
 
 ### In the Works
-- https://github.com/adamconkey/computational_geometry/issues/14: Fournier Montuno Triangulation ($O(n \log n)$)
+- https://github.com/adamconkey/computational_geometry/issues/14: Fournier-Montuno Trapezoidization - $O(n \cdot \log n)$
 - [https://github.com/adamconkey/computational_geometry/issues/2, https://github.com/adamconkey/computational_geometry/issues/3]: More diverse polygon definitions
 
 ### On the Roadmap
