@@ -1,12 +1,8 @@
 
 
-// TODO need to determine what the data structures are here.
-// The trapezoid in this context I think can fundamentally
-// be defined by refs to two edges (line segments), where
-// one is a primary edge that has the highest y-coordinate
-// vertex and the other is secondary. From that you can
-// then construct a trapezoid using intersections of the
-// horizontals with the edges. 
+// TODO implement logic to determine actual polygon
+// shape from edges, probably that can be run in the
+// new function on creation? Create tests to validate.
 
 use std::collections::HashSet;
 
