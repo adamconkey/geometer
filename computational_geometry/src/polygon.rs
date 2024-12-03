@@ -5,6 +5,7 @@ use std::path::Path;
 use crate::{
     line_segment::LineSegment,
     point::Point,
+    trapezoidization::Trapezoidization,
     triangle::Triangle,
     triangulation::{EarNotFoundError, TriangleVertexIds, Triangulation},
     vertex::{Vertex, VertexId},
@@ -85,6 +86,11 @@ impl Polygon {
         }
         Err(EarNotFoundError)
     }
+
+    pub fn trapezoidization(&self) -> Trapezoidization {
+
+    }
+
 
     fn get_vertex(&self, id: &VertexId) -> &Vertex {
         self.vertex_map.get(id)
