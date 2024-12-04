@@ -117,10 +117,6 @@ impl Polygon {
                 }
             }
 
-            // TODO now that you have i, should be able to do type
-            // processing below
-
-
             let c = self.get_line_segment(&v.id, &v.prev);
             let d = self.get_line_segment(&v.id, &v.next);
             // TODO characterize these into types better, can maybe
@@ -129,15 +125,32 @@ impl Polygon {
             let c_below = c.p2.y < v.coords.y;
             let d_above = d.p2.y > v.coords.y;
             let d_below = d.p2.y < v.coords.y;
-            if (c_above && d_below) || (d_above && c_below) {
-                // TODO type 1
+            if c_above && d_below {
+                // Type 1, replace c with d
+                assert_eq!(c, sweep_edges[i+1]);
+                sweep_edges[i+1] = d;
+            } else if d_above && c_below {
+                // Type 1, replace d with c
+                assert_eq!(d, sweep_edges[i+1]);
+                sweep_edges[i+1] = c;
             } else if c_above && d_above {
-                // TODO type 2
+                // Type 2, remove c and d
+                assert_eq!(c, sweep_edges[i+1]);
+                sweep_edges.remove(i+1);
+                assert_eq!(d, sweep_edges[i+1]);
+                sweep_edges.remove(i+1);
             } else {
-                // TODO type 3
+                // Type 3, add c and d
+                assert!(!sweep_edges.contains(&c));
+                assert!(!sweep_edges.contains(&d));
+                sweep_edges.insert(i+1, d);
+                sweep_edges.insert(i+1, c);
             }
 
-            
+            // TODO need to construct the trapezoids. Could consider
+            // encapsulating the above into some kind of plane sweep
+            // method so that you could independently test the 
+            // sequence of edges it produces             
 
         }
 
