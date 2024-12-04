@@ -79,6 +79,36 @@ impl<'a> LineSegment<'a> {
     pub fn incident_to(&self, p: &Point) -> bool {
         self.p1 == p || self.p2 == p
     }
+
+    pub fn intersection_with_horizontal(&self, y: i32) -> Option<i32> {
+        // If this line segment is entirely above or entirely below the
+        // horizontal, there is no intersection
+        if (self.p1.y > y && self.p2.y > y) || (self.p1.y < y && self.p2.y < y) {
+            return None
+        } 
+        
+        // TODO this can likely be simplified, just doing rote replacement for now
+        let x1 = self.p1.x;
+        let y1 = self.p1.y;
+        let x2 = self.p2.x;
+        let y2 = self.p2.y;
+        let x3 = x1;
+        let y3 = y;
+        let x4 = x2;
+        let y4 = y;
+
+        let t1 = x1 * y2 - y1 * x2;
+        let t2 = x3 - x4;
+        let t3 = x1 - x2;
+        let t4 = x3 * y4 - y3 - x4;
+        let t5 = y3 - y4;
+        let t6 = y1 - y2;
+        let denom = t3 * t5 - t6 * t2;
+
+        Some((t1 * t2 - t3 * t4) / denom)
+
+        // TODO definitely need to unit test this if it's kept around
+    }
 }
 
 #[cfg(test)]

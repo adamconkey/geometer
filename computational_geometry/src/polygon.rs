@@ -2,6 +2,8 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
+use itertools::Itertools;
+
 use crate::{
     line_segment::LineSegment,
     point::Point,
@@ -87,8 +89,59 @@ impl Polygon {
         Err(EarNotFoundError)
     }
 
-    pub fn trapezoidization(&self) -> Trapezoidization {
+    pub fn trapezoidization(&self) -> () {
+        let mut vertices: Vec<_> = self.vertex_map.values().collect();
+        // TODO I'm not sure if this is sorting increasing or decreasing,
+        // I want decreasing so it goes top to bottom by convention
+        vertices.sort_by(|a, b| a.coords.y.cmp(&b.coords.y));
 
+        // TODO this is going to be linear time search for the time-being
+        // but should be straight-forward to swap out with a BTree to 
+        // bring it back to O(n log n)
+        let mut sweep_edges: Vec<LineSegment> = Vec::new();
+
+        for v in vertices.iter() {
+            // Find index location in sweep_edges where v is being 
+            // processed from, effectively finding a which is first 
+            // edge for which v's x-value is greater than the edge's 
+            // intersection x-value. That will serve as basis for 
+            // adding/removing elements from data structure
+            let mut i = 0;
+            for j in 0..sweep_edges.len() {
+                let intersection = sweep_edges[j]
+                    .intersection_with_horizontal(v.coords.y)
+                    .unwrap();
+                if v.coords.x > intersection {
+                    i = j;
+                    break;
+                }
+            }
+
+            // TODO now that you have i, should be able to do type
+            // processing below
+
+
+            let c = self.get_line_segment(&v.id, &v.prev);
+            let d = self.get_line_segment(&v.id, &v.next);
+            // TODO characterize these into types better, can maybe
+            // do a match?
+            let c_above = c.p2.y > v.coords.y;
+            let c_below = c.p2.y < v.coords.y;
+            let d_above = d.p2.y > v.coords.y;
+            let d_below = d.p2.y < v.coords.y;
+            if (c_above && d_below) || (d_above && c_below) {
+                // TODO type 1
+            } else if c_above && d_above {
+                // TODO type 2
+            } else {
+                // TODO type 3
+            }
+
+            
+
+        }
+
+        ()
     }
 
 
