@@ -8,12 +8,12 @@ use std::collections::HashSet;
 
 use crate::line_segment::LineSegment;
 
-pub struct Trapezoid<'a> {
+pub struct HorizontalTrapezoid<'a> {
     e1: LineSegment<'a>,
     e2: LineSegment<'a>,
 }
 
 
 pub struct Trapezoidization<'a> {
-    trapezoids: HashSet<Trapezoid<'a>>,
+    trapezoids: HashSet<HorizontalTrapezoid<'a>>,
 }

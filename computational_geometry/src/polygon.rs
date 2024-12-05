@@ -2,8 +2,6 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
-use itertools::Itertools;
-
 use crate::{
     line_segment::LineSegment,
     point::Point,
@@ -117,6 +115,22 @@ impl Polygon {
                 }
             }
 
+            // TODO need to construct the trapezoids. Need a vec of
+            // trapezoids initially empty. The edge line segments
+            // that constitute the horizontal trapezoid sides are
+            // determined by v's location in the sweep line, so
+            // edge i and edge i+1. But those are full edges and
+            // not delimitted by the horizontal segments, so need
+            // to take those segments and trim them down in height
+            // by using the bottom horizontal from the previous
+            // trapezoid as the top horizontal for this one, and 
+            // v height as the bottom horizontal for this one.
+            // May want to define left/right explicitly for edges
+            // of trapezoid so that's more evident. Previous
+            // horizontal can be determined by min y-coordinate
+            // of line segments, could add a helper to retrieve it 
+
+
             let c = self.get_line_segment(&v.id, &v.prev);
             let d = self.get_line_segment(&v.id, &v.next);
             // TODO characterize these into types better, can maybe
@@ -147,10 +161,7 @@ impl Polygon {
                 sweep_edges.insert(i+1, c);
             }
 
-            // TODO need to construct the trapezoids. Could consider
-            // encapsulating the above into some kind of plane sweep
-            // method so that you could independently test the 
-            // sequence of edges it produces             
+              
 
         }
 
