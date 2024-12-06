@@ -5,7 +5,7 @@ use std::path::Path;
 use crate::{
     line_segment::LineSegment,
     point::Point,
-    trapezoidization::Trapezoidization,
+    trapezoidization::{HorizontalTrapezoid, Trapezoidization},
     triangle::Triangle,
     triangulation::{EarNotFoundError, TriangleVertexIds, Triangulation},
     vertex::{Vertex, VertexId},
@@ -88,6 +88,7 @@ impl Polygon {
     }
 
     pub fn trapezoidization(&self) -> () {
+        let mut trapezoids: Vec<HorizontalTrapezoid> = Vec::new();
         let mut vertices: Vec<_> = self.vertex_map.values().collect();
         // TODO I'm not sure if this is sorting increasing or decreasing,
         // I want decreasing so it goes top to bottom by convention
@@ -99,6 +100,25 @@ impl Polygon {
         let mut sweep_edges: Vec<LineSegment> = Vec::new();
 
         for v in vertices.iter() {
+            // If no edges have been processed yet, then we only
+            // add the edges connected to v
+            if sweep_edges.is_empty() {
+                sweep_edges.push(self.get_line_segment(&v.id, &v.next));
+                sweep_edges.push(self.get_line_segment(&v.id, &v.prev));
+                
+                // TODO I think if the assumption currently is there's
+                // no horizontal with multiple vertices, then the first
+                // "trapezoid" added will be a triangle, so can just 
+                // directly take these edges and create the trapezoid
+                // to add it. If there can be horizontal vertices then
+                // will need to handle that case and enforce ordering
+                // I guess left-to-right by x-coordinate, and you may
+                // then not be able to make a trapezoid until processing
+                // 3 vertices (if the first two were horizontal)
+
+                continue;
+            }
+
             // Find index location in sweep_edges where v is being 
             // processed from, effectively finding a which is first 
             // edge for which v's x-value is greater than the edge's 
@@ -115,8 +135,7 @@ impl Polygon {
                 }
             }
 
-            // TODO need to construct the trapezoids. Need a vec of
-            // trapezoids initially empty. The edge line segments
+            // TODO need to construct the trapezoids. The edge line segments
             // that constitute the horizontal trapezoid sides are
             // determined by v's location in the sweep line, so
             // edge i and edge i+1. But those are full edges and
