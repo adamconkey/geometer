@@ -2,6 +2,8 @@
 
 ![BUILD](https://github.com/adamconkey/computational_geometry/actions/workflows/build.yml/badge.svg)
 ![TEST](https://github.com/adamconkey/computational_geometry/actions/workflows/tests.yml/badge.svg)
+![CLIPPY](https://github.com/adamconkey/computational_geometry/actions/workflows/clippy.yml/badge.svg)
+
 
 Repo for playing around with implementing computational geometry algorithms from scratch in Rust.
 
