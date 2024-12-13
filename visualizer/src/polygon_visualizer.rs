@@ -30,7 +30,6 @@ impl fmt::Display for Visualization {
 //#[derive(PartialEq)]
 pub struct PolygonVisualizer {
     points: HashMap<String, Vec<[f64; 2]>>,
-    polygons: HashMap<String, Polygon>,
     triangulations: HashMap<String, HashSet<(Point, Point, Point)>>,
     line_width: f32,
     point_radius: f32,
@@ -40,7 +39,6 @@ pub struct PolygonVisualizer {
 impl Default for PolygonVisualizer {
     fn default() -> Self {
         let mut points = HashMap::new();
-        let mut polygons = HashMap::new();
         let mut triangulations = HashMap::new();
         
         for file in RESULT_DIR.files() {
@@ -56,21 +54,17 @@ impl Default for PolygonVisualizer {
             // Pushing first to end so it closes the chain, probably
             // only want to do this for line points since it
             // duplicates a vertex
-            plot_points.push(plot_points.first().unwrap().clone());
+            plot_points.push(*plot_points.first().unwrap());
             points.insert(stem.clone(), plot_points);
 
             let polygon = Polygon::new(polygon_points);
             let triangulation_points = polygon.triangulation()
                 .to_points();
             triangulations.insert(stem.clone(), triangulation_points);
-
-
-            polygons.insert(stem, polygon);
         }
 
         Self { 
-            points, 
-            polygons,
+            points,
             triangulations,
             line_width: 4.0, 
             point_radius: 8.0, 
@@ -119,7 +113,6 @@ impl PolygonVisualizer {
 
     fn draw_triangulation(&self, ui: &mut egui::Ui, name: &String) -> Response {
         let plot = self.create_plot();
-        let polygon = self.polygons.get(name).unwrap();
         let triangulation = self.triangulations.get(name).unwrap();
         let triangles: Vec<_> = triangulation
             .iter()
