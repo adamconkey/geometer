@@ -49,6 +49,10 @@ impl<'a> Triangulation<'a> {
         self.triangles.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.triangles.is_empty()
+    }
+
     pub fn to_points(&self) -> HashSet<(Point, Point, Point)> {
         self.triangles.iter()
             .map(|ids| 
@@ -129,7 +133,7 @@ impl Polygon {
 
     fn find_ear(&self, vmap: &VertexMap) -> Result<VertexId, EarNotFoundError> {
         for v in vmap.values() {
-            if self.diagonal(&self.get_vertex(&v.prev), self.get_vertex(&v.next)) {
+            if self.diagonal(self.get_vertex(&v.prev), self.get_vertex(&v.next)) {
                 return Ok(v.id);
             }
         }

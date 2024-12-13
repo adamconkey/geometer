@@ -20,7 +20,7 @@ impl VertexMap {
         // but it was global which was harder to test with
         let num_points = points.len();
         let vertex_ids = (0..num_points)
-            .map(|id| VertexId::from(id))
+            .map(VertexId::from)
             .collect::<Vec<_>>();
 
         for (i, point) in points.into_iter().enumerate() {
@@ -46,6 +46,10 @@ impl VertexMap {
         self.map.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
+
     pub fn remove(&mut self, k: &VertexId) -> Vertex {
         let v = self.map.remove(k).unwrap();
         self.update_next(&v.prev, &v.next);
@@ -66,10 +70,10 @@ impl VertexMap {
     }
 
     pub fn update_next(&mut self, k: &VertexId, next: &VertexId) {
-        self.get_mut(k).next = next.clone();
+        self.get_mut(k).next = *next;
     }
 
     pub fn update_prev(&mut self, k: &VertexId, prev: &VertexId) {
-        self.get_mut(k).prev = prev.clone();
+        self.get_mut(k).prev = *prev;
     }
 }
