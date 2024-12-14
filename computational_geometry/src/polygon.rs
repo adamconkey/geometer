@@ -200,72 +200,78 @@ impl Polygon {
 mod tests {
     use super::*;
     use rstest::{fixture, rstest};
+    use serde::Deserialize;
     use std::path::PathBuf;
 
-    fn load_polygon(filename: &str) -> Polygon {
+    #[derive(Deserialize)]
+    struct PolygonMetadata {
+        double_area: i32,
+        num_edges: usize,
+        num_triangles: usize,
+    }
+
+    fn load_polygon(name: &str, folder: &str) -> (Polygon, PolygonMetadata) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test");
-        path.push(filename);
-        Polygon::from_json(path)
+        path.push(folder);
+        let mut metadata_path = path.clone();
+        path.push(format!("{}.json", name));
+        metadata_path.push(format!("{}.meta.json", name));
+        
+        let polygon = Polygon::from_json(path);
+        let metadata_str: String = fs::read_to_string(metadata_path)
+            .expect("file should exist and be parseable");
+        let metadata = serde_json::from_str(&metadata_str).unwrap();
+        (polygon, metadata)
     }
 
-    #[fixture]
-    fn polygon_1() -> Polygon {
-        load_polygon("polygon_1.json")
+    #[macro_export]
+    macro_rules! polygon_fixture {
+        ($name:ident, $folder:expr) => {
+            #[fixture]
+            fn $name() -> (Polygon, PolygonMetadata) {
+                load_polygon(stringify!($name), stringify!($folder))
+            }
+        };
     }
 
-    #[fixture]
-    fn polygon_2() -> Polygon {
-        load_polygon("polygon_2.json")
-    }
-
-    #[fixture]
-    fn right_triangle() -> Polygon {
-        load_polygon("right_triangle.json")
-    }
-
-    #[fixture]
-    fn square_4x4() -> Polygon {
-        load_polygon("square_4x4.json")
-    }
-
+    polygon_fixture!(polygon_1, custom);
+    polygon_fixture!(polygon_2, custom);
+    polygon_fixture!(right_triangle, custom);
+    polygon_fixture!(square_4x4, custom);
 
     #[rstest]
-    #[case(right_triangle(), 12)]
-    #[case(square_4x4(), 32)]
-    #[case(polygon_2(), 466)]
-    fn test_area(#[case] polygon: Polygon, #[case] expected_double_area: i32) {
+    #[case(right_triangle())]
+    #[case(square_4x4())]
+    #[case(polygon_2())]
+    fn test_area(#[case] (polygon, metadata): (Polygon, PolygonMetadata)) {
         let double_area = polygon.double_area();
-        assert_eq!(double_area, expected_double_area);
+        assert_eq!(double_area, metadata.double_area);
     }
 
     #[rstest]
-    #[case(right_triangle(), 3)]
-    #[case(square_4x4(), 4)]
-    #[case(polygon_1(), 6)]
-    #[case(polygon_2(), 18)]
-    fn test_edges(#[case] polygon: Polygon, #[case] num_edges: usize) {
+    #[case(right_triangle())]
+    #[case(square_4x4())]
+    #[case(polygon_1())]
+    #[case(polygon_2())]
+    fn test_edges(#[case] (polygon, metadata): (Polygon, PolygonMetadata)) {
         let mut expected_edges = HashSet::new();
-        for i in 0usize..num_edges {
-            expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % num_edges)));
+        for i in 0usize..metadata.num_edges {
+            expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % metadata.num_edges)));
         }
         let edges = polygon.edges();
         assert_eq!(edges, expected_edges);
     }
 
     #[rstest]
-    #[case(right_triangle(), 1, 12)]
-    #[case(square_4x4(), 2, 32)]
-    #[case(polygon_2(), 16, 466)]
-    fn test_triangulation(
-        #[case] polygon: Polygon, 
-        #[case] expected_num_triangles: usize, 
-        #[case] expected_double_area: i32,
-    ) {
+    #[case(right_triangle())]
+    #[case(square_4x4())]
+    #[case(polygon_2())]
+    fn test_triangulation(#[case] (polygon, metadata): (Polygon, PolygonMetadata)) {
         let triangulation = polygon.triangulation();
-        assert_eq!(triangulation.len(), expected_num_triangles);
+        assert_eq!(triangulation.len(), metadata.num_triangles);
 
         let triangulation_double_area = polygon.double_area_from_triangulation(&triangulation);
-        assert_eq!(triangulation_double_area, expected_double_area);
+        assert_eq!(triangulation_double_area, metadata.double_area);
     }
 }
