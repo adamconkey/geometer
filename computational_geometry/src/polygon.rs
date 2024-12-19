@@ -199,7 +199,9 @@ impl Polygon {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use paste::paste;
     use rstest::{fixture, rstest};
+    use rstest_reuse::{self, *};
     use serde::Deserialize;
     use std::path::PathBuf;
 
@@ -210,51 +212,76 @@ mod tests {
         num_triangles: usize,
     }
 
-    fn load_polygon(name: &str, folder: &str) -> (Polygon, PolygonMetadata) {
+    fn load_polygon(name: &str, folder: &str) -> Polygon {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test");
         path.push(folder);
-        let mut metadata_path = path.clone();
         path.push(format!("{}.json", name));
-        metadata_path.push(format!("{}.meta.json", name));
-        
-        let polygon = Polygon::from_json(path);
-        let metadata_str: String = fs::read_to_string(metadata_path)
+        Polygon::from_json(path)
+    }
+
+    fn load_metadata(name: &str, folder: &str) -> PolygonMetadata {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("resources/test");
+        path.push(folder);
+        path.push(format!("{}.meta.json", name));
+        let metadata_str: String = fs::read_to_string(path)
             .expect("file should exist and be parseable");
-        let metadata = serde_json::from_str(&metadata_str).unwrap();
-        (polygon, metadata)
+        serde_json::from_str(&metadata_str).unwrap()
     }
 
     #[macro_export]
     macro_rules! polygon_fixture {
         ($name:ident, $folder:expr) => {
             #[fixture]
-            fn $name() -> (Polygon, PolygonMetadata) {
+            fn $name() -> Polygon {
                 load_polygon(stringify!($name), stringify!($folder))
             }
         };
     }
 
-    polygon_fixture!(polygon_1, custom);
-    polygon_fixture!(polygon_2, custom);
-    polygon_fixture!(right_triangle, custom);
-    polygon_fixture!(square_4x4, custom);
+    #[macro_export]
+    macro_rules! metadata_fixture {
+        ($name:ident, $folder:expr) => {
+            paste! {
+                #[fixture]
+                fn [<$name _metadata>]() -> PolygonMetadata {
+                    load_metadata(stringify!($name), stringify!($folder))
+                }
+            }
+        };
+    }
 
+    polygon_fixture!(polygon_1, custom);
+    metadata_fixture!(polygon_1, custom);
+    polygon_fixture!(polygon_2, custom);
+    metadata_fixture!(polygon_2, custom);
+    polygon_fixture!(right_triangle, custom);
+    metadata_fixture!(right_triangle, custom);
+    polygon_fixture!(square_4x4, custom);
+    metadata_fixture!(square_4x4, custom);
+
+    polygon_fixture!(elgindy_1, interesting_polygon_archive);
+    metadata_fixture!(elgindy_1, interesting_polygon_archive);
+
+    #[template]
     #[rstest]
-    #[case(right_triangle())]
-    #[case(square_4x4())]
-    #[case(polygon_2())]
-    fn test_area(#[case] (polygon, metadata): (Polygon, PolygonMetadata)) {
+    #[case(right_triangle(), right_triangle_metadata())]
+    #[case(square_4x4(), square_4x4_metadata())]
+    #[case(polygon_1(), polygon_1_metadata())]
+    #[case(polygon_2(), polygon_2_metadata())]
+    #[case(elgindy_1(), elgindy_1_metadata())]
+    fn all_polygons(#[case] polygon: Polygon, #[case] metadata: PolygonMetadata) {}
+
+
+    #[apply(all_polygons)]
+    fn test_area(polygon: Polygon, metadata: PolygonMetadata) {
         let double_area = polygon.double_area();
         assert_eq!(double_area, metadata.double_area);
     }
 
-    #[rstest]
-    #[case(right_triangle())]
-    #[case(square_4x4())]
-    #[case(polygon_1())]
-    #[case(polygon_2())]
-    fn test_edges(#[case] (polygon, metadata): (Polygon, PolygonMetadata)) {
+    #[apply(all_polygons)]
+    fn test_edges(polygon: Polygon, metadata: PolygonMetadata) {
         let mut expected_edges = HashSet::new();
         for i in 0usize..metadata.num_edges {
             expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % metadata.num_edges)));
@@ -263,11 +290,8 @@ mod tests {
         assert_eq!(edges, expected_edges);
     }
 
-    #[rstest]
-    #[case(right_triangle())]
-    #[case(square_4x4())]
-    #[case(polygon_2())]
-    fn test_triangulation(#[case] (polygon, metadata): (Polygon, PolygonMetadata)) {
+    #[apply(all_polygons)]
+    fn test_triangulation(polygon: Polygon, metadata: PolygonMetadata) {
         let triangulation = polygon.triangulation();
         assert_eq!(triangulation.len(), metadata.num_triangles);
 

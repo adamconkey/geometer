@@ -9,4 +9,6 @@ serde_json.workspace = true
 
 [dev-dependencies]
 itertools = "0.13.0"
+paste = "*"
 rstest = "0.23.0"
+rstest_reuse = "*"
