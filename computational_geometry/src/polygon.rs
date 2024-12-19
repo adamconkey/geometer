@@ -260,6 +260,7 @@ mod tests {
 
     polygon_fixture!(elgindy_1, interesting_polygon_archive);
     polygon_fixture!(gray_embroidery, interesting_polygon_archive);
+    polygon_fixture!(held_12, interesting_polygon_archive);
 
 
     #[template]
@@ -270,6 +271,7 @@ mod tests {
     #[case(polygon_2())]
     #[case(elgindy_1())]
     #[case(gray_embroidery())]
+    #[case(held_12())]
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
 
@@ -288,6 +290,7 @@ mod tests {
             expected_edges.insert((src, dest));
         }
         let edges = case.polygon.edges();
+        assert_eq!(edges.len(), case.metadata.num_edges);
         assert_eq!(edges, expected_edges);
     }
 
