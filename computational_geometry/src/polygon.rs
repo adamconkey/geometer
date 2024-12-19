@@ -199,7 +199,6 @@ impl Polygon {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use paste::paste;
     use rstest::{fixture, rstest};
     use rstest_reuse::{self, *};
     use serde::Deserialize;
@@ -210,6 +209,17 @@ mod tests {
         double_area: i32,
         num_edges: usize,
         num_triangles: usize,
+    }
+
+    struct PolygonTestCase {
+        polygon: Polygon,
+        metadata: PolygonMetadata,
+    }
+
+    impl PolygonTestCase {
+        fn new(polygon: Polygon, metadata: PolygonMetadata) -> Self {
+            PolygonTestCase { polygon, metadata }
+        }
     }
 
     fn load_polygon(name: &str, folder: &str) -> Polygon {
@@ -234,68 +244,55 @@ mod tests {
     macro_rules! polygon_fixture {
         ($name:ident, $folder:expr) => {
             #[fixture]
-            fn $name() -> Polygon {
-                load_polygon(stringify!($name), stringify!($folder))
-            }
-        };
-    }
-
-    #[macro_export]
-    macro_rules! metadata_fixture {
-        ($name:ident, $folder:expr) => {
-            paste! {
-                #[fixture]
-                fn [<$name _metadata>]() -> PolygonMetadata {
+            fn $name() -> PolygonTestCase {
+                PolygonTestCase::new(
+                    load_polygon(stringify!($name), stringify!($folder)),
                     load_metadata(stringify!($name), stringify!($folder))
-                }
+                )
             }
         };
     }
 
     polygon_fixture!(polygon_1, custom);
-    metadata_fixture!(polygon_1, custom);
     polygon_fixture!(polygon_2, custom);
-    metadata_fixture!(polygon_2, custom);
     polygon_fixture!(right_triangle, custom);
-    metadata_fixture!(right_triangle, custom);
     polygon_fixture!(square_4x4, custom);
-    metadata_fixture!(square_4x4, custom);
 
     polygon_fixture!(elgindy_1, interesting_polygon_archive);
-    metadata_fixture!(elgindy_1, interesting_polygon_archive);
+
 
     #[template]
     #[rstest]
-    #[case(right_triangle(), right_triangle_metadata())]
-    #[case(square_4x4(), square_4x4_metadata())]
-    #[case(polygon_1(), polygon_1_metadata())]
-    #[case(polygon_2(), polygon_2_metadata())]
-    #[case(elgindy_1(), elgindy_1_metadata())]
-    fn all_polygons(#[case] polygon: Polygon, #[case] metadata: PolygonMetadata) {}
+    #[case(right_triangle())]
+    #[case(square_4x4())]
+    #[case(polygon_1())]
+    #[case(polygon_2())]
+    #[case(elgindy_1())]
+    fn all_polygons(#[case] case: PolygonTestCase) {}
 
 
     #[apply(all_polygons)]
-    fn test_area(polygon: Polygon, metadata: PolygonMetadata) {
-        let double_area = polygon.double_area();
-        assert_eq!(double_area, metadata.double_area);
+    fn test_area(case: PolygonTestCase) {
+        let double_area = case.polygon.double_area();
+        assert_eq!(double_area, case.metadata.double_area);
     }
 
     #[apply(all_polygons)]
-    fn test_edges(polygon: Polygon, metadata: PolygonMetadata) {
+    fn test_edges(case: PolygonTestCase) {
         let mut expected_edges = HashSet::new();
-        for i in 0usize..metadata.num_edges {
-            expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % metadata.num_edges)));
+        for i in 0usize..case.metadata.num_edges {
+            expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % case.metadata.num_edges)));
         }
-        let edges = polygon.edges();
+        let edges = case.polygon.edges();
         assert_eq!(edges, expected_edges);
     }
 
     #[apply(all_polygons)]
-    fn test_triangulation(polygon: Polygon, metadata: PolygonMetadata) {
-        let triangulation = polygon.triangulation();
-        assert_eq!(triangulation.len(), metadata.num_triangles);
+    fn test_triangulation(case: PolygonTestCase) {
+        let triangulation = case.polygon.triangulation();
+        assert_eq!(triangulation.len(), case.metadata.num_triangles);
 
-        let triangulation_double_area = polygon.double_area_from_triangulation(&triangulation);
-        assert_eq!(triangulation_double_area, metadata.double_area);
+        let triangulation_double_area = case.polygon.double_area_from_triangulation(&triangulation);
+        assert_eq!(triangulation_double_area, case.metadata.double_area);
     }
 }
