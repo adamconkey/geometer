@@ -281,7 +281,9 @@ mod tests {
     fn test_edges(case: PolygonTestCase) {
         let mut expected_edges = HashSet::new();
         for i in 0usize..case.metadata.num_edges {
-            expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % case.metadata.num_edges)));
+            let src = VertexId::from(i);
+            let dest = VertexId::from((i + 1) % case.metadata.num_edges);
+            expected_edges.insert((src, dest));
         }
         let edges = case.polygon.edges();
         assert_eq!(edges, expected_edges);
