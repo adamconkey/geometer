@@ -265,13 +265,13 @@ mod tests {
 
     #[template]
     #[rstest]
-    #[case(right_triangle())]
-    #[case(square_4x4())]
-    #[case(polygon_1())]
-    #[case(polygon_2())]
-    #[case(elgindy_1())]
-    #[case(gray_embroidery())]
-    #[case(held_12())]
+    #[case::right_triangle(right_triangle())]
+    #[case::square_4x4(square_4x4())]
+    #[case::polygon_1(polygon_1())]
+    #[case::polygon_2(polygon_2())]
+    #[case::elgindy_1(elgindy_1())]
+    #[case::gray_embroidery(gray_embroidery())]
+    #[case::held_12(held_12())]
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
 
