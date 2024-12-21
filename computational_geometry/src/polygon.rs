@@ -264,6 +264,7 @@ mod tests {
     polygon_fixture!(held_7a, interesting_polygon_archive);
     polygon_fixture!(held_7b, interesting_polygon_archive);
     polygon_fixture!(held_7c, interesting_polygon_archive);
+    polygon_fixture!(held_7d, interesting_polygon_archive);
 
     #[template]
     #[rstest]
@@ -277,6 +278,7 @@ mod tests {
     #[case::held_7a(held_7a())]
     #[case::held_7b(held_7b())]
     #[case::held_7c(held_7c())]
+    #[case::held_7d(held_7d())]
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
 
