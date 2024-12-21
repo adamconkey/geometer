@@ -1,6 +1,6 @@
 use include_dir::{include_dir, Dir};
 
-pub const RESULT_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/results");
+pub const RESULT_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/polygons");
 
 
 #[derive(Default)]

@@ -85,6 +85,14 @@ impl Polygon {
         Polygon::new(points)
     }
     
+    pub fn num_edges(&self) -> usize {
+        self.edges().len()
+    }
+
+    pub fn num_vertices(&self) -> usize {
+        self.vertex_map.len()
+    }
+
     pub fn double_area(&self) -> i32 {
         // Computes double area of the polygon.
         //
@@ -200,72 +208,170 @@ impl Polygon {
 mod tests {
     use super::*;
     use rstest::{fixture, rstest};
+    use rstest_reuse::{self, *};
+    use serde::Deserialize;
     use std::path::PathBuf;
 
-    fn load_polygon(filename: &str) -> Polygon {
+    #[derive(Deserialize)]
+    struct PolygonMetadata {
+        double_area: i32,
+        num_edges: usize,
+        num_triangles: usize,
+        num_vertices: usize,
+    }
+
+    struct PolygonTestCase {
+        polygon: Polygon,
+        metadata: PolygonMetadata,
+    }
+
+    impl PolygonTestCase {
+        fn new(polygon: Polygon, metadata: PolygonMetadata) -> Self {
+            PolygonTestCase { polygon, metadata }
+        }
+    }
+
+    fn load_polygon(name: &str, folder: &str) -> Polygon {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources/test");
-        path.push(filename);
+        path.push(folder);
+        path.push(format!("{}.json", name));
         Polygon::from_json(path)
     }
 
-    #[fixture]
-    fn polygon_1() -> Polygon {
-        load_polygon("polygon_1.json")
+    fn load_metadata(name: &str, folder: &str) -> PolygonMetadata {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("resources/test");
+        path.push(folder);
+        path.push(format!("{}.meta.json", name));
+        let metadata_str: String = fs::read_to_string(path)
+            .expect("file should exist and be parseable");
+        serde_json::from_str(&metadata_str).unwrap()
     }
 
-    #[fixture]
-    fn polygon_2() -> Polygon {
-        load_polygon("polygon_2.json")
+    #[macro_export]
+    macro_rules! polygon_fixture {
+        ($name:ident, $folder:expr) => {
+            #[fixture]
+            fn $name() -> PolygonTestCase {
+                PolygonTestCase::new(
+                    load_polygon(stringify!($name), stringify!($folder)),
+                    load_metadata(stringify!($name), stringify!($folder))
+                )
+            }
+        };
     }
 
-    #[fixture]
-    fn right_triangle() -> Polygon {
-        load_polygon("right_triangle.json")
-    }
+    polygon_fixture!(polygon_1, custom);
+    polygon_fixture!(polygon_2, custom);
+    polygon_fixture!(right_triangle, custom);
+    polygon_fixture!(square_4x4, custom);
 
-    #[fixture]
-    fn square_4x4() -> Polygon {
-        load_polygon("square_4x4.json")
-    }
+    polygon_fixture!(eberly_10, interesting_polygon_archive);
+    polygon_fixture!(eberly_14, interesting_polygon_archive);
+    polygon_fixture!(elgindy_1, interesting_polygon_archive);
+    polygon_fixture!(gray_embroidery, interesting_polygon_archive);
+    polygon_fixture!(held_1, interesting_polygon_archive);
+    polygon_fixture!(held_3, interesting_polygon_archive);
+    polygon_fixture!(held_12, interesting_polygon_archive);
+    polygon_fixture!(held_7a, interesting_polygon_archive);
+    polygon_fixture!(held_7b, interesting_polygon_archive);
+    polygon_fixture!(held_7c, interesting_polygon_archive);
+    polygon_fixture!(held_7d, interesting_polygon_archive);
+    polygon_fixture!(mapbox_building, interesting_polygon_archive);
+    polygon_fixture!(mapbox_dude, interesting_polygon_archive);
+    polygon_fixture!(matisse_alga, interesting_polygon_archive);
+    polygon_fixture!(matisse_blue, interesting_polygon_archive);
+    polygon_fixture!(matisse_icarus, interesting_polygon_archive);
+    polygon_fixture!(matisse_nuit, interesting_polygon_archive);
+    polygon_fixture!(mei_2, interesting_polygon_archive);
+    polygon_fixture!(mei_3, interesting_polygon_archive);
+    polygon_fixture!(mei_4, interesting_polygon_archive);
+    polygon_fixture!(mei_5, interesting_polygon_archive);
+    polygon_fixture!(mei_6, interesting_polygon_archive);
+    polygon_fixture!(meisters_3, interesting_polygon_archive);
+    polygon_fixture!(misc_discobolus, interesting_polygon_archive);
+    polygon_fixture!(misc_fu, interesting_polygon_archive);
+    polygon_fixture!(seidel_3, interesting_polygon_archive);
+    polygon_fixture!(skimage_horse, interesting_polygon_archive);
+    polygon_fixture!(toussaint_1a, interesting_polygon_archive);
 
-
+    #[template]
     #[rstest]
-    #[case(right_triangle(), 12)]
-    #[case(square_4x4(), 32)]
-    #[case(polygon_2(), 466)]
-    fn test_area(#[case] polygon: Polygon, #[case] expected_double_area: i32) {
-        let double_area = polygon.double_area();
-        assert_eq!(double_area, expected_double_area);
+    #[case::right_triangle(right_triangle())]
+    #[case::square_4x4(square_4x4())]
+    #[case::polygon_1(polygon_1())]
+    #[case::polygon_2(polygon_2())]
+    #[case::eberly_10(eberly_10())]
+    #[case::eberly_14(eberly_14())]
+    #[case::elgindy_1(elgindy_1())]
+    #[case::gray_embroidery(gray_embroidery())]
+    #[case::held_1(held_1())]
+    #[case::held_3(held_3())]
+    #[case::held_12(held_12())]
+    #[case::held_7a(held_7a())]
+    #[case::held_7b(held_7b())]
+    #[case::held_7c(held_7c())]
+    #[case::held_7d(held_7d())]
+    #[case::mapbox_building(mapbox_building())]
+    #[case::mapbox_dude(mapbox_dude())]
+    #[case::matisse_alga(matisse_alga())]
+    #[case::matisse_blue(matisse_blue())]
+    #[case::matisse_icarus(matisse_icarus())]
+    #[case::matisse_nuit(matisse_nuit())]
+    #[case::mei_2(mei_2())]
+    #[case::mei_3(mei_3())]
+    #[case::mei_4(mei_4())]
+    #[case::mei_5(mei_5())]
+    #[case::mei_6(mei_6())]
+    #[case::meisters_3(meisters_3())]
+    #[case::misc_discobolus(misc_discobolus())]
+    #[case::misc_fu(misc_fu())]
+    #[case::seidel_3(seidel_3())]
+    #[case::skimage_horse(skimage_horse())]
+    #[case::toussaint_1a(toussaint_1a())]
+    fn all_polygons(#[case] case: PolygonTestCase) {}
+
+
+    #[apply(all_polygons)]
+    fn test_area(case: PolygonTestCase) {
+        let double_area = case.polygon.double_area();
+        assert_eq!(double_area, case.metadata.double_area);
     }
 
-    #[rstest]
-    #[case(right_triangle(), 3)]
-    #[case(square_4x4(), 4)]
-    #[case(polygon_1(), 6)]
-    #[case(polygon_2(), 18)]
-    fn test_edges(#[case] polygon: Polygon, #[case] num_edges: usize) {
+    #[apply(all_polygons)]
+    fn test_edges(case: PolygonTestCase) {
         let mut expected_edges = HashSet::new();
-        for i in 0usize..num_edges {
-            expected_edges.insert((VertexId::from(i), VertexId::from((i + 1) % num_edges)));
+        for i in 0usize..case.metadata.num_edges {
+            let src = VertexId::from(i);
+            let dest = VertexId::from((i + 1) % case.metadata.num_edges);
+            expected_edges.insert((src, dest));
         }
-        let edges = polygon.edges();
+        let edges = case.polygon.edges();
+        assert_eq!(edges.len(), case.metadata.num_edges);
         assert_eq!(edges, expected_edges);
     }
 
-    #[rstest]
-    #[case(right_triangle(), 1, 12)]
-    #[case(square_4x4(), 2, 32)]
-    #[case(polygon_2(), 16, 466)]
-    fn test_triangulation(
-        #[case] polygon: Polygon, 
-        #[case] expected_num_triangles: usize, 
-        #[case] expected_double_area: i32,
-    ) {
-        let triangulation = polygon.triangulation();
-        assert_eq!(triangulation.len(), expected_num_triangles);
+    #[apply(all_polygons)]
+    fn test_triangulation(case: PolygonTestCase) {
+        let triangulation = case.polygon.triangulation();
+        assert_eq!(triangulation.len(), case.metadata.num_triangles);
+        // This meta-assert is only valid for polygons without holes, which 
+        // are not yet supported. Will need a flag in the metadata to know 
+        // if holes are present and then this assert would be conditional
+        assert_eq!(case.metadata.num_triangles, case.metadata.num_edges - 2);
 
-        let triangulation_double_area = polygon.double_area_from_triangulation(&triangulation);
-        assert_eq!(triangulation_double_area, expected_double_area);
+        let triangulation_double_area = case.polygon.double_area_from_triangulation(&triangulation);
+        assert_eq!(triangulation_double_area, case.metadata.double_area);
+    }
+
+    #[apply(all_polygons)]
+    fn test_attributes(case: PolygonTestCase) {
+        assert_eq!(case.polygon.num_edges(), case.metadata.num_edges);
+        assert_eq!(case.polygon.num_vertices(), case.metadata.num_vertices);
+        // This meta-assert is only valid for polygons without holes, which 
+        // are not yet supported. Will need a flag in the metadata to know 
+        // if holes are present and then this assert would be conditional
+        assert_eq!(case.metadata.num_edges, case.metadata.num_vertices);
     }
 }
