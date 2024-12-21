@@ -1,5 +1,6 @@
 {
     "double_area": 1267232,
     "num_edges": 4,
-    "num_triangles": 2
+    "num_triangles": 2,
+    "num_vertices": 4
 }

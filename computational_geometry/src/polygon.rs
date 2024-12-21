@@ -85,6 +85,10 @@ impl Polygon {
         Polygon::new(points)
     }
     
+    pub fn num_vertices(&self) -> usize {
+        self.vertex_map.len()
+    }
+
     pub fn double_area(&self) -> i32 {
         // Computes double area of the polygon.
         //
@@ -209,6 +213,7 @@ mod tests {
         double_area: i32,
         num_edges: usize,
         num_triangles: usize,
+        num_vertices: usize,
     }
 
     struct PolygonTestCase {
@@ -350,5 +355,10 @@ mod tests {
 
         let triangulation_double_area = case.polygon.double_area_from_triangulation(&triangulation);
         assert_eq!(triangulation_double_area, case.metadata.double_area);
+    }
+
+    #[apply(all_polygons)]
+    fn test_attributes(case: PolygonTestCase) {
+        assert_eq!(case.polygon.num_vertices(), case.metadata.num_vertices);
     }
 }
