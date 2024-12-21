@@ -281,6 +281,7 @@ mod tests {
     polygon_fixture!(mei_5, interesting_polygon_archive);
     polygon_fixture!(mei_6, interesting_polygon_archive);
     polygon_fixture!(meisters_3, interesting_polygon_archive);
+    polygon_fixture!(misc_discobolus, interesting_polygon_archive);
     polygon_fixture!(seidel_3, interesting_polygon_archive);
     polygon_fixture!(skimage_horse, interesting_polygon_archive);
     polygon_fixture!(toussaint_1a, interesting_polygon_archive);
@@ -314,6 +315,7 @@ mod tests {
     #[case::mei_5(mei_5())]
     #[case::mei_6(mei_6())]
     #[case::meisters_3(meisters_3())]
+    #[case::misc_discobolus(misc_discobolus())]
     #[case::seidel_3(seidel_3())]
     #[case::skimage_horse(skimage_horse())]
     #[case::toussaint_1a(toussaint_1a())]
