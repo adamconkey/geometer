@@ -23,7 +23,7 @@ impl Point {
             return false;
         }
 
-        let (e1, e2, check) = match LineSegment::new(&a, &b).is_vertical() {
+        let (e1, e2, check) = match LineSegment::new(a, b).is_vertical() {
             true  => (a.y, b.y, self.y),
             false => (a.x, b.x, self.x),
         };
