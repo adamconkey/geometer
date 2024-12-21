@@ -85,6 +85,10 @@ impl Polygon {
         Polygon::new(points)
     }
     
+    pub fn num_edges(&self) -> usize {
+        self.edges().len()
+    }
+
     pub fn num_vertices(&self) -> usize {
         self.vertex_map.len()
     }
@@ -359,6 +363,11 @@ mod tests {
 
     #[apply(all_polygons)]
     fn test_attributes(case: PolygonTestCase) {
+        assert_eq!(case.polygon.num_edges(), case.metadata.num_edges);
         assert_eq!(case.polygon.num_vertices(), case.metadata.num_vertices);
+        // This assert is only valid for polygons without holes, which are 
+        // not yet supported. Will need a flag in the metadata to know if 
+        // holes are present and then this assert would be conditional
+        assert_eq!(case.metadata.num_edges, case.metadata.num_vertices);
     }
 }
