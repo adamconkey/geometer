@@ -258,6 +258,7 @@ mod tests {
     polygon_fixture!(right_triangle, custom);
     polygon_fixture!(square_4x4, custom);
 
+    polygon_fixture!(eberly_10, interesting_polygon_archive);
     polygon_fixture!(elgindy_1, interesting_polygon_archive);
     polygon_fixture!(gray_embroidery, interesting_polygon_archive);
     polygon_fixture!(held_12, interesting_polygon_archive);
@@ -280,6 +281,7 @@ mod tests {
     #[case::square_4x4(square_4x4())]
     #[case::polygon_1(polygon_1())]
     #[case::polygon_2(polygon_2())]
+    #[case::eberly_10(eberly_10())]
     #[case::elgindy_1(elgindy_1())]
     #[case::gray_embroidery(gray_embroidery())]
     #[case::held_12(held_12())]
