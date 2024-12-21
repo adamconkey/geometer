@@ -270,6 +270,7 @@ mod tests {
     polygon_fixture!(held_7c, interesting_polygon_archive);
     polygon_fixture!(held_7d, interesting_polygon_archive);
     polygon_fixture!(mapbox_building, interesting_polygon_archive);
+    polygon_fixture!(mapbox_dude, interesting_polygon_archive);
     polygon_fixture!(matisse_nuit, interesting_polygon_archive);
     polygon_fixture!(mei_3, interesting_polygon_archive);
     polygon_fixture!(mei_5, interesting_polygon_archive);
@@ -296,6 +297,7 @@ mod tests {
     #[case::held_7c(held_7c())]
     #[case::held_7d(held_7d())]
     #[case::mapbox_building(mapbox_building())]
+    #[case::mapbox_dude(mapbox_dude())]
     #[case::matisse_nuit(matisse_nuit())]
     #[case::mei_3(mei_3())]
     #[case::mei_5(mei_5())]
