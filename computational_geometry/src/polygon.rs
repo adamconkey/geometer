@@ -271,6 +271,7 @@ mod tests {
     polygon_fixture!(mei_5, interesting_polygon_archive);
     polygon_fixture!(meisters_3, interesting_polygon_archive);
     polygon_fixture!(seidel_3, interesting_polygon_archive);
+    polygon_fixture!(skimage_horse, interesting_polygon_archive);
 
     #[template]
     #[rstest]
@@ -291,6 +292,7 @@ mod tests {
     #[case::mei_5(mei_5())]
     #[case::meisters_3(meisters_3())]
     #[case::seidel_3(seidel_3())]
+    #[case::skimage_horse(skimage_horse())]
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
 
