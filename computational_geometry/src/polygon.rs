@@ -269,6 +269,7 @@ mod tests {
     polygon_fixture!(matisse_nuit, interesting_polygon_archive);
     polygon_fixture!(mei_3, interesting_polygon_archive);
     polygon_fixture!(mei_5, interesting_polygon_archive);
+    polygon_fixture!(meisters_3, interesting_polygon_archive);
 
     #[template]
     #[rstest]
@@ -287,6 +288,7 @@ mod tests {
     #[case::matisse_nuit(matisse_nuit())]
     #[case::mei_3(mei_3())]
     #[case::mei_5(mei_5())]
+    #[case::meisters_3(meisters_3())]
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
 
