@@ -261,6 +261,7 @@ mod tests {
     polygon_fixture!(elgindy_1, interesting_polygon_archive);
     polygon_fixture!(gray_embroidery, interesting_polygon_archive);
     polygon_fixture!(held_12, interesting_polygon_archive);
+    polygon_fixture!(held_7a, interesting_polygon_archive);
 
 
     #[template]
@@ -272,6 +273,7 @@ mod tests {
     #[case::elgindy_1(elgindy_1())]
     #[case::gray_embroidery(gray_embroidery())]
     #[case::held_12(held_12())]
+    #[case::held_7a(held_7a())]
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
 
