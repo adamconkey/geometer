@@ -84,6 +84,17 @@ impl Polygon {
         let points: Vec<Point> = serde_json::from_str(&polygon_str).unwrap();
         Polygon::new(points)
     }
+
+    pub fn to_json<P: AsRef<Path>>(&self, path: P) {
+        // TODO return result
+
+        // TODO I think to make this as close in order as possible to the
+        // input points, should have ability to find vertex with lowest
+        // index, then get vec of vertices starting from that vertex, then
+        // it would be simple to extract vec of points from there.
+
+
+    }
     
     pub fn num_edges(&self) -> usize {
         self.edges().len()
@@ -171,6 +182,10 @@ impl Polygon {
             }
         }
         edges
+    }
+
+    pub fn points(&self) -> Vec<Point> {
+        
     }
     
     fn in_cone(&self, a: &Vertex, b: &Vertex) -> bool {
