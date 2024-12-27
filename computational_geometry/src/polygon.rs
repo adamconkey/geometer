@@ -66,7 +66,7 @@ impl<'a> Triangulation<'a> {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Polygon {
     vertex_map: VertexMap,
 }
@@ -88,12 +88,21 @@ impl Polygon {
     pub fn to_json<P: AsRef<Path>>(&self, path: P) {
         // TODO return result
 
-        // TODO I think to make this as close in order as possible to the
-        // input points, should have ability to find vertex with lowest
-        // index, then get vec of vertices starting from that vertex, then
-        // it would be simple to extract vec of points from there.
-
-
+        // Getting a vec of vertices ordered by vertex ID so that it
+        // matches the order of input points as closely as possible.
+        let mut vertices = self.vertex_map
+            .values()
+            .collect::<Vec<&Vertex>>();
+        vertices.sort_by(|a, b| a.id.cmp(&b.id));
+        
+        let points = vertices
+            .iter()
+            .map(|v| v.coords.clone())
+            .collect::<Vec<Point>>();
+        let points_str = serde_json::to_string(&points).unwrap();
+        // TODO don't expect below or unwrap above, want to return result
+        // where it can possibly error on serialization or file write
+        fs::write(path, points_str).expect("File should have saved but failed");
     }
     
     pub fn num_edges(&self) -> usize {
@@ -183,10 +192,6 @@ impl Polygon {
         }
         edges
     }
-
-    pub fn points(&self) -> Vec<Point> {
-        
-    }
     
     fn in_cone(&self, a: &Vertex, b: &Vertex) -> bool {
         let ab = LineSegment::from_vertices(a, b);
@@ -226,6 +231,7 @@ mod tests {
     use rstest_reuse::{self, *};
     use serde::Deserialize;
     use std::path::PathBuf;
+    use tempfile::NamedTempFile;
 
     #[derive(Deserialize)]
     struct PolygonMetadata {
@@ -347,6 +353,16 @@ mod tests {
     #[case::toussaint_1a(toussaint_1a())]
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
+
+    #[apply(all_polygons)]
+    fn test_json(case: PolygonTestCase) {
+        let filename = NamedTempFile::new()
+            .unwrap()
+            .into_temp_path();
+        case.polygon.to_json(&filename);
+        let new_polygon = Polygon::from_json(&filename);
+        assert_eq!(case.polygon, new_polygon);
+    }
 
     #[apply(all_polygons)]
     fn test_area(case: PolygonTestCase) {
