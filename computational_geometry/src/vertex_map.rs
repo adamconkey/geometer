@@ -4,7 +4,7 @@ use crate::point::Point;
 use crate::vertex::{Vertex, VertexId};
 
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct VertexMap {
     map: HashMap<VertexId, Vertex>,
 }
