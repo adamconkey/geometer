@@ -88,21 +88,19 @@ impl Polygon {
     pub fn to_json<P: AsRef<Path>>(&self, path: P) {
         // TODO return result
 
-        // Getting a vec of vertices ordered by vertex ID so that it
-        // matches the order of input points as closely as possible.
-        let mut vertices = self.vertex_map
-            .values()
-            .collect::<Vec<&Vertex>>();
-        vertices.sort_by(|a, b| a.id.cmp(&b.id));
-        
-        let points = vertices
-            .iter()
-            .map(|v| v.coords.clone())
-            .collect::<Vec<Point>>();
+        let points = self.vertex_map.sorted_points();
         let points_str = serde_json::to_string(&points).unwrap();
         // TODO don't expect below or unwrap above, want to return result
         // where it can possibly error on serialization or file write
         fs::write(path, points_str).expect("File should have saved but failed");
+    }
+
+    pub fn validate(&self) -> bool {
+        let vertices = self.vertex_map.sorted_vertices();
+        // TODO add checks here. Should this return bool, 
+        // or have an error type, or do asserts?
+
+        true
     }
     
     pub fn num_edges(&self) -> usize {
