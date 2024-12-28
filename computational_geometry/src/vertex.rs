@@ -4,7 +4,7 @@ use crate::{
 };
 
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct VertexId(u32);
 
 impl From<u32> for VertexId {
