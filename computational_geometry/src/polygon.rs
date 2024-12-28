@@ -387,7 +387,7 @@ mod tests {
     fn test_triangulation(case: PolygonTestCase) {
         let triangulation = case.polygon.triangulation();
         assert_eq!(triangulation.len(), case.metadata.num_triangles);
-        // This meta-assert is only valid for polygons without holes, which 
+        // This meta-assert is only valid for polygons without holes, holes 
         // are not yet supported. Will need a flag in the metadata to know 
         // if holes are present and then this assert would be conditional
         assert_eq!(case.metadata.num_triangles, case.metadata.num_edges - 2);
@@ -400,7 +400,7 @@ mod tests {
     fn test_attributes(case: PolygonTestCase) {
         assert_eq!(case.polygon.num_edges(), case.metadata.num_edges);
         assert_eq!(case.polygon.num_vertices(), case.metadata.num_vertices);
-        // This meta-assert is only valid for polygons without holes, which 
+        // This meta-assert is only valid for polygons without holes, holes 
         // are not yet supported. Will need a flag in the metadata to know 
         // if holes are present and then this assert would be conditional
         assert_eq!(case.metadata.num_edges, case.metadata.num_vertices);
