@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::{
     line_segment::LineSegment,
     point::Point,
@@ -16,6 +18,12 @@ impl From<u32> for VertexId {
 impl From<usize> for VertexId {
     fn from(raw: usize) -> Self {
         Self(raw.try_into().unwrap())
+    }
+}
+
+impl fmt::Display for VertexId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

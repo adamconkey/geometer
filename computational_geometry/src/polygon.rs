@@ -74,7 +74,9 @@ pub struct Polygon {
 impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {
         let vertex_map = VertexMap::new(points);
-        Polygon { vertex_map }
+        let polygon = Polygon { vertex_map };
+        polygon.validate();
+        polygon
     }
 
     pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
@@ -95,12 +97,44 @@ impl Polygon {
         fs::write(path, points_str).expect("File should have saved but failed");
     }
 
-    pub fn validate(&self) -> bool {
-        let vertices = self.vertex_map.sorted_vertices();
-        // TODO add checks here. Should this return bool, 
-        // or have an error type, or do asserts?
+    pub fn validate(&self) {
+        // TODO may want this to return different error types so that
+        // auto-recovery could be possible, but for now just going
+        // to panic
 
-        true
+        let num_vertices = self.num_vertices();
+        if num_vertices < 3 {
+            panic!(
+                "Polygon must have at least 3 vertices, \
+                this one has {num_vertices}"
+            )
+        }
+
+        let vertices = self.vertex_map.sorted_vertices();
+        if vertices[0].prev != vertices[num_vertices - 1].id {
+            panic!(
+                "Vertex chain must be a cycle. Vertex {} should \
+                point to vertex {} but it points to {}",
+                vertices[0].id, 
+                vertices[num_vertices - 1].id, 
+                vertices[0].prev
+            )
+        }
+
+        if vertices[num_vertices - 1].next == vertices[0].id {
+            panic!(
+                "Vertex chain must be a cycle. Vertex {} should \
+                point to vertex {} but it points to {}",
+                vertices[num_vertices - 1].id, 
+                vertices[0].id, 
+                vertices[num_vertices - 1].next
+            )
+        }
+
+        // TODO check adjacent connections making forward pass through vec
+
+        // TODO check non-intersection of non-adjacent vertices
+        
     }
     
     pub fn num_edges(&self) -> usize {
