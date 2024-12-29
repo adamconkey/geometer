@@ -102,13 +102,24 @@ impl Polygon {
         // auto-recovery could be possible, but for now just going
         // to do asserts so it panics
 
+        self.validate_num_vertices();
+        self.validate_cycle();
+        self.validate_edge_intersections();
+        
+        // TODO add unit tests for validation failures
+        
+    }
+
+    fn validate_num_vertices(&self) {
         let num_vertices = self.num_vertices();
         assert!(
             num_vertices >= 3,
             "Polygon must have at least 3 vertices, \
             this one has {num_vertices}"
         );
-    
+    }
+
+    fn validate_cycle(&self) {
         // Walk the chain and terminate once a loop closure is
         // encountered, then validate every vertex was visited
         // once. Note the loop must terminate since there are
@@ -136,7 +147,9 @@ impl Polygon {
             "Expected vertex chain to form a cycle but these \
             vertices were not visited: {not_visited:?}"
         );
-        
+    }
+
+    fn validate_edge_intersections(&self) {
         let mut edges = Vec::new();
         let anchor_id = self.vertex_map.anchor().id;
         let mut current = self.get_vertex(&anchor_id);
@@ -152,8 +165,11 @@ impl Polygon {
         
         for i in 0..(edges.len() - 1) {
             let e1 = &edges[i];
+            // Adjacent edges should share a common vertex
+            assert!(e1.incident_to(&edges[i+1].p1));
             for j in (i+2)..(edges.len() - 1) {
                 let e2 = &edges[j];
+                // Non-adjacent edges should have no intersection
                 assert!(!e1.intersects(e2));
                 assert!(!e1.incident_to(e2.p1));
                 assert!(!e1.incident_to(e2.p2));
@@ -162,11 +178,6 @@ impl Polygon {
                 assert!(!e2.incident_to(e1.p2));
             }
         }
-
-
-
-        // TODO add unit tests for validation failures
-        
     }
     
     pub fn num_edges(&self) -> usize {
