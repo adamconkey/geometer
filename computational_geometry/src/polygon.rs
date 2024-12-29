@@ -276,9 +276,8 @@ impl Polygon {
         for i in 0..(edges.len() - 1) {
             let e1 = &edges[i];
             // Adjacent edges should share a common vertex
-            assert!(e1.incident_to(&edges[i+1].p1));
-            for j in (i+2)..(edges.len() - 1) {
-                let e2 = &edges[j];
+            assert!(e1.incident_to(edges[i+1].p1));
+            for e2 in edges.iter().take(edges.len() -1).skip(i+2) {
                 // Non-adjacent edges should have no intersection
                 assert!(!e1.intersects(e2));
                 assert!(!e1.incident_to(e2.p1));
