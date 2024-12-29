@@ -61,6 +61,20 @@ impl VertexMap {
         self.map.values()
     }
 
+    pub fn sorted_vertices(&self) -> Vec<&Vertex> {
+        let mut vertices = self.values()
+            .collect::<Vec<&Vertex>>();
+        vertices.sort_by(|a, b| a.id.cmp(&b.id));
+        vertices
+    }
+
+    pub fn sorted_points(&self) -> Vec<Point> {
+        self.sorted_vertices()
+            .iter()
+            .map(|v| v.coords.clone())
+            .collect::<Vec<Point>>()
+    }
+
     pub fn anchor(&self) -> &Vertex {
         // TODO I'm not yet convinced this is something I want, ultimately
         // need something to initiate algorithms in the vertex chain.

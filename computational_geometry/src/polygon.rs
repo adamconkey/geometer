@@ -74,7 +74,9 @@ pub struct Polygon {
 impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {
         let vertex_map = VertexMap::new(points);
-        Polygon { vertex_map }
+        let polygon = Polygon { vertex_map };
+        polygon.validate();
+        polygon
     }
 
     pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
@@ -88,17 +90,7 @@ impl Polygon {
     pub fn to_json<P: AsRef<Path>>(&self, path: P) {
         // TODO return result
 
-        // Getting a vec of vertices ordered by vertex ID so that it
-        // matches the order of input points as closely as possible.
-        let mut vertices = self.vertex_map
-            .values()
-            .collect::<Vec<&Vertex>>();
-        vertices.sort_by(|a, b| a.id.cmp(&b.id));
-        
-        let points = vertices
-            .iter()
-            .map(|v| v.coords.clone())
-            .collect::<Vec<Point>>();
+        let points = self.vertex_map.sorted_points();
         let points_str = serde_json::to_string(&points).unwrap();
         // TODO don't expect below or unwrap above, want to return result
         // where it can possibly error on serialization or file write
@@ -220,6 +212,81 @@ impl Polygon {
             }
         } 
         true
+    }
+
+    pub fn validate(&self) {
+        self.validate_num_vertices();
+        self.validate_cycle();
+        self.validate_edge_intersections();
+    }
+
+    fn validate_num_vertices(&self) {
+        let num_vertices = self.num_vertices();
+        assert!(
+            num_vertices >= 3,
+            "Polygon must have at least 3 vertices, \
+            this one has {num_vertices}"
+        );
+    }
+
+    fn validate_cycle(&self) {
+        // Walk the chain and terminate once a loop closure is
+        // encountered, then validate every vertex was visited
+        // once. Note the loop must terminate since there are
+        // finite vertices and visited vertices are tracked.
+        let anchor = self.vertex_map.anchor();
+        let mut current = self.vertex_map.anchor();
+        let mut visited = HashSet::<VertexId>::new();
+
+        loop {
+            visited.insert(current.id);
+            current = self.vertex_map.get(&current.next);
+            if current.id == anchor.id || visited.contains(&current.id) {
+                break;
+            }
+        }
+
+        let mut not_visited = HashSet::<VertexId>::new();
+        for v in self.vertex_map.sorted_vertices() {
+            if !visited.contains(&v.id) {
+                not_visited.insert(v.id);
+            }
+        }
+        assert!(
+            not_visited.is_empty(),
+            "Expected vertex chain to form a cycle but these \
+            vertices were not visited: {not_visited:?}"
+        );
+    }
+
+    fn validate_edge_intersections(&self) {
+        let mut edges = Vec::new();
+        let anchor_id = self.vertex_map.anchor().id;
+        let mut current = self.get_vertex(&anchor_id);
+        loop {
+            let next = self.get_vertex(&current.next);
+            let ls = LineSegment::from_vertices(current, next);
+            edges.push(ls);
+            current = next;
+            if current.id == anchor_id {
+                break;
+            }
+        }
+        
+        for i in 0..(edges.len() - 1) {
+            let e1 = &edges[i];
+            // Adjacent edges should share a common vertex
+            assert!(e1.incident_to(edges[i+1].p1));
+            for e2 in edges.iter().take(edges.len() -1).skip(i+2) {
+                // Non-adjacent edges should have no intersection
+                assert!(!e1.intersects(e2));
+                assert!(!e1.incident_to(e2.p1));
+                assert!(!e1.incident_to(e2.p2));
+                assert!(!e2.intersects(e1));
+                assert!(!e2.incident_to(e1.p1));
+                assert!(!e2.incident_to(e1.p2));
+            }
+        }
     }
 }
 
@@ -353,6 +420,27 @@ mod tests {
     #[case::toussaint_1a(toussaint_1a())]
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_polygon_not_enough_vertices() {
+        let p1 = Point::new(1, 2);
+        let p2 = Point::new(3, 4);
+        let points = vec![p1, p2];
+        let _polygon = Polygon::new(points);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_polygon_not_simple() {
+        let p1 = Point::new(0, 0);
+        let p2 = Point::new(2, 0);
+        let p3 = Point::new(2, 2);
+        let p4 = Point::new(0, 2);
+        let p5 = Point::new(4, 1); // This one should break it
+        let points = vec![p1, p2, p3, p4, p5];
+        let _polygon = Polygon::new(points);
+    }
 
     #[apply(all_polygons)]
     fn test_json(case: PolygonTestCase) {
