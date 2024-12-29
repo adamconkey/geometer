@@ -110,30 +110,38 @@ impl Polygon {
             )
         }
 
-        let vertices = self.vertex_map.sorted_vertices();
-        if vertices[0].prev != vertices[num_vertices - 1].id {
-            panic!(
-                "Vertex chain must be a cycle. Vertex {} should \
-                point to vertex {} but it points to {}",
-                vertices[0].id, 
-                vertices[num_vertices - 1].id, 
-                vertices[0].prev
-            )
+        // Walk the chain and terminate once a loop closure is
+        // encountered, then validate every vertex was visited
+        // once. Note the loop must terminate since there are
+        // finite vertices and visited vertices are tracked.
+        let anchor = self.vertex_map.anchor();
+        let mut current = self.vertex_map.anchor();
+        let mut visited = HashSet::<VertexId>::new();
+
+        loop {
+            visited.insert(current.id);
+            current = self.vertex_map.get(&current.next);
+            if current.id == anchor.id || visited.contains(&current.id) {
+                break;
+            }
         }
 
-        if vertices[num_vertices - 1].next == vertices[0].id {
+        if visited.len() != num_vertices {
+            let mut not_visited = HashSet::<VertexId>::new();
+            for v in self.vertex_map.sorted_vertices() {
+                if !visited.contains(&v.id) {
+                    not_visited.insert(v.id);
+                }
+            }
             panic!(
-                "Vertex chain must be a cycle. Vertex {} should \
-                point to vertex {} but it points to {}",
-                vertices[num_vertices - 1].id, 
-                vertices[0].id, 
-                vertices[num_vertices - 1].next
+                "Expected vertex chain to form a cycle but these \
+                vertices were not visited: {not_visited:?}"
             )
         }
-
-        // TODO check adjacent connections making forward pass through vec
 
         // TODO check non-intersection of non-adjacent vertices
+
+        // TODO add unit tests for validation failures
         
     }
     
