@@ -428,7 +428,7 @@ mod tests {
         let p1 = Point::new(1, 2);
         let p2 = Point::new(3, 4);
         let points = vec![p1, p2];
-        let polygon = Polygon::new(points);
+        let _polygon = Polygon::new(points);
     }
 
     #[test]
@@ -440,7 +440,7 @@ mod tests {
         let p4 = Point::new(0, 2);
         let p5 = Point::new(4, 1); // This one should break it
         let points = vec![p1, p2, p3, p4, p5];
-        let polygon = Polygon::new(points);
+        let _polygon = Polygon::new(points);
     }
 
     #[apply(all_polygons)]
