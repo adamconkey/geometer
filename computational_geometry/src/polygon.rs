@@ -100,16 +100,15 @@ impl Polygon {
     pub fn validate(&self) {
         // TODO may want this to return different error types so that
         // auto-recovery could be possible, but for now just going
-        // to panic
+        // to do asserts so it panics
 
         let num_vertices = self.num_vertices();
-        if num_vertices < 3 {
-            panic!(
-                "Polygon must have at least 3 vertices, \
-                this one has {num_vertices}"
-            )
-        }
-
+        assert!(
+            num_vertices >= 3,
+            "Polygon must have at least 3 vertices, \
+            this one has {num_vertices}"
+        );
+    
         // Walk the chain and terminate once a loop closure is
         // encountered, then validate every vertex was visited
         // once. Note the loop must terminate since there are
@@ -126,20 +125,45 @@ impl Polygon {
             }
         }
 
-        if visited.len() != num_vertices {
-            let mut not_visited = HashSet::<VertexId>::new();
-            for v in self.vertex_map.sorted_vertices() {
-                if !visited.contains(&v.id) {
-                    not_visited.insert(v.id);
-                }
+        let mut not_visited = HashSet::<VertexId>::new();
+        for v in self.vertex_map.sorted_vertices() {
+            if !visited.contains(&v.id) {
+                not_visited.insert(v.id);
             }
-            panic!(
-                "Expected vertex chain to form a cycle but these \
-                vertices were not visited: {not_visited:?}"
-            )
+        }
+        assert!(
+            not_visited.is_empty(),
+            "Expected vertex chain to form a cycle but these \
+            vertices were not visited: {not_visited:?}"
+        );
+        
+        let mut edges = Vec::new();
+        let anchor_id = self.vertex_map.anchor().id;
+        let mut current = self.get_vertex(&anchor_id);
+        loop {
+            let next = self.get_vertex(&current.next);
+            let ls = LineSegment::from_vertices(current, next);
+            edges.push(ls);
+            current = next;
+            if current.id == anchor_id {
+                break;
+            }
+        }
+        
+        for i in 0..(edges.len() - 1) {
+            let e1 = &edges[i];
+            for j in (i+2)..(edges.len() - 1) {
+                let e2 = &edges[j];
+                assert!(!e1.intersects(e2));
+                assert!(!e1.incident_to(e2.p1));
+                assert!(!e1.incident_to(e2.p2));
+                assert!(!e2.intersects(e1));
+                assert!(!e2.incident_to(e1.p1));
+                assert!(!e2.incident_to(e1.p2));
+            }
         }
 
-        // TODO check non-intersection of non-adjacent vertices
+
 
         // TODO add unit tests for validation failures
         
