@@ -429,6 +429,27 @@ mod tests {
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
 
+    #[test]
+    #[should_panic]
+    fn test_invalid_polygon_not_enough_vertices() {
+        let p1 = Point::new(1, 2);
+        let p2 = Point::new(3, 4);
+        let points = vec![p1, p2];
+        let polygon = Polygon::new(points);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_polygon_not_simple() {
+        let p1 = Point::new(0, 0);
+        let p2 = Point::new(2, 0);
+        let p3 = Point::new(2, 2);
+        let p4 = Point::new(0, 2);
+        let p5 = Point::new(4, 1); // This one should break it
+        let points = vec![p1, p2, p3, p4, p5];
+        let polygon = Polygon::new(points);
+    }
+
     #[apply(all_polygons)]
     fn test_json(case: PolygonTestCase) {
         let filename = NamedTempFile::new()
