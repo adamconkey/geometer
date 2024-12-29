@@ -96,89 +96,6 @@ impl Polygon {
         // where it can possibly error on serialization or file write
         fs::write(path, points_str).expect("File should have saved but failed");
     }
-
-    pub fn validate(&self) {
-        // TODO may want this to return different error types so that
-        // auto-recovery could be possible, but for now just going
-        // to do asserts so it panics
-
-        self.validate_num_vertices();
-        self.validate_cycle();
-        self.validate_edge_intersections();
-        
-        // TODO add unit tests for validation failures
-        
-    }
-
-    fn validate_num_vertices(&self) {
-        let num_vertices = self.num_vertices();
-        assert!(
-            num_vertices >= 3,
-            "Polygon must have at least 3 vertices, \
-            this one has {num_vertices}"
-        );
-    }
-
-    fn validate_cycle(&self) {
-        // Walk the chain and terminate once a loop closure is
-        // encountered, then validate every vertex was visited
-        // once. Note the loop must terminate since there are
-        // finite vertices and visited vertices are tracked.
-        let anchor = self.vertex_map.anchor();
-        let mut current = self.vertex_map.anchor();
-        let mut visited = HashSet::<VertexId>::new();
-
-        loop {
-            visited.insert(current.id);
-            current = self.vertex_map.get(&current.next);
-            if current.id == anchor.id || visited.contains(&current.id) {
-                break;
-            }
-        }
-
-        let mut not_visited = HashSet::<VertexId>::new();
-        for v in self.vertex_map.sorted_vertices() {
-            if !visited.contains(&v.id) {
-                not_visited.insert(v.id);
-            }
-        }
-        assert!(
-            not_visited.is_empty(),
-            "Expected vertex chain to form a cycle but these \
-            vertices were not visited: {not_visited:?}"
-        );
-    }
-
-    fn validate_edge_intersections(&self) {
-        let mut edges = Vec::new();
-        let anchor_id = self.vertex_map.anchor().id;
-        let mut current = self.get_vertex(&anchor_id);
-        loop {
-            let next = self.get_vertex(&current.next);
-            let ls = LineSegment::from_vertices(current, next);
-            edges.push(ls);
-            current = next;
-            if current.id == anchor_id {
-                break;
-            }
-        }
-        
-        for i in 0..(edges.len() - 1) {
-            let e1 = &edges[i];
-            // Adjacent edges should share a common vertex
-            assert!(e1.incident_to(&edges[i+1].p1));
-            for j in (i+2)..(edges.len() - 1) {
-                let e2 = &edges[j];
-                // Non-adjacent edges should have no intersection
-                assert!(!e1.intersects(e2));
-                assert!(!e1.incident_to(e2.p1));
-                assert!(!e1.incident_to(e2.p2));
-                assert!(!e2.intersects(e1));
-                assert!(!e2.incident_to(e1.p1));
-                assert!(!e2.incident_to(e1.p2));
-            }
-        }
-    }
     
     pub fn num_edges(&self) -> usize {
         self.edges().len()
@@ -295,6 +212,82 @@ impl Polygon {
             }
         } 
         true
+    }
+
+    pub fn validate(&self) {
+        self.validate_num_vertices();
+        self.validate_cycle();
+        self.validate_edge_intersections();
+    }
+
+    fn validate_num_vertices(&self) {
+        let num_vertices = self.num_vertices();
+        assert!(
+            num_vertices >= 3,
+            "Polygon must have at least 3 vertices, \
+            this one has {num_vertices}"
+        );
+    }
+
+    fn validate_cycle(&self) {
+        // Walk the chain and terminate once a loop closure is
+        // encountered, then validate every vertex was visited
+        // once. Note the loop must terminate since there are
+        // finite vertices and visited vertices are tracked.
+        let anchor = self.vertex_map.anchor();
+        let mut current = self.vertex_map.anchor();
+        let mut visited = HashSet::<VertexId>::new();
+
+        loop {
+            visited.insert(current.id);
+            current = self.vertex_map.get(&current.next);
+            if current.id == anchor.id || visited.contains(&current.id) {
+                break;
+            }
+        }
+
+        let mut not_visited = HashSet::<VertexId>::new();
+        for v in self.vertex_map.sorted_vertices() {
+            if !visited.contains(&v.id) {
+                not_visited.insert(v.id);
+            }
+        }
+        assert!(
+            not_visited.is_empty(),
+            "Expected vertex chain to form a cycle but these \
+            vertices were not visited: {not_visited:?}"
+        );
+    }
+
+    fn validate_edge_intersections(&self) {
+        let mut edges = Vec::new();
+        let anchor_id = self.vertex_map.anchor().id;
+        let mut current = self.get_vertex(&anchor_id);
+        loop {
+            let next = self.get_vertex(&current.next);
+            let ls = LineSegment::from_vertices(current, next);
+            edges.push(ls);
+            current = next;
+            if current.id == anchor_id {
+                break;
+            }
+        }
+        
+        for i in 0..(edges.len() - 1) {
+            let e1 = &edges[i];
+            // Adjacent edges should share a common vertex
+            assert!(e1.incident_to(&edges[i+1].p1));
+            for j in (i+2)..(edges.len() - 1) {
+                let e2 = &edges[j];
+                // Non-adjacent edges should have no intersection
+                assert!(!e1.intersects(e2));
+                assert!(!e1.incident_to(e2.p1));
+                assert!(!e1.incident_to(e2.p2));
+                assert!(!e2.intersects(e1));
+                assert!(!e2.incident_to(e1.p1));
+                assert!(!e2.incident_to(e1.p2));
+            }
+        }
     }
 }
 
