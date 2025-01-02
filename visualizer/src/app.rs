@@ -56,6 +56,15 @@ impl eframe::App for TemplateApp {
                 }
             });
 
+        // This was needed to workaround some artifacts in the plot for
+        // highly obtuse triangles in triangulations. It's possible it
+        // causes other problems down the road, so can try setting to
+        // true if other things look strange.
+        // https://github.com/adamconkey/computational_geometry/issues/17
+        ctx.tessellation_options_mut(|to| {
+            to.feathering = false;
+        });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             self.visualizer.ui(ui, &self.selected_polygon);
         });
