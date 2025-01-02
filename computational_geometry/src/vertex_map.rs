@@ -61,6 +61,10 @@ impl VertexMap {
         self.map.values()
     }
 
+    pub fn values_mut(&mut self) -> hash_map::ValuesMut<'_, VertexId, Vertex> {
+        self.map.values_mut()
+    }
+
     pub fn sorted_vertices(&self) -> Vec<&Vertex> {
         let mut vertices = self.values()
             .collect::<Vec<&Vertex>>();
@@ -89,5 +93,11 @@ impl VertexMap {
 
     pub fn update_prev(&mut self, k: &VertexId, prev: &VertexId) {
         self.get_mut(k).prev = *prev;
+    }
+
+    pub fn rotate_vertices_about_origin(&mut self, degrees: i32) {
+        for v in self.values_mut() {
+            v.rotate_about_origin(degrees);
+        }
     }
 }

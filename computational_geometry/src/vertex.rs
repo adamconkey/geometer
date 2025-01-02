@@ -52,4 +52,8 @@ impl Vertex {
     pub fn left_on(&self, ab: &LineSegment) -> bool {
         self.coords.left_on(ab)
     }
+
+    pub fn rotate_about_origin(&mut self, degrees: i32) {
+        self.coords.rotate_about_origin(degrees);
+    }
 }

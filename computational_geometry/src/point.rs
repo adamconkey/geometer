@@ -38,6 +38,10 @@ impl Point {
     pub fn left_on(&self, ab: &LineSegment) -> bool {
         Triangle::new(ab.p1, ab.p2, self).area_sign() >= 0
     }
+
+    pub fn rotate_about_origin(&mut self, degrees: i32) {
+        todo!("Need to implement rotation equations for point")
+    }
 }
 
 
