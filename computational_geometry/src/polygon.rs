@@ -427,7 +427,8 @@ mod tests {
         let p1 = Point::new(1, 2);
         let p2 = Point::new(3, 4);
         let points = vec![p1, p2];
-        let _polygon = Polygon::new(points);
+        let polygon = Polygon::new(points);
+        assert_eq!(2, polygon.num_vertices());
     }
 
     #[test]
@@ -439,7 +440,8 @@ mod tests {
         let p4 = Point::new(0, 2);
         let p5 = Point::new(4, 1); // This one should break it
         let points = vec![p1, p2, p3, p4, p5];
-        let _polygon = Polygon::new(points);
+        let polygon = Polygon::new(points);
+        assert_eq!(3, polygon.num_vertices())
     }
 
     #[apply(all_polygons)]
