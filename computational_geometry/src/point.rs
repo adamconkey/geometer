@@ -39,8 +39,17 @@ impl Point {
         Triangle::new(ab.p1, ab.p2, self).area_sign() >= 0
     }
 
-    pub fn rotate_about_origin(&mut self, degrees: i32) {
+    pub fn rotate_about_origin(&mut self, radians: f64) {
         todo!("Need to implement rotation equations for point")
+    }
+
+    pub fn rotate_about_point(&mut self, radians: f64, point: Point) {
+        let cos_theta = radians.cos();
+        let sin_theta = radians.sin();
+        let x_diff = self.x - point.x;
+        let y_diff = self.y - point.y;
+        // let x1 = x_diff * cos_theta - y_diff * sin_theta + point.x;
+        todo!("Need to fix types on point to support this (i32 -> f64)")
     }
 }
 

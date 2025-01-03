@@ -95,9 +95,9 @@ impl VertexMap {
         self.get_mut(k).prev = *prev;
     }
 
-    pub fn rotate_vertices_about_origin(&mut self, degrees: i32) {
+    pub fn rotate_vertices_about_origin(&mut self, radians: f64) {
         for v in self.values_mut() {
-            v.rotate_about_origin(degrees);
+            v.rotate_about_origin(radians);
         }
     }
 }

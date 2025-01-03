@@ -53,7 +53,7 @@ impl Vertex {
         self.coords.left_on(ab)
     }
 
-    pub fn rotate_about_origin(&mut self, degrees: i32) {
-        self.coords.rotate_about_origin(degrees);
+    pub fn rotate_about_origin(&mut self, radians: f64) {
+        self.coords.rotate_about_origin(radians);
     }
 }
