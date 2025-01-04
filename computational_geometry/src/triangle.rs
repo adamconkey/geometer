@@ -10,28 +10,28 @@ pub struct Triangle<'a> {
     pub p1: &'a Point,
     pub p2: &'a Point,
     pub p3: &'a Point,
-    double_area: OnceCell<f64>,
+    area: OnceCell<f64>,
 }
 
 impl<'a> Triangle<'a> {
     pub fn new(p1: &'a Point, p2: &'a Point, p3: &'a Point) -> Triangle<'a> {
-        Triangle { p1, p2, p3, double_area: OnceCell::new() }
+        Triangle { p1, p2, p3, area: OnceCell::new() }
     }
 
     pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex, v3: &'a Vertex) -> Triangle<'a> {
         Triangle::new(&v1.coords, &v2.coords, &v3.coords)
     }
 
-    pub fn double_area(&self) -> f64 {
-        *self.double_area.get_or_init(|| {
+    pub fn area(&self) -> f64 {
+        *self.area.get_or_init(|| {
             let t1 = (self.p2.x - self.p1.x) * (self.p3.y - self.p1.y);
             let t2 = (self.p3.x - self.p1.x) * (self.p2.y - self.p1.y);
-            t1 - t2
+            0.5 * (t1 - t2)
         })
     }
 
     pub fn has_collinear_points(&self) -> bool {
-        self.double_area() == 0.0
+        self.area() == 0.0
     }
 }
 
@@ -62,8 +62,8 @@ mod tests {
         let b = Point::new(3.0, 0.0);
         let c = Point::new(0.0, 4.0);
         let triangle = Triangle::new(&a, &b, &c);
-        let double_area = triangle.double_area();
-        assert_eq!(double_area, 12.0);
+        let area = triangle.area();
+        assert_eq!(area, 6.0);
     }
 
     // TODO want some better unit tests for the triangle area
@@ -80,7 +80,7 @@ mod tests {
             Triangle::new(&b, &a, &c),
         ];
         for triangle in cw {
-            assert!(triangle.double_area() < 0.0);
+            assert!(triangle.area() < 0.0);
         }
     }
 
@@ -96,7 +96,7 @@ mod tests {
             Triangle::new(&c, &a, &b),
         ];
         for triangle in ccw {
-            assert!(triangle.double_area() > 0.0);
+            assert!(triangle.area() > 0.0);
         }
     }
 
