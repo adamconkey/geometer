@@ -49,7 +49,7 @@ impl Default for PolygonVisualizer {
 
             let mut plot_points: Vec<_> = polygon_points
                 .iter()
-                .map(|p: &Point| [f64::from(p.x), f64::from(p.y)])
+                .map(|p: &Point| [p.x, p.y])
                 .collect();
             // Pushing first to end so it closes the chain, probably
             // only want to do this for line points since it
@@ -118,12 +118,7 @@ impl PolygonVisualizer {
             .iter()
             .map(|(p1, p2, p3)|
                 PlotPolygon::new(
-                    vec![
-                        // TODO could simplify this with an impl from
-                        [f64::from(p1.x), f64::from(p1.y)],
-                        [f64::from(p2.x), f64::from(p2.y)],
-                        [f64::from(p3.x), f64::from(p3.y)],
-                    ]
+                    vec![[p1.x, p1.y], [p2.x, p2.y], [p3.x, p3.y]]
                 )
         ).collect();
 
