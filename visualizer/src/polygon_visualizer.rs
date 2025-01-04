@@ -3,7 +3,7 @@ use egui_plot::{
     CoordinatesFormatter, Corner, Line, 
     Plot, Points, Polygon as PlotPolygon
 };
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt;
 
 use computational_geometry::{
@@ -30,7 +30,7 @@ impl fmt::Display for Visualization {
 //#[derive(PartialEq)]
 pub struct PolygonVisualizer {
     points: HashMap<String, Vec<[f64; 2]>>,
-    triangulations: HashMap<String, HashSet<(Point, Point, Point)>>,
+    triangulations: HashMap<String, Vec<(Point, Point, Point)>>,
     line_width: f32,
     point_radius: f32,
     selected_visualization: Visualization,

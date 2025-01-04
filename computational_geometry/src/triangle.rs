@@ -10,7 +10,7 @@ pub struct Triangle<'a> {
     pub p1: &'a Point,
     pub p2: &'a Point,
     pub p3: &'a Point,
-    double_area: OnceCell<i32>,
+    double_area: OnceCell<f64>,
 }
 
 impl<'a> Triangle<'a> {
@@ -22,7 +22,7 @@ impl<'a> Triangle<'a> {
         Triangle::new(&v1.coords, &v2.coords, &v3.coords)
     }
 
-    pub fn double_area(&self) -> i32 {
+    pub fn double_area(&self) -> f64 {
         *self.double_area.get_or_init(|| {
             let t1 = (self.p2.x - self.p1.x) * (self.p3.y - self.p1.y);
             let t2 = (self.p3.x - self.p1.x) * (self.p2.y - self.p1.y);
@@ -30,12 +30,12 @@ impl<'a> Triangle<'a> {
         })
     }
 
-    pub fn area_sign(&self) -> i32 {
+    pub fn area_sign(&self) -> f64 {
         self.double_area().signum()
     }
 
     pub fn has_collinear_points(&self) -> bool {
-        self.area_sign() == 0
+        self.area_sign() == 0.0
     }
 }
 
@@ -51,32 +51,32 @@ mod tests {
         let id1 = VertexId::from(1u32);
         let id2 = VertexId::from(2u32);
         let id3 = VertexId::from(3u32);
-        let v1 = Vertex::new(Point::new(0, 0), id1, id3, id2);
-        let v2 = Vertex::new(Point::new(3, 0), id2, id1, id3);
-        let v3 = Vertex::new(Point::new(0, 4), id3, id2, id1);
+        let v1 = Vertex::new(Point::new(0.0, 0.0), id1, id3, id2);
+        let v2 = Vertex::new(Point::new(3.0, 0.0), id2, id1, id3);
+        let v3 = Vertex::new(Point::new(0.0, 4.0), id3, id2, id1);
         let triangle = Triangle::from_vertices(&v1, &v2, &v3);
-        assert_eq!(Point::new(0, 0), *triangle.p1);   
-        assert_eq!(Point::new(3, 0), *triangle.p2);   
-        assert_eq!(Point::new(0, 4), *triangle.p3);   
+        assert_eq!(Point::new(0.0, 0.0), *triangle.p1);   
+        assert_eq!(Point::new(3.0, 0.0), *triangle.p2);   
+        assert_eq!(Point::new(0.0, 4.0), *triangle.p3);   
     }
 
     #[test]
     fn test_area_right_triangle() {
-        let a = Point::new(0, 0);
-        let b = Point::new(3, 0);
-        let c = Point::new(0, 4);
+        let a = Point::new(0.0, 0.0);
+        let b = Point::new(3.0, 0.0);
+        let c = Point::new(0.0, 4.0);
         let triangle = Triangle::new(&a, &b, &c);
         let double_area = triangle.double_area();
-        assert_eq!(double_area, 12);
+        assert_eq!(double_area, 12.0);
     }
 
     // TODO want some better unit tests for the triangle area
 
     #[test]
     fn test_area_sign_clockwise() {
-        let a = Point::new(0, 0);
-        let b = Point::new(4, 3);
-        let c = Point::new(1, 3);
+        let a = Point::new(0.0, 0.0);
+        let b = Point::new(4.0, 3.0);
+        let c = Point::new(1.0, 3.0);
         
         let cw = vec![
             Triangle::new(&a, &c, &b),
@@ -84,15 +84,15 @@ mod tests {
             Triangle::new(&b, &a, &c),
         ];
         for triangle in cw {
-            assert_eq!(triangle.area_sign(), -1);
+            assert_eq!(triangle.area_sign(), -1.0);
         }
     }
 
     #[test]
     fn test_area_sign_counter_clockwise() {
-        let a = Point::new(0, 0);
-        let b = Point::new(4, 3);
-        let c = Point::new(1, 3);
+        let a = Point::new(0.0, 0.0);
+        let b = Point::new(4.0, 3.0);
+        let c = Point::new(1.0, 3.0);
 
         let ccw = vec![
             Triangle::new(&a, &b, &c),
@@ -100,15 +100,15 @@ mod tests {
             Triangle::new(&c, &a, &b),
         ];
         for triangle in ccw {
-            assert_eq!(triangle.area_sign(), 1);
+            assert_eq!(triangle.area_sign(), 1.0);
         }
     }
 
     #[test]
     fn test_area_sign_collinear() {
-        let a = Point::new(0, 0);
-        let b = Point::new(4, 3);
-        let c = Point::new(1, 3);
+        let a = Point::new(0.0, 0.0);
+        let b = Point::new(4.0, 3.0);
+        let c = Point::new(1.0, 3.0);
 
         // This is choice with replacement over a 3-tuple, so there are
         // 3 * 3 * 3 = 27 total options and this generates all of them.
