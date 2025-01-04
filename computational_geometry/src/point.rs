@@ -40,7 +40,8 @@ impl Point {
     }
 
     pub fn rotate_about_origin(&mut self, radians: f64) {
-        todo!("Need to implement rotation equations for point")
+        let origin = Point::new(0.0, 0.0);
+        self.rotate_about_point(radians, origin);
     }
 
     pub fn rotate_about_point(&mut self, radians: f64, point: Point) {
@@ -48,8 +49,10 @@ impl Point {
         let sin_theta = radians.sin();
         let x_diff = self.x - point.x;
         let y_diff = self.y - point.y;
-        // let x1 = x_diff * cos_theta - y_diff * sin_theta + point.x;
-        todo!("Need to fix types on point to support this (i32 -> f64)")
+        let x1 = x_diff * cos_theta - y_diff * sin_theta + point.x;
+        let y1 = x_diff * sin_theta - y_diff * cos_theta + point.y;
+        self.x = x1;
+        self.y = y1;
     }
 }
 
