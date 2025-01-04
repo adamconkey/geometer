@@ -32,11 +32,11 @@ impl Point {
     }
 
     pub fn left(&self, ab: &LineSegment) -> bool {
-        Triangle::new(ab.p1, ab.p2, self).area_sign() > 0.0
+        Triangle::new(ab.p1, ab.p2, self).double_area() > 0.0
     }
 
     pub fn left_on(&self, ab: &LineSegment) -> bool {
-        Triangle::new(ab.p1, ab.p2, self).area_sign() >= 0.0
+        Triangle::new(ab.p1, ab.p2, self).double_area() >= 0.0
     }
 }
 

@@ -30,13 +30,8 @@ impl<'a> Triangle<'a> {
         })
     }
 
-    // TODO this doesn't work with floats need to fix
-    pub fn area_sign(&self) -> f64 {
-        self.double_area().signum()
-    }
-
     pub fn has_collinear_points(&self) -> bool {
-        self.area_sign() == 0.0
+        self.double_area() == 0.0
     }
 }
 
@@ -74,7 +69,7 @@ mod tests {
     // TODO want some better unit tests for the triangle area
 
     #[test]
-    fn test_area_sign_clockwise() {
+    fn test_area_clockwise() {
         let a = Point::new(0.0, 0.0);
         let b = Point::new(4.0, 3.0);
         let c = Point::new(1.0, 3.0);
@@ -85,12 +80,12 @@ mod tests {
             Triangle::new(&b, &a, &c),
         ];
         for triangle in cw {
-            assert_eq!(triangle.area_sign(), -1.0);
+            assert!(triangle.double_area() < 0.0);
         }
     }
 
     #[test]
-    fn test_area_sign_counter_clockwise() {
+    fn test_area_counter_clockwise() {
         let a = Point::new(0.0, 0.0);
         let b = Point::new(4.0, 3.0);
         let c = Point::new(1.0, 3.0);
@@ -101,12 +96,12 @@ mod tests {
             Triangle::new(&c, &a, &b),
         ];
         for triangle in ccw {
-            assert_eq!(triangle.area_sign(), 1.0);
+            assert!(triangle.double_area() > 0.0);
         }
     }
 
     #[test]
-    fn test_area_sign_collinear() {
+    fn test_area_collinear() {
         let a = Point::new(0.0, 0.0);
         let b = Point::new(4.0, 3.0);
         let c = Point::new(1.0, 3.0);

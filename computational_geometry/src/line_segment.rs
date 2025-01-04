@@ -53,9 +53,8 @@ impl<'a> LineSegment<'a> {
             return false;
         }
         
-        let ab_splits_cd = abc.area_sign() * abd.area_sign() < 0.0;
-        let cd_splits_ab = cda.area_sign() * cdb.area_sign() < 0.0;
-                
+        let ab_splits_cd = c.left(self) ^ d.left(self);
+        let cd_splits_ab = a.left(cd) ^ b.left(cd);
         ab_splits_cd && cd_splits_ab
     }
         
