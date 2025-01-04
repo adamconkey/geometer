@@ -5,7 +5,7 @@ use crate::{
 };
 
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct LineSegment<'a> {
     pub p1: &'a Point,
     pub p2: &'a Point,
@@ -53,9 +53,8 @@ impl<'a> LineSegment<'a> {
             return false;
         }
         
-        let ab_splits_cd = abc.area_sign() * abd.area_sign() < 0;
-        let cd_splits_ab = cda.area_sign() * cdb.area_sign() < 0;
-                
+        let ab_splits_cd = c.left(self) ^ d.left(self);
+        let cd_splits_ab = a.left(cd) ^ b.left(cd);
         ab_splits_cd && cd_splits_ab
     }
         
@@ -88,10 +87,10 @@ mod tests {
 
     #[test]
     fn test_proper_intersect() {
-        let a = Point::new(6, 4);
-        let b = Point::new(0, 4);
-        let c = Point::new(1, 0);
-        let d = Point::new(4, 6);
+        let a = Point::new(6.0, 4.0);
+        let b = Point::new(0.0, 4.0);
+        let c = Point::new(1.0, 0.0);
+        let d = Point::new(4.0, 6.0);
 
         let ab = LineSegment::new(&a, &b);
         let cd = LineSegment::new(&c, &d);
@@ -106,10 +105,10 @@ mod tests {
 
     #[test]
     fn test_improper_intersect() {
-        let a = Point::new(6, 6);
-        let b = Point::new(0, 6);
-        let c = Point::new(1, 0);
-        let d = Point::new(4, 6);
+        let a = Point::new(6.0, 6.0);
+        let b = Point::new(0.0, 6.0);
+        let c = Point::new(1.0, 0.0);
+        let d = Point::new(4.0, 6.0);
 
         let ab = LineSegment::new(&a, &b);
         let cd = LineSegment::new(&c, &d);
@@ -124,10 +123,10 @@ mod tests {
 
     #[test]
     fn test_no_intersect() {
-        let a = Point::new(6, 4);
-        let b = Point::new(4, 4);
-        let c = Point::new(1, 0);
-        let d = Point::new(4, 6);
+        let a = Point::new(6.0, 4.0);
+        let b = Point::new(4.0, 4.0);
+        let c = Point::new(1.0, 0.0);
+        let d = Point::new(4.0, 6.0);
 
         let ab = LineSegment::new(&a, &b);
         let cd = LineSegment::new(&c, &d);
@@ -142,8 +141,8 @@ mod tests {
 
     #[test]
     fn test_intersect_with_self() {
-        let a = Point::new(6, 4);
-        let b = Point::new(4, 4);
+        let a = Point::new(6.0, 4.0);
+        let b = Point::new(4.0, 4.0);
         let ab = LineSegment::new(&a, &b);
 
         assert!(!ab.proper_intersects(&ab));
@@ -153,8 +152,8 @@ mod tests {
 
     #[test]
     fn test_reverse() {
-        let a = Point::new(0, 0);
-        let b = Point::new(1, 2);
+        let a = Point::new(0.0, 0.0);
+        let b = Point::new(1.0, 2.0);
         let ab = LineSegment::new(&a, &b);
         let ba = ab.reverse();
         assert_eq!(ab.p1, &a);

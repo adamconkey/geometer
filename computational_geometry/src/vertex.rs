@@ -28,7 +28,7 @@ impl fmt::Display for VertexId {
 }
 
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Vertex {
     pub coords: Point,
     pub id: VertexId,
