@@ -53,7 +53,7 @@ impl<'a> Triangulation<'a> {
         self.triangles.is_empty()
     }
 
-    pub fn to_points(&self) -> HashSet<(Point, Point, Point)> {
+    pub fn to_points(&self) -> Vec<(Point, Point, Point)> {
         self.triangles.iter()
             .map(|ids| 
                 (
@@ -105,30 +105,23 @@ impl Polygon {
         self.vertex_map.len()
     }
 
-    pub fn double_area(&self) -> i32 {
-        // Computes double area of the polygon.
-        //
-        // NOTE: This is computing double area so that I can stick to
-        // i32 return types in this preliminary implementation and
-        // not worry about floating point issues.
-        let mut area = 0;
+    pub fn area(&self) -> f64 {
+        let mut area = 0.0;
         let anchor = self.vertex_map.anchor();
         for v1 in self.vertex_map.values() {
             let v2 = self.get_vertex(&v1.next); 
-            area += Triangle::from_vertices(anchor, v1, v2).double_area();
+            area += Triangle::from_vertices(anchor, v1, v2).area();
         }
         area
     }
 
-    pub fn double_area_from_triangulation(&self, triangulation: &Triangulation) -> i32 {
-        // Computes double area from a triangulation as the sum of
-        // the double area of the individual triangles that 
-        // constitute the triangulation.
-        // 
-        // This value should always be exactly equal to `self.double_area()`.
-        let mut area = 0;
+    pub fn area_from_triangulation(&self, triangulation: &Triangulation) -> f64 {
+        // Computes area from a triangulation as the sum of the area of 
+        // the individual triangles that constitute the triangulation.
+        // This value should always be exactly equal to `self.area()`.
+        let mut area = 0.0;
         for (p1, p2, p3) in triangulation.to_points().iter() {
-            area += Triangle::new(p1, p2, p3).double_area();
+            area += Triangle::new(p1, p2, p3).area();
         }
         area
     }
@@ -302,7 +295,7 @@ mod tests {
 
     #[derive(Deserialize)]
     struct PolygonMetadata {
-        double_area: i32,
+        area: f64,
         num_edges: usize,
         num_triangles: usize,
         num_vertices: usize,
@@ -424,8 +417,8 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_invalid_polygon_not_enough_vertices() {
-        let p1 = Point::new(1, 2);
-        let p2 = Point::new(3, 4);
+        let p1 = Point::new(1.0, 2.0);
+        let p2 = Point::new(3.0, 4.0);
         let points = vec![p1, p2];
         let polygon = Polygon::new(points);
         assert_eq!(2, polygon.num_vertices());
@@ -434,11 +427,11 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_invalid_polygon_not_simple() {
-        let p1 = Point::new(0, 0);
-        let p2 = Point::new(2, 0);
-        let p3 = Point::new(2, 2);
-        let p4 = Point::new(0, 2);
-        let p5 = Point::new(4, 1); // This one should break it
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(2.0, 0.0);
+        let p3 = Point::new(2.0, 2.0);
+        let p4 = Point::new(0.0, 2.0);
+        let p5 = Point::new(4.0, 1.0); // This one should break it
         let points = vec![p1, p2, p3, p4, p5];
         let polygon = Polygon::new(points);
         assert_eq!(3, polygon.num_vertices())
@@ -456,8 +449,8 @@ mod tests {
 
     #[apply(all_polygons)]
     fn test_area(case: PolygonTestCase) {
-        let double_area = case.polygon.double_area();
-        assert_eq!(double_area, case.metadata.double_area);
+        let area = case.polygon.area();
+        assert_eq!(area, case.metadata.area);
     }
 
     #[apply(all_polygons)]
@@ -482,8 +475,8 @@ mod tests {
         // if holes are present and then this assert would be conditional
         assert_eq!(case.metadata.num_triangles, case.metadata.num_edges - 2);
 
-        let triangulation_double_area = case.polygon.double_area_from_triangulation(&triangulation);
-        assert_eq!(triangulation_double_area, case.metadata.double_area);
+        let triangulation_area = case.polygon.area_from_triangulation(&triangulation);
+        assert_eq!(triangulation_area, case.metadata.area);
     }
 
     #[apply(all_polygons)]
