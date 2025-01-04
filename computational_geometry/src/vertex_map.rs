@@ -100,4 +100,10 @@ impl VertexMap {
             v.rotate_about_origin(radians);
         }
     }
+
+    pub fn rotate_vertices_about_point(&mut self, radians: f64, point: &Point) {
+        for v in self.values_mut() {
+            v.rotate_about_point(radians, point);
+        }
+    }
 }

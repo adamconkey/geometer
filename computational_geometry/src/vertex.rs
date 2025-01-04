@@ -56,4 +56,8 @@ impl Vertex {
     pub fn rotate_about_origin(&mut self, radians: f64) {
         self.coords.rotate_about_origin(radians);
     }
+
+    pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
+        self.coords.rotate_about_point(radians, point);
+    }
 }

@@ -41,10 +41,10 @@ impl Point {
 
     pub fn rotate_about_origin(&mut self, radians: f64) {
         let origin = Point::new(0.0, 0.0);
-        self.rotate_about_point(radians, origin);
+        self.rotate_about_point(radians, &origin);
     }
 
-    pub fn rotate_about_point(&mut self, radians: f64, point: Point) {
+    pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
         let cos_theta = radians.cos();
         let sin_theta = radians.sin();
         let x_diff = self.x - point.x;

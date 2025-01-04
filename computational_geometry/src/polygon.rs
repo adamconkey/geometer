@@ -207,10 +207,12 @@ impl Polygon {
         true
     }
 
-    // TODO want to support float degrees as well as radians,
-    // not sure yet how I want to structure that though
     pub fn rotate_about_origin(&mut self, radians: f64) {
         self.vertex_map.rotate_vertices_about_origin(radians);
+    }
+
+    pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
+        self.vertex_map.rotate_vertices_about_point(radians, point);
     }
 
     pub fn validate(&self) {
