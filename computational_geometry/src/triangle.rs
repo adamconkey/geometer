@@ -30,6 +30,7 @@ impl<'a> Triangle<'a> {
         })
     }
 
+    // TODO this doesn't work with floats need to fix
     pub fn area_sign(&self) -> f64 {
         self.double_area().signum()
     }
