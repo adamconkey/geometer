@@ -50,7 +50,7 @@ impl Point {
         let x_diff = self.x - point.x;
         let y_diff = self.y - point.y;
         let x1 = x_diff * cos_theta - y_diff * sin_theta + point.x;
-        let y1 = x_diff * sin_theta - y_diff * cos_theta + point.y;
+        let y1 = x_diff * sin_theta + y_diff * cos_theta + point.y;
         self.x = x1;
         self.y = y1;
     }
