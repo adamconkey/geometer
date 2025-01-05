@@ -169,4 +169,6 @@ mod tests {
         assert_approx_eq!(p1.x, p2.x, F64_ASSERT_PRECISION);
         assert_approx_eq!(p1.y, p2.y, F64_ASSERT_PRECISION);
     }
+
+    // TODO need tests for rotation about arbitrary point
 }
