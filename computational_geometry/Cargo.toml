@@ -8,6 +8,7 @@ serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
+assert_approx_eq = "1.1.0"
 itertools = "0.14.0"
 paste = "*"
 rstest = "0.24.0"

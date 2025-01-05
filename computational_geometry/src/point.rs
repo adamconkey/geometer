@@ -59,7 +59,11 @@ impl Point {
 
 #[cfg(test)]
 mod tests {
+    use crate::F64_ASSERT_PRECISION;
+
     use super::*;
+    use assert_approx_eq::assert_approx_eq;
+    use rstest::rstest;
  
     #[test]
     fn test_serialize_point() {
@@ -105,5 +109,15 @@ mod tests {
         assert!(!p0.between(&p2, &p1));
         assert!(!p2.between(&p0, &p1));
         assert!(!p2.between(&p1, &p0));
+    }
+
+    #[rstest]
+    #[case(0.0, 1.0, 0.0)]
+    #[case(std::f64::consts::PI, -1.0, 0.0)]
+    fn test_rotate_about_origin(#[case] radians: f64, #[case] x: f64, #[case] y: f64) {
+        let mut p = Point::new(1.0, 0.0);
+        p.rotate_about_origin(radians);
+        assert_approx_eq!(p.x, x, F64_ASSERT_PRECISION);
+        assert_approx_eq!(p.y, y, F64_ASSERT_PRECISION);
     }
 }
