@@ -142,12 +142,31 @@ mod tests {
     #[case(2.0 * PI, 1.0, 0.0)]
     fn unit_circle_rotations(#[case] radians: f64, #[case] x: f64, #[case] y: f64) {}   
 
-    
+
     #[apply(unit_circle_rotations)]
     fn test_rotate_about_origin(radians: f64, x: f64, y: f64) {
         let mut p = Point::new(1.0, 0.0);
         p.rotate_about_origin(radians);
         assert_approx_eq!(p.x, x, F64_ASSERT_PRECISION);
         assert_approx_eq!(p.y, y, F64_ASSERT_PRECISION);
+    }
+
+    #[apply(unit_circle_rotations)]
+    fn test_rotate_about_self(radians: f64, _x: f64, _y: f64) {
+        let mut p = Point::new(1.0, 2.0);
+        p.rotate_about_point(radians, &p.clone());
+        assert_approx_eq!(p.x, p.x, F64_ASSERT_PRECISION);
+        assert_approx_eq!(p.y, p.y, F64_ASSERT_PRECISION);
+    }
+
+    #[test]
+    fn test_rotation_composition() {
+        let mut p1 = Point::new(1.0, 0.0);
+        let mut p2 = p1.clone();
+        p1.rotate_about_origin(FRAC_PI_4);
+        p1.rotate_about_origin(FRAC_PI_4);
+        p2.rotate_about_origin(FRAC_PI_2);
+        assert_approx_eq!(p1.x, p2.x, F64_ASSERT_PRECISION);
+        assert_approx_eq!(p1.y, p2.y, F64_ASSERT_PRECISION);
     }
 }
