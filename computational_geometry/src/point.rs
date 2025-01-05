@@ -63,11 +63,10 @@ mod tests {
 
     use super::*;
     use assert_approx_eq::assert_approx_eq;
+    use rstest_reuse::{self, *};
     use rstest::rstest;
     use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8, PI, SQRT_2};
  
-    
-
     #[test]
     fn test_serialize_point() {
         let p = Point::new(1.0, 2.0);
@@ -114,41 +113,38 @@ mod tests {
         assert!(!p2.between(&p1, &p0));
     }
 
+    #[template]
     #[rstest]
     #[case(0.0, 1.0, 0.0)]
-    
     #[case(FRAC_PI_8, 0.5 * (2.0 + SQRT_2).sqrt(), 0.5 * (2.0 - SQRT_2).sqrt())]
     #[case(FRAC_PI_6, 0.5 * 3.0f64.sqrt(), 0.5)]
     #[case(FRAC_PI_4, 0.5 * SQRT_2, 0.5 * SQRT_2)]
     #[case(FRAC_PI_3, 0.5, 0.5 * 3.0f64.sqrt())]
     #[case(3.0 * FRAC_PI_8, 0.5 * (2.0 - SQRT_2).sqrt(), 0.5 * (2.0 + SQRT_2).sqrt())]
-    
     #[case(FRAC_PI_2, 0.0, 1.0)]
-
     #[case(5.0 * FRAC_PI_8, -0.5 * (2.0 - SQRT_2).sqrt(), 0.5 * (2.0 + SQRT_2).sqrt())]
     #[case(2.0 * FRAC_PI_3, -0.5, 0.5 * 3.0f64.sqrt())]
     #[case(3.0 * FRAC_PI_4, -0.5 * SQRT_2, 0.5 * SQRT_2)]
     #[case(5.0 * FRAC_PI_6, -0.5 * 3.0f64.sqrt(), 0.5)]
     #[case(7.0 * FRAC_PI_8, -0.5 * (2.0 + SQRT_2).sqrt(), 0.5 * (2.0 - SQRT_2).sqrt())]
-
     #[case(PI, -1.0, 0.0)]
-    
     #[case(9.0 * FRAC_PI_8, -0.5 * (2.0 + SQRT_2).sqrt(), -0.5 * (2.0 - SQRT_2).sqrt())]
     #[case(7.0 * FRAC_PI_6, -0.5 * 3.0f64.sqrt(), -0.5)]
     #[case(5.0 * FRAC_PI_4, -0.5 * SQRT_2, -0.5 * SQRT_2)]
     #[case(4.0 * FRAC_PI_3, -0.5, -0.5 * 3.0f64.sqrt())]
     #[case(11.0 * FRAC_PI_8, -0.5 * (2.0 - SQRT_2).sqrt(), -0.5 * (2.0 + SQRT_2).sqrt())]
-    
     #[case(3.0 * FRAC_PI_2, 0.0, -1.0)]
-    
     #[case(13.0 * FRAC_PI_8, 0.5 * (2.0 - SQRT_2).sqrt(), -0.5 * (2.0 + SQRT_2).sqrt())]
     #[case(5.0 * FRAC_PI_3, 0.5, -0.5 * 3.0f64.sqrt())]
     #[case(7.0 * FRAC_PI_4, 0.5 * SQRT_2, -0.5 * SQRT_2)]
     #[case(11.0 * FRAC_PI_6, 0.5 * 3.0f64.sqrt(), -0.5)]
     #[case(15.0 * FRAC_PI_8, 0.5 * (2.0 + SQRT_2).sqrt(), -0.5 * (2.0 - SQRT_2).sqrt())]
-    
     #[case(2.0 * PI, 1.0, 0.0)]
-    fn test_rotate_about_origin(#[case] radians: f64, #[case] x: f64, #[case] y: f64) {
+    fn unit_circle_rotations(#[case] radians: f64, #[case] x: f64, #[case] y: f64) {}   
+
+    
+    #[apply(unit_circle_rotations)]
+    fn test_rotate_about_origin(radians: f64, x: f64, y: f64) {
         let mut p = Point::new(1.0, 0.0);
         p.rotate_about_origin(radians);
         assert_approx_eq!(p.x, x, F64_ASSERT_PRECISION);
