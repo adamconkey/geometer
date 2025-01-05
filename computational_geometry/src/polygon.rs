@@ -488,6 +488,8 @@ mod tests {
         assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
     }
 
+    // TODO add test for rotation about arbitrary points (parameterized with a few)
+
     #[apply(all_polygons)]
     fn test_triangulation(case: PolygonTestCase) {
         let triangulation = case.polygon.triangulation();
