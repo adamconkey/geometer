@@ -113,7 +113,9 @@ mod tests {
 
     #[rstest]
     #[case(0.0, 1.0, 0.0)]
+    #[case(std::f64::consts::FRAC_PI_2, 0.0, 1.0)]
     #[case(std::f64::consts::PI, -1.0, 0.0)]
+    #[case(3.0 * std::f64::consts::FRAC_PI_2, 0.0, -1.0)]
     fn test_rotate_about_origin(#[case] radians: f64, #[case] x: f64, #[case] y: f64) {
         let mut p = Point::new(1.0, 0.0);
         p.rotate_about_origin(radians);
