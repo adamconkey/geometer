@@ -294,7 +294,10 @@ impl Polygon {
 
 #[cfg(test)]
 mod tests {
+    use crate::F64_ASSERT_PRECISION;
+
     use super::*;
+    use assert_approx_eq::assert_approx_eq;
     use rstest::{fixture, rstest};
     use rstest_reuse::{self, *};
     use serde::Deserialize;
@@ -472,6 +475,17 @@ mod tests {
         let edges = case.polygon.edges();
         assert_eq!(edges.len(), case.metadata.num_edges);
         assert_eq!(edges, expected_edges);
+    }
+
+    #[apply(all_polygons)]
+    fn test_rotation_about_origin(
+        case: PolygonTestCase, 
+        // TODO import with use so these are shorter and parametrize with a few more
+        #[values(std::f64::consts::PI, std::f64::consts::FRAC_PI_2)] radians: f64) {
+        let mut polygon = case.polygon;
+        polygon.rotate_about_origin(radians);
+        // TODO can consider asserting other invariants, call validate, etc
+        assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
     }
 
     #[apply(all_polygons)]
