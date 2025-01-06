@@ -301,6 +301,7 @@ mod tests {
     use rstest::{fixture, rstest};
     use rstest_reuse::{self, *};
     use serde::Deserialize;
+    use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8, PI, SQRT_2};
     use std::path::PathBuf;
     use tempfile::NamedTempFile;
 
@@ -480,15 +481,28 @@ mod tests {
     #[apply(all_polygons)]
     fn test_rotation_about_origin(
         case: PolygonTestCase, 
-        // TODO import with use so these are shorter and parametrize with a few more
-        #[values(std::f64::consts::PI, std::f64::consts::FRAC_PI_2)] radians: f64) {
+        #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f64
+    ) {
         let mut polygon = case.polygon;
         polygon.rotate_about_origin(radians);
-        // TODO can consider asserting other invariants, call validate, etc
+        polygon.validate();
+        assert_eq!(polygon.num_edges(), case.metadata.num_edges);
+        assert_eq!(polygon.num_vertices(), case.metadata.num_vertices);
         assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
     }
 
-    // TODO add test for rotation about arbitrary points (parameterized with a few)
+    #[apply(all_polygons)]
+    fn test_rotation_about_point(
+        case: PolygonTestCase,
+        #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f64,
+        #[values(Point::new(5.2, 10.0), Point::new(-43.0, PI), Point::new(SQRT_2, 1e8))] point: Point
+    ) {
+        let mut polygon = case.polygon;
+        polygon.rotate_about_point(radians, &point);
+        assert_eq!(polygon.num_edges(), case.metadata.num_edges);
+        assert_eq!(polygon.num_vertices(), case.metadata.num_vertices);
+        assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
+    }
 
     #[apply(all_polygons)]
     fn test_triangulation(case: PolygonTestCase) {
