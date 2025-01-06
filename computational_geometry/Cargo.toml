@@ -3,6 +3,10 @@ name="computational_geometry"
 edition.workspace = true
 version.workspace = true
 
+[[bin]]
+name = "generate-rotated-ipa-polygons"
+path = "src/bin/generate_rotated_ipa_polygons.rs"
+
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
