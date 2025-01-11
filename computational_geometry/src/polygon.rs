@@ -5,6 +5,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::{
+    bounding_box::BoundingBox,
     line_segment::LineSegment,
     point::Point,
     triangle::Triangle,
@@ -205,6 +206,30 @@ impl Polygon {
             }
         } 
         true
+    }
+
+    pub fn bounding_box(&self) -> BoundingBox {
+        BoundingBox::new(self.min_x(), self.max_x(), self.min_y(), self.max_y())
+    }
+
+    pub fn min_x(&self) -> f64 {
+        self.vertex_map.min_x()
+    }
+
+    pub fn max_x(&self) -> f64 {
+        self.vertex_map.max_x()
+    }
+
+    pub fn min_y(&self) -> f64 {
+        self.vertex_map.min_y()
+    }
+
+    pub fn max_y(&self) -> f64 {
+        self.vertex_map.max_y()
+    }
+
+    pub fn translate(&mut self, x: f64, y: f64) {
+        self.vertex_map.translate(x, y);
     }
 
     pub fn rotate_about_origin(&mut self, radians: f64) {

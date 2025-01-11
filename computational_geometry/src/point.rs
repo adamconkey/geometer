@@ -39,6 +39,11 @@ impl Point {
         Triangle::new(ab.p1, ab.p2, self).area() >= 0.0
     }
 
+    pub fn translate(&mut self, x: f64, y: f64) {
+        self.x += x;
+        self.y += y;
+    }
+
     pub fn rotate_about_origin(&mut self, radians: f64) {
         let origin = Point::new(0.0, 0.0);
         self.rotate_about_point(radians, &origin);

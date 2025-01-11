@@ -16,19 +16,24 @@ fn main() {
         dest_json_path.push(src_json_path.file_name().unwrap());
 
         let mut polygon = Polygon::from_json(src_json_path);
+        
+        // Get a (rounded) bounding box center for translation vector
+        let orig_bb = polygon.bounding_box();
+        let mut orig_bb_center = orig_bb.center();
+        orig_bb_center.round();
     
-        // TODO I'm thinking of adding the ability to compute the
-        // bounding box of the polygon, which should be quite easy
-        // to implement. Then you could either rotate around the
-        // center of the bounding box, or if that produces weird
-        // coordinates (I'm not sure yet), then you could rotate
-        // PI around the origin as I'm doing here, but translate
-        // by essentially the vector between the center of the 
-        // new bounding box after rotation and the center of the
-        // old bounding box. I think if you rounded those center
-        // coordinates it would work out to nice even coordinates. 
         polygon.rotate_about_origin(std::f64::consts::PI);
         polygon.round_coordinates();
+        
+        // Get a new (rounded) bounding box center to compute translation
+        let new_bb = polygon.bounding_box();
+        let mut new_bb_center = new_bb.center();
+        new_bb_center.round();
+
+        let x = orig_bb_center.x - new_bb_center.x;
+        let y = orig_bb_center.y - new_bb_center.y;
+        polygon.translate(x, y);
+
         polygon.to_json(dest_json_path);
     }
 }

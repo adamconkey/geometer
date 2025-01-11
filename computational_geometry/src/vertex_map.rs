@@ -87,12 +87,34 @@ impl VertexMap {
         self.values().collect::<Vec<_>>()[0]
     }
 
+    pub fn min_x(&self) -> f64 {
+        self.values().fold(std::f64::MAX, |acc, v| acc.min(v.coords.x))
+    }
+
+    pub fn max_x(&self) -> f64 {
+        self.values().fold(std::f64::MIN, |acc, v| acc.max(v.coords.x))
+    }
+
+    pub fn min_y(&self) -> f64 {
+        self.values().fold(std::f64::MAX, |acc, v| acc.min(v.coords.y))
+    }
+
+    pub fn max_y(&self) -> f64 {
+        self.values().fold(std::f64::MIN, |acc, v| acc.max(v.coords.y))
+    }
+
     pub fn update_next(&mut self, k: &VertexId, next: &VertexId) {
         self.get_mut(k).next = *next;
     }
 
     pub fn update_prev(&mut self, k: &VertexId, prev: &VertexId) {
         self.get_mut(k).prev = *prev;
+    }
+
+    pub fn translate(&mut self, x: f64, y: f64) {
+        for v in self.values_mut() {
+            v.translate(x, y);
+        }
     }
 
     pub fn rotate_vertices_about_origin(&mut self, radians: f64) {
@@ -111,5 +133,26 @@ impl VertexMap {
         for v in self.values_mut() {
             v.round_coordinates();
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_min_max() {
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(5.0, -1.0);
+        let p3 = Point::new(7.0, 6.0);
+        let p4 = Point::new(-4.0, 8.0);
+        let p5 = Point::new(-2.0, -3.0);
+        let points = vec![p1, p2, p3, p4, p5];
+        let vmap = VertexMap::new(points);
+        assert_eq!(vmap.min_x(), -4.0);
+        assert_eq!(vmap.max_x(), 7.0);
+        assert_eq!(vmap.min_y(), -3.0);
+        assert_eq!(vmap.max_y(), 8.0);
     }
 }
