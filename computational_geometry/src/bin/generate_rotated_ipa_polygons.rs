@@ -10,12 +10,17 @@ fn main() {
     let mut orig_path = dataset_path.clone();
     orig_path.push("original");
 
+    // TODO Also writing to visualizer path since they are copied there
+    // until the path resolution for the visualizer is resolved
+    let mut vis_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    vis_path.push("../visualizer/polygons");
+
     for path in fs::read_dir(orig_path).unwrap() {
         let src_json_path = path.unwrap().path();
         let mut dest_json_path = dataset_path.clone();
         dest_json_path.push(src_json_path.file_name().unwrap());
 
-        let mut polygon = Polygon::from_json(src_json_path);
+        let mut polygon = Polygon::from_json(&src_json_path);
         
         // Get a (rounded) bounding box center for translation vector
         let orig_bb = polygon.bounding_box();
@@ -35,5 +40,10 @@ fn main() {
         polygon.translate(x, y);
 
         polygon.to_json(dest_json_path);
+
+        // TODO will remove this when paths are resolved for visualizer
+        let mut vis_json_path = vis_path.clone();
+        vis_json_path.push(src_json_path.file_name().unwrap());
+        polygon.to_json(vis_json_path);
     }
 }
