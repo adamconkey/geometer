@@ -52,4 +52,20 @@ impl Vertex {
     pub fn left_on(&self, ab: &LineSegment) -> bool {
         self.coords.left_on(ab)
     }
+
+    pub fn translate(&mut self, x: f64, y: f64) {
+        self.coords.translate(x, y)
+    }
+
+    pub fn rotate_about_origin(&mut self, radians: f64) {
+        self.coords.rotate_about_origin(radians);
+    }
+
+    pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
+        self.coords.rotate_about_point(radians, point);
+    }
+
+    pub fn round_coordinates(&mut self) {
+        self.coords.round();
+    }
 }

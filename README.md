@@ -23,6 +23,8 @@ My goal for this repo is to eventually have a complete implementation of the alg
 ### Currently Supported
 - Area of 2D polygons
 - Triangulation - $O(n^2)$
+- 2D Rotation and translation of polygons
+- 2D Bounding box computation
 
 ### In the Works
 - https://github.com/adamconkey/computational_geometry/issues/14: Fournier-Montuno Trapezoidization - $O(n \cdot \log n)$

@@ -5,6 +5,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::{
+    bounding_box::BoundingBox,
     line_segment::LineSegment,
     point::Point,
     triangle::Triangle,
@@ -91,7 +92,7 @@ impl Polygon {
         // TODO return result
 
         let points = self.vertex_map.sorted_points();
-        let points_str = serde_json::to_string(&points).unwrap();
+        let points_str = serde_json::to_string_pretty(&points).unwrap();
         // TODO don't expect below or unwrap above, want to return result
         // where it can possibly error on serialization or file write
         fs::write(path, points_str).expect("File should have saved but failed");
@@ -207,6 +208,42 @@ impl Polygon {
         true
     }
 
+    pub fn bounding_box(&self) -> BoundingBox {
+        BoundingBox::new(self.min_x(), self.max_x(), self.min_y(), self.max_y())
+    }
+
+    pub fn min_x(&self) -> f64 {
+        self.vertex_map.min_x()
+    }
+
+    pub fn max_x(&self) -> f64 {
+        self.vertex_map.max_x()
+    }
+
+    pub fn min_y(&self) -> f64 {
+        self.vertex_map.min_y()
+    }
+
+    pub fn max_y(&self) -> f64 {
+        self.vertex_map.max_y()
+    }
+
+    pub fn translate(&mut self, x: f64, y: f64) {
+        self.vertex_map.translate(x, y);
+    }
+
+    pub fn rotate_about_origin(&mut self, radians: f64) {
+        self.vertex_map.rotate_vertices_about_origin(radians);
+    }
+
+    pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
+        self.vertex_map.rotate_vertices_about_point(radians, point);
+    }
+
+    pub fn round_coordinates(&mut self) {
+        self.vertex_map.round_coordinates();
+    }
+
     pub fn validate(&self) {
         self.validate_num_vertices();
         self.validate_cycle();
@@ -286,10 +323,14 @@ impl Polygon {
 
 #[cfg(test)]
 mod tests {
+    use crate::F64_ASSERT_PRECISION;
+
     use super::*;
+    use assert_approx_eq::assert_approx_eq;
     use rstest::{fixture, rstest};
     use rstest_reuse::{self, *};
     use serde::Deserialize;
+    use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8, PI, SQRT_2};
     use std::path::PathBuf;
     use tempfile::NamedTempFile;
 
@@ -464,6 +505,32 @@ mod tests {
         let edges = case.polygon.edges();
         assert_eq!(edges.len(), case.metadata.num_edges);
         assert_eq!(edges, expected_edges);
+    }
+
+    #[apply(all_polygons)]
+    fn test_rotation_about_origin(
+        case: PolygonTestCase, 
+        #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f64
+    ) {
+        let mut polygon = case.polygon;
+        polygon.rotate_about_origin(radians);
+        polygon.validate();
+        assert_eq!(polygon.num_edges(), case.metadata.num_edges);
+        assert_eq!(polygon.num_vertices(), case.metadata.num_vertices);
+        assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
+    }
+
+    #[apply(all_polygons)]
+    fn test_rotation_about_point(
+        case: PolygonTestCase,
+        #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f64,
+        #[values(Point::new(5.2, 10.0), Point::new(-43.0, PI), Point::new(SQRT_2, 1e8))] point: Point
+    ) {
+        let mut polygon = case.polygon;
+        polygon.rotate_about_point(radians, &point);
+        assert_eq!(polygon.num_edges(), case.metadata.num_edges);
+        assert_eq!(polygon.num_vertices(), case.metadata.num_vertices);
+        assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
     }
 
     #[apply(all_polygons)]
