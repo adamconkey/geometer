@@ -88,19 +88,19 @@ impl VertexMap {
     }
 
     pub fn min_x(&self) -> f64 {
-        self.values().fold(std::f64::MAX, |acc, v| acc.min(v.coords.x))
+        self.values().fold(f64::MAX, |acc, v| acc.min(v.coords.x))
     }
 
     pub fn max_x(&self) -> f64 {
-        self.values().fold(std::f64::MIN, |acc, v| acc.max(v.coords.x))
+        self.values().fold(f64::MIN, |acc, v| acc.max(v.coords.x))
     }
 
     pub fn min_y(&self) -> f64 {
-        self.values().fold(std::f64::MAX, |acc, v| acc.min(v.coords.y))
+        self.values().fold(f64::MAX, |acc, v| acc.min(v.coords.y))
     }
 
     pub fn max_y(&self) -> f64 {
-        self.values().fold(std::f64::MIN, |acc, v| acc.max(v.coords.y))
+        self.values().fold(f64::MIN, |acc, v| acc.max(v.coords.y))
     }
 
     pub fn update_next(&mut self, k: &VertexId, next: &VertexId) {
