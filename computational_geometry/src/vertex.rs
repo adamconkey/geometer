@@ -60,4 +60,8 @@ impl Vertex {
     pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
         self.coords.rotate_about_point(radians, point);
     }
+
+    pub fn round_coordinates(&mut self) {
+        self.coords.round();
+    }
 }

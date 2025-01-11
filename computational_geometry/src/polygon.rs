@@ -91,7 +91,7 @@ impl Polygon {
         // TODO return result
 
         let points = self.vertex_map.sorted_points();
-        let points_str = serde_json::to_string(&points).unwrap();
+        let points_str = serde_json::to_string_pretty(&points).unwrap();
         // TODO don't expect below or unwrap above, want to return result
         // where it can possibly error on serialization or file write
         fs::write(path, points_str).expect("File should have saved but failed");
@@ -213,6 +213,10 @@ impl Polygon {
 
     pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
         self.vertex_map.rotate_vertices_about_point(radians, point);
+    }
+
+    pub fn round_coordinates(&mut self) {
+        self.vertex_map.round_coordinates();
     }
 
     pub fn validate(&self) {

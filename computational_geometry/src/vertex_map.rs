@@ -106,4 +106,10 @@ impl VertexMap {
             v.rotate_about_point(radians, point);
         }
     }
+
+    pub fn round_coordinates(&mut self) {
+        for v in self.values_mut() {
+            v.round_coordinates();
+        }
+    }
 }

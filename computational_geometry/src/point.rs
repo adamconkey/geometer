@@ -54,6 +54,11 @@ impl Point {
         self.x = x1;
         self.y = y1;
     }
+
+    pub fn round(&mut self) {
+        self.x = f64::round(self.x);
+        self.y = f64::round(self.y);
+    }
 }
 
 
