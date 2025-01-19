@@ -1,70 +1,16 @@
-use core::fmt;
 use std::collections::HashSet;
-use std::collections::hash_set::Iter;
 use std::fs;
 use std::path::Path;
 
 use crate::{
-    bounding_box::BoundingBox,
-    line_segment::LineSegment,
-    point::Point,
-    triangle::Triangle,
-    vertex::{Vertex, VertexId},
-    vertex_map::VertexMap,
+    bounding_box::BoundingBox, 
+    line_segment::LineSegment, 
+    point::Point, 
+    triangle::Triangle, 
+    triangulation::{EarNotFoundError, TriangleVertexIds, Triangulation}, 
+    vertex::{Vertex, VertexId}, 
+    vertex_map::VertexMap
 };
-
-
-#[derive(Debug, Clone)]
-struct EarNotFoundError;
-
-impl fmt::Display for EarNotFoundError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "polygon is likely invalid")
-    }
-}
-
-
-#[derive(Eq, Hash, PartialEq)]
-pub struct TriangleVertexIds(VertexId, VertexId, VertexId);
-
-
-pub struct Triangulation<'a> {
-    triangles: HashSet<TriangleVertexIds>,
-    vmap: &'a VertexMap,
-}
-
-impl<'a> Triangulation<'a> {
-    pub fn new(vmap: &'a VertexMap) -> Self {
-        Self { triangles: HashSet::new(), vmap }
-    }    
-    
-    pub fn insert(&mut self, value: TriangleVertexIds) -> bool {
-        self.triangles.insert(value)
-    }
-
-    pub fn iter(&self) -> Iter<'_, TriangleVertexIds> { 
-        self.triangles.iter()
-    }
-
-    pub fn len(&self) -> usize {
-        self.triangles.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.triangles.is_empty()
-    }
-
-    pub fn to_points(&self) -> Vec<(Point, Point, Point)> {
-        self.triangles.iter()
-            .map(|ids| 
-                (
-                    self.vmap.get(&ids.0).coords.clone(),
-                    self.vmap.get(&ids.1).coords.clone(),
-                    self.vmap.get(&ids.2).coords.clone()
-                )
-            ).collect()        
-    }
-}
 
 
 #[derive(Debug, PartialEq)]
