@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::{collections::HashSet, hash::Hash};
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
@@ -156,41 +156,26 @@ impl Polygon {
     }
 
     pub fn interior_points(&self) -> HashSet<VertexId> {
-        // TODO actually want to do this? Or is there a nicer
-        // structure to it than literally 4 nested for loops?
-
-        let mut result = HashSet::new();
+        let mut interior_points = HashSet::new();
         let ids: Vec<_> = self.vertex_map.keys().collect();
-        for id1 in ids.iter() {
-            for id2 in ids.iter() {
-                if id2 == id1 {
-                    continue;
-                }
-                for id3 in ids.iter() {
-                    if id3 == id1 || id3 == id2 {
-                        continue;
-                    }
-                    for id in ids.iter() {
-                        if id == id1 || id == id2 || id == id3 {
-                            continue;
-                        }
-                        let p = self.vertex_map.get(id).coords.clone();
-                        // TODO helper for this?
-                        let v1 = self.vertex_map.get(id1);
-                        let v2 = self.vertex_map.get(id2);
-                        let v3 = self.vertex_map.get(id3);
-                        let triangle = Triangle::from_vertices(v1, v2, v3);
 
-                        if triangle.contains(p) {
-                            // TODO obviously dumb, figure out refs
-                            result.insert(**id);
-                            continue;
-                        }
-                    }
-                }
+        // Don't be fooled by the runtime here, it's iterating over all
+        // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3), 
+        // so it's still O(n^4), this is just more compact than 4 nested
+        // for-loops.
+        for perm in ids.iter().permutations(4) {
+            let p = self.vertex_map.get(perm[0]).coords.clone();
+            // TODO could make helper to get triangle here
+            let v1 = self.vertex_map.get(perm[1]);
+            let v2 = self.vertex_map.get(perm[2]);
+            let v3 = self.vertex_map.get(perm[3]);
+            let triangle = Triangle::from_vertices(v1, v2, v3);
+            if triangle.contains(p) {
+                // TODO fix this deref nonsense
+                interior_points.insert(**perm[0]);
             }
         }
-        result
+        interior_points
     }
 
     pub fn exterior_points(&self) -> HashSet<VertexId> {
