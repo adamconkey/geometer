@@ -355,7 +355,7 @@ mod tests {
 
     fn load_polygon(name: &str, folder: &str) -> Polygon {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("resources/test");
+        path.push("polygons");
         path.push(folder);
         path.push(format!("{}.json", name));
         Polygon::from_json(path)
@@ -363,7 +363,7 @@ mod tests {
 
     fn load_metadata(name: &str, folder: &str) -> PolygonMetadata {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("resources/test");
+        path.push("polygons");
         path.push(folder);
         path.push(format!("{}.meta.json", name));
         let metadata_str: String = fs::read_to_string(path)

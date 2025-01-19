@@ -5,7 +5,7 @@ use computational_geometry::polygon::Polygon;
 
 fn main() {
     let mut dataset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    dataset_path.push("resources/test/interesting_polygon_archive");
+    dataset_path.push("polygons/interesting_polygon_archive");
 
     let mut orig_path = dataset_path.clone();
     orig_path.push("original");
