@@ -154,6 +154,15 @@ impl Polygon {
         true
     }
 
+    pub fn interior_points(&self) -> HashSet<Point> {
+        todo!("Implement O'Rourke 3.1")
+
+    }
+
+    pub fn exterior_points(&self) -> HashSet<Point> {
+        todo!("Use complement of interior_points to get this one")
+    }
+
     pub fn bounding_box(&self) -> BoundingBox {
         BoundingBox::new(self.min_x(), self.max_x(), self.min_y(), self.max_y())
     }
