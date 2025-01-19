@@ -1,12 +1,14 @@
 use std::fmt;
 
+use serde::Deserialize;
+
 use crate::{
     line_segment::LineSegment,
     point::Point,
 };
 
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct VertexId(u32);
 
 impl From<u32> for VertexId {

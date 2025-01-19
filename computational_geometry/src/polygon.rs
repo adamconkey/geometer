@@ -182,16 +182,15 @@ impl Polygon {
                         let triangle = Triangle::from_vertices(v1, v2, v3);
 
                         if triangle.contains(p) {
-                            result.insert(id);
+                            // TODO obviously dumb, figure out refs
+                            result.insert(**id);
                             continue;
                         }
                     }
                 }
             }
         }
-        
-        todo!("Implement O'Rourke 3.1")
-
+        result
     }
 
     pub fn exterior_points(&self) -> HashSet<VertexId> {
@@ -327,6 +326,7 @@ mod tests {
     #[derive(Deserialize)]
     struct PolygonMetadata {
         area: f64,
+        interior_points: HashSet<VertexId>,
         num_edges: usize,
         num_triangles: usize,
         num_vertices: usize,
@@ -444,6 +444,14 @@ mod tests {
     #[case::toussaint_1a(toussaint_1a())]
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
+    #[template]
+    #[rstest]
+    #[case::polygon_1(polygon_1())]
+    #[case::polygon_2(polygon_2())]
+    #[case::right_triangle(right_triangle())]
+    #[case::square_4x4(square_4x4())]
+    fn all_custom_polygons(#[case] case: PolygonTestCase) {}
+
 
     #[test]
     #[should_panic]
@@ -536,11 +544,11 @@ mod tests {
         assert_eq!(triangulation_area, case.metadata.area);
     }
 
-    // #[rstest]
-    // #[case::polygon_1(polygon_1(), )]
-    // fn test_interior_points() {
-
-    // }
+    #[apply(all_custom_polygons)]
+    fn test_interior_points(case: PolygonTestCase) {
+        let interior_points = case.polygon.interior_points();
+        assert_eq!(interior_points, case.metadata.interior_points);
+    }
 
     #[apply(all_polygons)]
     fn test_attributes(case: PolygonTestCase) {
