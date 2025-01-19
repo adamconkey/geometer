@@ -1,8 +1,7 @@
 use std::cell::OnceCell;
 
 use crate::{
-    point::Point,
-    vertex::Vertex,
+    line_segment::LineSegment, point::Point, vertex::Vertex
 };
 
 
@@ -22,6 +21,13 @@ impl<'a> Triangle<'a> {
         Triangle::new(&v1.coords, &v2.coords, &v3.coords)
     }
 
+    pub fn to_line_segments(&self) -> Vec<LineSegment> {
+        let ls1 = LineSegment::new(self.p1, self.p2);
+        let ls2 = LineSegment::new(self.p2, self.p3);
+        let ls3 = LineSegment::new(self.p3, self.p1);
+        vec![ls1, ls2, ls3]
+    }
+
     pub fn area(&self) -> f64 {
         *self.area.get_or_init(|| {
             let t1 = (self.p2.x - self.p1.x) * (self.p3.y - self.p1.y);
@@ -32,6 +38,15 @@ impl<'a> Triangle<'a> {
 
     pub fn has_collinear_points(&self) -> bool {
         self.area() == 0.0
+    }
+
+    pub fn contains(&self, p: Point) -> bool {
+        for ls in self.to_line_segments() {
+            if !p.left_on(&ls) {
+                return false;
+            }
+        }
+        true
     }
 }
 

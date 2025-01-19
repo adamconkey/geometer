@@ -1,4 +1,5 @@
-use std::collections::HashSet;
+use itertools::Itertools;
+use std::{collections::HashSet, hash::Hash};
 use std::fs;
 use std::path::Path;
 
@@ -154,12 +155,46 @@ impl Polygon {
         true
     }
 
-    pub fn interior_points(&self) -> HashSet<Point> {
+    pub fn interior_points(&self) -> HashSet<VertexId> {
+        // TODO actually want to do this? Or is there a nicer
+        // structure to it than literally 4 nested for loops?
+
+        let mut result = HashSet::new();
+        let ids: Vec<_> = self.vertex_map.keys().collect();
+        for id1 in ids.iter() {
+            for id2 in ids.iter() {
+                if id2 == id1 {
+                    continue;
+                }
+                for id3 in ids.iter() {
+                    if id3 == id1 || id3 == id2 {
+                        continue;
+                    }
+                    for id in ids.iter() {
+                        if id == id1 || id == id2 || id == id3 {
+                            continue;
+                        }
+                        let p = self.vertex_map.get(id).coords.clone();
+                        // TODO helper for this?
+                        let v1 = self.vertex_map.get(id1);
+                        let v2 = self.vertex_map.get(id2);
+                        let v3 = self.vertex_map.get(id3);
+                        let triangle = Triangle::from_vertices(v1, v2, v3);
+
+                        if triangle.contains(p) {
+                            result.insert(id);
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+        
         todo!("Implement O'Rourke 3.1")
 
     }
 
-    pub fn exterior_points(&self) -> HashSet<Point> {
+    pub fn exterior_points(&self) -> HashSet<VertexId> {
         todo!("Use complement of interior_points to get this one")
     }
 
@@ -500,6 +535,12 @@ mod tests {
         let triangulation_area = case.polygon.area_from_triangulation(&triangulation);
         assert_eq!(triangulation_area, case.metadata.area);
     }
+
+    // #[rstest]
+    // #[case::polygon_1(polygon_1(), )]
+    // fn test_interior_points() {
+
+    // }
 
     #[apply(all_polygons)]
     fn test_attributes(case: PolygonTestCase) {

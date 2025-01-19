@@ -57,12 +57,22 @@ impl VertexMap {
         v
     }
 
+    pub fn keys(&self) -> hash_map::Keys<'_, VertexId, Vertex> {
+        self.map.keys()
+    }
+
     pub fn values(&self) -> hash_map::Values<'_, VertexId, Vertex> {
         self.map.values()
     }
 
     pub fn values_mut(&mut self) -> hash_map::ValuesMut<'_, VertexId, Vertex> {
         self.map.values_mut()
+    }
+
+    pub fn sorted_ids(&self) -> Vec<&VertexId> {
+        let mut ids: Vec<_> = self.keys().collect();
+        ids.sort();
+        ids
     }
 
     pub fn sorted_vertices(&self) -> Vec<&Vertex> {
