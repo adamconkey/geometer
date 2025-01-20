@@ -535,6 +535,15 @@ mod tests {
     #[case::eberly_14(eberly_14())]
     #[case::elgindy_1(elgindy_1())]
     #[case::gray_embroidery(gray_embroidery())]
+    #[case::held_1(held_1())]
+    #[case::held_12(held_12())]
+    #[case::held_3(held_3())]
+    // TODO can add more test cases here, but I've just been going through
+    // and manually verifying they're correct. Some have so many vertices
+    // though it's not practial, and since this is O(n^4) some actually
+    // time out. May make more sense to wait until there's a more tractable
+    // algorithm implmented to test all, and then validate a subset of
+    // fast ones against the long implementation
     fn test_interior_points(#[case] case: PolygonTestCase) {
         let interior_points = case.polygon.interior_points();
         assert_eq!(
@@ -558,6 +567,9 @@ mod tests {
             assert_eq!(
                 num_extreme_points + num_interior_points, 
                 case.metadata.num_vertices,
+            );
+            assert!(
+                case.metadata.extreme_points.is_disjoint(&case.metadata.interior_points)
             );
         }
         // This meta-assert is only valid for polygons without holes, holes 
