@@ -111,6 +111,13 @@ impl Polygon {
         LineSegment::from_vertices(v1, v2)
     }
 
+    fn get_triangle(&self, id_1: &VertexId, id_2: &VertexId, id_3: &VertexId) -> Triangle {
+        let v1 = self.vertex_map.get(id_1);
+        let v2 = self.vertex_map.get(id_2);
+        let v3 = self.vertex_map.get(id_3);
+        Triangle::from_vertices(v1, v2, v3)
+    }
+
     pub fn edges(&self) -> HashSet<(VertexId, VertexId)> {
         // TODO could cache this and clear on modification
         let mut edges = HashSet::new();
@@ -157,29 +164,28 @@ impl Polygon {
 
     pub fn interior_points(&self) -> HashSet<VertexId> {
         let mut interior_points = HashSet::new();
-        let ids: Vec<_> = self.vertex_map.keys().collect();
+        let ids = self.vertex_map.keys().cloned().collect_vec();
 
         // Don't be fooled by the runtime here, it's iterating over all
         // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3), 
         // so it's still O(n^4), this is just more compact than 4 nested
         // for-loops.
-        for perm in ids.iter().permutations(4) {
-            let p = self.vertex_map.get(perm[0]).coords.clone();
-            // TODO could make helper to get triangle here
-            let v1 = self.vertex_map.get(perm[1]);
-            let v2 = self.vertex_map.get(perm[2]);
-            let v3 = self.vertex_map.get(perm[3]);
-            let triangle = Triangle::from_vertices(v1, v2, v3);
+        for perm in ids.into_iter().permutations(4) {
+            let p = self.get_vertex(&perm[0]).coords.clone();
+            let triangle = self.get_triangle(&perm[1], &perm[2], &perm[3]);
             if triangle.contains(p) {
-                // TODO fix this deref nonsense
-                interior_points.insert(**perm[0]);
+                interior_points.insert(perm[0]);
             }
         }
         interior_points
     }
 
     pub fn exterior_points(&self) -> HashSet<VertexId> {
-        todo!("Use complement of interior_points to get this one")
+        // NOTE: This is currently mad slow O(n^4) since the interior
+        // point computation being used has that runtime.
+        let ids: HashSet<VertexId> = self.vertex_map.keys().cloned().collect();
+        let interior_ids = self.interior_points();
+        &ids - &interior_ids
     }
 
     pub fn bounding_box(&self) -> BoundingBox {
