@@ -167,6 +167,17 @@ impl Polygon {
     }
 
     pub fn interior_points(&self) -> HashSet<VertexId> {
+        // This is just an alias to the current best implementation
+        self.interior_points_from_extreme_edges()
+    }
+
+    pub fn interior_points_from_extreme_edges(&self) -> HashSet<VertexId> {
+        let ids = self.vertex_map.ids_set();
+        let extreme_ids = self.extreme_points_from_extreme_edges();
+        &ids - &extreme_ids
+    }
+
+    pub fn interior_points_from_triangle_checks(&self) -> HashSet<VertexId> {
         let mut interior_points = HashSet::new();
         let ids = self.vertex_map.ids_vec();
 
@@ -494,6 +505,20 @@ mod tests {
     #[case::square_4x4(square_4x4())]
     fn all_custom_polygons(#[case] case: PolygonTestCase) {}
 
+    #[template]
+    #[apply(all_custom_polygons)]
+    #[case::eberly_10(eberly_10())]
+    #[case::eberly_14(eberly_14())]
+    #[case::elgindy_1(elgindy_1())]
+    #[case::gray_embroidery(gray_embroidery())]
+    #[case::held_1(held_1())]
+    #[case::held_12(held_12())]
+    #[case::held_3(held_3())]
+    // TODO can add more test cases here, but I've just been going through
+    // and manually verifying they're correct. Some have so many vertices
+    // though it's not practical
+    fn extreme_point_cases(#[case] case: PolygonTestCase) {}
+
 
     #[test]
     #[should_panic]
@@ -586,22 +611,9 @@ mod tests {
         assert_eq!(triangulation_area, case.metadata.area);
     }
 
-    #[apply(all_custom_polygons)]
-    #[case::eberly_10(eberly_10())]
-    #[case::eberly_14(eberly_14())]
-    #[case::elgindy_1(elgindy_1())]
-    #[case::gray_embroidery(gray_embroidery())]
-    #[case::held_1(held_1())]
-    #[case::held_12(held_12())]
-    #[case::held_3(held_3())]
-    // TODO can add more test cases here, but I've just been going through
-    // and manually verifying they're correct. Some have so many vertices
-    // though it's not practial, and since this is O(n^4) some actually
-    // time out. May make more sense to wait until there's a more tractable
-    // algorithm implmented to test all, and then validate a subset of
-    // fast ones against the long implementation
-    fn test_interior_points(#[case] case: PolygonTestCase) {
-        let interior_points = case.polygon.interior_points();
+    #[apply(extreme_point_cases)]
+    fn test_interior_points_from_triangle_checks(#[case] case: PolygonTestCase) {
+        let interior_points = case.polygon.interior_points_from_triangle_checks();
         assert_eq!(
             interior_points, 
             case.metadata.interior_points,
@@ -611,17 +623,19 @@ mod tests {
         );
     }
 
-    #[apply(all_custom_polygons)]
-    #[case::eberly_10(eberly_10())]
-    #[case::eberly_14(eberly_14())]
-    #[case::elgindy_1(elgindy_1())]
-    #[case::gray_embroidery(gray_embroidery())]
-    #[case::held_1(held_1())]
-    #[case::held_12(held_12())]
-    #[case::held_3(held_3())]
-    // TODO could consider combining this test with interior points if
-    // one will always be a complement of the other, but I'm not sure
-    // that will necessarily be the case going forward
+    #[apply(extreme_point_cases)]
+    fn test_interior_points_from_extreme_edges(#[case] case: PolygonTestCase) {
+        let interior_points = case.polygon.interior_points_from_extreme_edges();
+        assert_eq!(
+            interior_points, 
+            case.metadata.interior_points,
+            "Extra computed: {:?}, Extra in metadata: {:?}", 
+            interior_points.difference(&case.metadata.interior_points),
+            case.metadata.interior_points.difference(&interior_points)
+        );
+    }
+
+    #[apply(extreme_point_cases)]
     fn test_extreme_points_from_interior_points(#[case] case: PolygonTestCase) {
         let extreme_points = case.polygon.extreme_points_from_interior_points();
         assert_eq!(
@@ -633,17 +647,7 @@ mod tests {
         );
     }
 
-    #[apply(all_custom_polygons)]
-    #[case::eberly_10(eberly_10())]
-    #[case::eberly_14(eberly_14())]
-    #[case::elgindy_1(elgindy_1())]
-    #[case::gray_embroidery(gray_embroidery())]
-    #[case::held_1(held_1())]
-    #[case::held_12(held_12())]
-    #[case::held_3(held_3())]
-    // TODO could consider combining this test with interior points if
-    // one will always be a complement of the other, but I'm not sure
-    // that will necessarily be the case going forward
+    #[apply(extreme_point_cases)]
     fn test_extreme_points_from_extreme_edges(#[case] case: PolygonTestCase) {
         let extreme_points = case.polygon.extreme_points_from_extreme_edges();
         assert_eq!(
