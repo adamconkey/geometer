@@ -1,5 +1,7 @@
 {
     "area": 6,
+    "extreme_points": [0, 1, 2],
+    "interior_points": [],
     "num_edges": 3,
     "num_triangles": 1,
     "num_vertices": 3

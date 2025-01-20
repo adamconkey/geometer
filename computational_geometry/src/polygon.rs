@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
@@ -110,6 +111,13 @@ impl Polygon {
         LineSegment::from_vertices(v1, v2)
     }
 
+    fn get_triangle(&self, id_1: &VertexId, id_2: &VertexId, id_3: &VertexId) -> Triangle {
+        let v1 = self.vertex_map.get(id_1);
+        let v2 = self.vertex_map.get(id_2);
+        let v3 = self.vertex_map.get(id_3);
+        Triangle::from_vertices(v1, v2, v3)
+    }
+
     pub fn edges(&self) -> HashSet<(VertexId, VertexId)> {
         // TODO could cache this and clear on modification
         let mut edges = HashSet::new();
@@ -152,6 +160,32 @@ impl Polygon {
             }
         } 
         true
+    }
+
+    pub fn interior_points(&self) -> HashSet<VertexId> {
+        let mut interior_points = HashSet::new();
+        let ids = self.vertex_map.keys().cloned().collect_vec();
+
+        // Don't be fooled by the runtime here, it's iterating over all
+        // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3), 
+        // so it's still O(n^4), this is just more compact than 4 nested
+        // for-loops.
+        for perm in ids.into_iter().permutations(4) {
+            let p = self.get_vertex(&perm[0]).coords.clone();
+            let triangle = self.get_triangle(&perm[1], &perm[2], &perm[3]);
+            if triangle.contains(p) {
+                interior_points.insert(perm[0]);
+            }
+        }
+        interior_points
+    }
+
+    pub fn extreme_points(&self) -> HashSet<VertexId> {
+        // NOTE: This is currently mad slow O(n^4) since the interior
+        // point computation being used has that runtime.
+        let ids: HashSet<VertexId> = self.vertex_map.keys().cloned().collect();
+        let interior_ids = self.interior_points();
+        &ids - &interior_ids
     }
 
     pub fn bounding_box(&self) -> BoundingBox {
@@ -283,6 +317,8 @@ mod tests {
     #[derive(Deserialize)]
     struct PolygonMetadata {
         area: f64,
+        extreme_points: HashSet<VertexId>,
+        interior_points: HashSet<VertexId>,
         num_edges: usize,
         num_triangles: usize,
         num_vertices: usize,
@@ -400,6 +436,14 @@ mod tests {
     #[case::toussaint_1a(toussaint_1a())]
     fn all_polygons(#[case] case: PolygonTestCase) {}
 
+    #[template]
+    #[rstest]
+    #[case::polygon_1(polygon_1())]
+    #[case::polygon_2(polygon_2())]
+    #[case::right_triangle(right_triangle())]
+    #[case::square_4x4(square_4x4())]
+    fn all_custom_polygons(#[case] case: PolygonTestCase) {}
+
 
     #[test]
     #[should_panic]
@@ -492,10 +536,70 @@ mod tests {
         assert_eq!(triangulation_area, case.metadata.area);
     }
 
+    #[apply(all_custom_polygons)]
+    #[case::eberly_10(eberly_10())]
+    #[case::eberly_14(eberly_14())]
+    #[case::elgindy_1(elgindy_1())]
+    #[case::gray_embroidery(gray_embroidery())]
+    #[case::held_1(held_1())]
+    #[case::held_12(held_12())]
+    #[case::held_3(held_3())]
+    // TODO can add more test cases here, but I've just been going through
+    // and manually verifying they're correct. Some have so many vertices
+    // though it's not practial, and since this is O(n^4) some actually
+    // time out. May make more sense to wait until there's a more tractable
+    // algorithm implmented to test all, and then validate a subset of
+    // fast ones against the long implementation
+    fn test_interior_points(#[case] case: PolygonTestCase) {
+        let interior_points = case.polygon.interior_points();
+        assert_eq!(
+            interior_points, 
+            case.metadata.interior_points,
+            "Extra computed: {:?}, Extra in metadata: {:?}", 
+            interior_points.difference(&case.metadata.interior_points),
+            case.metadata.interior_points.difference(&interior_points)
+        );
+    }
+
+    #[apply(all_custom_polygons)]
+    #[case::eberly_10(eberly_10())]
+    #[case::eberly_14(eberly_14())]
+    #[case::elgindy_1(elgindy_1())]
+    #[case::gray_embroidery(gray_embroidery())]
+    #[case::held_1(held_1())]
+    #[case::held_12(held_12())]
+    #[case::held_3(held_3())]
+    // TODO could consider combining this test with interior points if
+    // one will always be a complement of the other, but I'm not sure
+    // that will necessarily be the case going forward
+    fn test_extreme_points(#[case] case: PolygonTestCase) {
+        let extreme_points = case.polygon.extreme_points();
+        assert_eq!(
+            extreme_points,
+            case.metadata.extreme_points,
+            "Extra computed: {:?}, Extra in metadata: {:?}", 
+            extreme_points.difference(&case.metadata.extreme_points),
+            case.metadata.extreme_points.difference(&extreme_points)
+        );
+    }
+
     #[apply(all_polygons)]
     fn test_attributes(case: PolygonTestCase) {
         assert_eq!(case.polygon.num_edges(), case.metadata.num_edges);
         assert_eq!(case.polygon.num_vertices(), case.metadata.num_vertices);
+
+        // Not all test cases have these defined so only assert on ones that do
+        let num_extreme_points = case.metadata.extreme_points.len();
+        let num_interior_points = case.metadata.interior_points.len();
+        if num_extreme_points > 0 || num_interior_points > 0 {
+            assert_eq!(
+                num_extreme_points + num_interior_points, 
+                case.metadata.num_vertices,
+            );
+            assert!(
+                case.metadata.extreme_points.is_disjoint(&case.metadata.interior_points)
+            );
+        }
         // This meta-assert is only valid for polygons without holes, holes 
         // are not yet supported. Will need a flag in the metadata to know 
         // if holes are present and then this assert would be conditional
