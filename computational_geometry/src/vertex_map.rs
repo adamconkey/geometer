@@ -1,4 +1,6 @@
-use std::collections::{hash_map, HashMap};
+use std::collections::{hash_map, HashMap, HashSet};
+
+use itertools::Itertools;
 
 use crate::point::Point;
 use crate::vertex::{Vertex, VertexId};
@@ -67,6 +69,14 @@ impl VertexMap {
 
     pub fn values_mut(&mut self) -> hash_map::ValuesMut<'_, VertexId, Vertex> {
         self.map.values_mut()
+    }
+
+    pub fn ids_vec(&self) -> Vec<VertexId> {
+        self.keys().cloned().collect_vec()
+    }
+
+    pub fn ids_set(&self) -> HashSet<VertexId> {
+        self.keys().cloned().collect()
     }
 
     pub fn sorted_ids(&self) -> Vec<&VertexId> {

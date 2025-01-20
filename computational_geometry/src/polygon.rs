@@ -105,6 +105,10 @@ impl Polygon {
         self.vertex_map.get(id)
     }
 
+    fn get_point(&self, id: &VertexId) -> Point {
+        self.get_vertex(id).coords.clone()
+    }
+
     fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> LineSegment {
         let v1 = self.get_vertex(id_1);
         let v2 = self.get_vertex(id_2);
@@ -163,15 +167,26 @@ impl Polygon {
     }
 
     pub fn interior_points(&self) -> HashSet<VertexId> {
+        // This is just an alias to the current best implementation
+        self.interior_points_from_extreme_edges()
+    }
+
+    pub fn interior_points_from_extreme_edges(&self) -> HashSet<VertexId> {
+        let ids = self.vertex_map.ids_set();
+        let extreme_ids = self.extreme_points_from_extreme_edges();
+        &ids - &extreme_ids
+    }
+
+    pub fn interior_points_from_triangle_checks(&self) -> HashSet<VertexId> {
         let mut interior_points = HashSet::new();
-        let ids = self.vertex_map.keys().cloned().collect_vec();
+        let ids = self.vertex_map.ids_vec();
 
         // Don't be fooled by the runtime here, it's iterating over all
         // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3), 
         // so it's still O(n^4), this is just more compact than 4 nested
         // for-loops.
         for perm in ids.into_iter().permutations(4) {
-            let p = self.get_vertex(&perm[0]).coords.clone();
+            let p = self.get_point(&perm[0]);
             let triangle = self.get_triangle(&perm[1], &perm[2], &perm[3]);
             if triangle.contains(p) {
                 interior_points.insert(perm[0]);
@@ -180,10 +195,56 @@ impl Polygon {
         interior_points
     }
 
+    pub fn extreme_edges(&self) -> Vec<(VertexId, VertexId)> {
+        // NOTE: This is O(n^3)
+        let mut extreme_edges = Vec::new();
+        let ids = self.vertex_map.ids_vec();
+
+        for id1 in ids.iter() {
+            for id2 in ids.iter() {
+                if id2 == id1 {
+                    continue;
+                }
+                let ls = self.get_line_segment(id1, id2);
+                let mut is_extreme = true;
+                for id3 in ids.iter() {
+                    if id3 == id1 || id3 == id2 {
+                        continue;
+                    }
+                    let p = self.get_point(id3);
+                    if !p.left_on(&ls) {
+                        is_extreme = false;
+                        break;
+                    }
+                }
+                if is_extreme {
+                    extreme_edges.push((*id1, *id2));
+                }
+            }
+        }
+        extreme_edges
+    }
+
     pub fn extreme_points(&self) -> HashSet<VertexId> {
-        // NOTE: This is currently mad slow O(n^4) since the interior
-        // point computation being used has that runtime.
-        let ids: HashSet<VertexId> = self.vertex_map.keys().cloned().collect();
+        // This one is an alias to the current best implementation
+        self.extreme_points_from_interior_points()
+    }
+
+    pub fn extreme_points_from_extreme_edges(&self) -> HashSet<VertexId> {
+        // NOTE: This is O(n^3) since the extreme edges computation
+        // has that runtime
+        let mut extreme_points = HashSet::new();
+        for (id1, id2) in self.extreme_edges().into_iter() {
+            extreme_points.insert(id1);
+            extreme_points.insert(id2);
+        }
+        extreme_points
+    }
+
+    pub fn extreme_points_from_interior_points(&self) -> HashSet<VertexId> {
+        // NOTE: This is slow O(n^4) since the interior point 
+        // computation being used has that runtime.
+        let ids = self.vertex_map.ids_set();
         let interior_ids = self.interior_points();
         &ids - &interior_ids
     }
@@ -444,6 +505,20 @@ mod tests {
     #[case::square_4x4(square_4x4())]
     fn all_custom_polygons(#[case] case: PolygonTestCase) {}
 
+    #[template]
+    #[apply(all_custom_polygons)]
+    #[case::eberly_10(eberly_10())]
+    #[case::eberly_14(eberly_14())]
+    #[case::elgindy_1(elgindy_1())]
+    #[case::gray_embroidery(gray_embroidery())]
+    #[case::held_1(held_1())]
+    #[case::held_12(held_12())]
+    #[case::held_3(held_3())]
+    // TODO can add more test cases here, but I've just been going through
+    // and manually verifying they're correct. Some have so many vertices
+    // though it's not practical
+    fn extreme_point_cases(#[case] case: PolygonTestCase) {}
+
 
     #[test]
     #[should_panic]
@@ -536,22 +611,9 @@ mod tests {
         assert_eq!(triangulation_area, case.metadata.area);
     }
 
-    #[apply(all_custom_polygons)]
-    #[case::eberly_10(eberly_10())]
-    #[case::eberly_14(eberly_14())]
-    #[case::elgindy_1(elgindy_1())]
-    #[case::gray_embroidery(gray_embroidery())]
-    #[case::held_1(held_1())]
-    #[case::held_12(held_12())]
-    #[case::held_3(held_3())]
-    // TODO can add more test cases here, but I've just been going through
-    // and manually verifying they're correct. Some have so many vertices
-    // though it's not practial, and since this is O(n^4) some actually
-    // time out. May make more sense to wait until there's a more tractable
-    // algorithm implmented to test all, and then validate a subset of
-    // fast ones against the long implementation
-    fn test_interior_points(#[case] case: PolygonTestCase) {
-        let interior_points = case.polygon.interior_points();
+    #[apply(extreme_point_cases)]
+    fn test_interior_points_from_triangle_checks(#[case] case: PolygonTestCase) {
+        let interior_points = case.polygon.interior_points_from_triangle_checks();
         assert_eq!(
             interior_points, 
             case.metadata.interior_points,
@@ -561,19 +623,33 @@ mod tests {
         );
     }
 
-    #[apply(all_custom_polygons)]
-    #[case::eberly_10(eberly_10())]
-    #[case::eberly_14(eberly_14())]
-    #[case::elgindy_1(elgindy_1())]
-    #[case::gray_embroidery(gray_embroidery())]
-    #[case::held_1(held_1())]
-    #[case::held_12(held_12())]
-    #[case::held_3(held_3())]
-    // TODO could consider combining this test with interior points if
-    // one will always be a complement of the other, but I'm not sure
-    // that will necessarily be the case going forward
-    fn test_extreme_points(#[case] case: PolygonTestCase) {
-        let extreme_points = case.polygon.extreme_points();
+    #[apply(extreme_point_cases)]
+    fn test_interior_points_from_extreme_edges(#[case] case: PolygonTestCase) {
+        let interior_points = case.polygon.interior_points_from_extreme_edges();
+        assert_eq!(
+            interior_points, 
+            case.metadata.interior_points,
+            "Extra computed: {:?}, Extra in metadata: {:?}", 
+            interior_points.difference(&case.metadata.interior_points),
+            case.metadata.interior_points.difference(&interior_points)
+        );
+    }
+
+    #[apply(extreme_point_cases)]
+    fn test_extreme_points_from_interior_points(#[case] case: PolygonTestCase) {
+        let extreme_points = case.polygon.extreme_points_from_interior_points();
+        assert_eq!(
+            extreme_points,
+            case.metadata.extreme_points,
+            "Extra computed: {:?}, Extra in metadata: {:?}", 
+            extreme_points.difference(&case.metadata.extreme_points),
+            case.metadata.extreme_points.difference(&extreme_points)
+        );
+    }
+
+    #[apply(extreme_point_cases)]
+    fn test_extreme_points_from_extreme_edges(#[case] case: PolygonTestCase) {
+        let extreme_points = case.polygon.extreme_points_from_extreme_edges();
         assert_eq!(
             extreme_points,
             case.metadata.extreme_points,
