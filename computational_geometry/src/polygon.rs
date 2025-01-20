@@ -555,9 +555,31 @@ mod tests {
         assert_eq!(
             interior_points, 
             case.metadata.interior_points,
-            "Extra interior: {:?}, Extra extreme: {:?}", 
+            "Extra computed: {:?}, Extra in metadata: {:?}", 
             interior_points.difference(&case.metadata.interior_points),
             case.metadata.interior_points.difference(&interior_points)
+        );
+    }
+
+    #[apply(all_custom_polygons)]
+    #[case::eberly_10(eberly_10())]
+    #[case::eberly_14(eberly_14())]
+    #[case::elgindy_1(elgindy_1())]
+    #[case::gray_embroidery(gray_embroidery())]
+    #[case::held_1(held_1())]
+    #[case::held_12(held_12())]
+    #[case::held_3(held_3())]
+    // TODO could consider combining this test with interior points if
+    // one will always be a complement of the other, but I'm not sure
+    // that will necessarily be the case going forward
+    fn test_extreme_points(#[case] case: PolygonTestCase) {
+        let extreme_points = case.polygon.extreme_points();
+        assert_eq!(
+            extreme_points,
+            case.metadata.extreme_points,
+            "Extra computed: {:?}, Extra in metadata: {:?}", 
+            extreme_points.difference(&case.metadata.extreme_points),
+            case.metadata.extreme_points.difference(&extreme_points)
         );
     }
 
