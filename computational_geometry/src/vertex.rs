@@ -8,7 +8,7 @@ use crate::{
 };
 
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct VertexId(u32);
 
 impl From<u32> for VertexId {
@@ -24,6 +24,12 @@ impl From<usize> for VertexId {
 }
 
 impl fmt::Display for VertexId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Debug for VertexId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.0)
     }
