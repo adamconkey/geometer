@@ -180,7 +180,7 @@ impl Polygon {
         interior_points
     }
 
-    pub fn exterior_points(&self) -> HashSet<VertexId> {
+    pub fn extreme_points(&self) -> HashSet<VertexId> {
         // NOTE: This is currently mad slow O(n^4) since the interior
         // point computation being used has that runtime.
         let ids: HashSet<VertexId> = self.vertex_map.keys().cloned().collect();
