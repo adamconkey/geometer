@@ -7,7 +7,7 @@
 
 Repo for playing around with implementing computational geometry algorithms from scratch in Rust.
 
-⚠️ **Work In Progress:** This repos is under heavy development right now and just in its nascent stages.
+🚧👷‍♂️ **Work In Progress:** This repos is under heavy development right now and just in its nascent stages.
 
 ---
 
@@ -20,20 +20,17 @@ My goal for this repo is to eventually have a complete implementation of the alg
 ---
 
 ## Features 
-### Currently Supported
-- Area of 2D polygons
+### Currently Supported for 2D Polygons
+- Area
 - Triangulation - $O(n^2)$
-- 2D Rotation and translation of polygons
-- 2D Bounding box computation
-
-### In the Works
-- https://github.com/adamconkey/computational_geometry/issues/14: Fournier-Montuno Trapezoidization - $O(n \cdot \log n)$
-- [https://github.com/adamconkey/computational_geometry/issues/2, https://github.com/adamconkey/computational_geometry/issues/3]: More diverse polygon definitions
+- Rotation and translation
+- Bounding box computation
+- Determination of extreme and interior points - $O(n^3)$ and $O(n^4)$ (for benchmarking)
 
 ### On the Roadmap
 - Convex Hull (2D and 3D)
 - Voronoi Diagram
-- Benchmarking of different triangulation algorithms
+- Benchmarking of different algorithms
 - Animated visualizations of algorithms
 
 ---
