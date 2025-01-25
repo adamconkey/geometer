@@ -3,10 +3,6 @@ name="computational_geometry"
 edition.workspace = true
 version.workspace = true
 
-[[bin]]
-name = "generate-rotated-ipa-polygons"
-path = "src/bin/generate_rotated_ipa_polygons.rs"
-
 [dependencies]
 itertools = "0.14.0"
 serde.workspace = true
@@ -14,7 +10,16 @@ serde_json.workspace = true
 
 [dev-dependencies]
 assert_approx_eq = "1.1.0"
+criterion = { version = "0.5", features = ["html_reports"] }
 paste = "*"
 rstest = "0.24.0"
 rstest_reuse = "*"
 tempfile = "3.14.0"
+
+[[bin]]
+name = "generate-rotated-ipa-polygons"
+path = "src/bin/generate_rotated_ipa_polygons.rs"
+
+[[bench]]
+name = "extreme_points"
+harness = false
