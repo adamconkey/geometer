@@ -15,6 +15,7 @@ paste = "*"
 rstest = "0.24.0"
 rstest_reuse = "*"
 tempfile = "3.14.0"
+walkdir = "2.5.0"
 
 [[bin]]
 name = "generate-rotated-ipa-polygons"

@@ -1,21 +1,28 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, ffi::OsStr, path::PathBuf};
+use walkdir::WalkDir;
 
 use computational_geometry::polygon::Polygon;
 
 
-fn load_polygon(name: &str, folder: &str) -> Polygon {
-    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    path.push("polygons");
-    path.push(folder);
-    path.push(format!("{}.json", name));
-    Polygon::from_json(path)
-}
-
 fn polygon_map() -> HashMap<usize, Polygon> {
     let mut map = HashMap::new();
-    for name in ["polygon_1", "polygon_2", "square_4x4", "right_triangle"].iter() {
-        let p = load_polygon(name, "custom");
+    let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    root.push("polygons");
+    let paths = WalkDir::new(root)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .map(|e| e.into_path())
+        // TODO this is a bit hacky, it's meant to account for files ending
+        // in .meta.json but it won't be perfect, should figure out a nicer
+        // way to ensure it picks up exactly the intended files
+        .filter(|p| p.is_file())
+        .filter(|p| p.extension() == Some(OsStr::new("json")))
+        .filter(|p| p.with_extension("").extension() != Some(OsStr::new("meta")));
+
+    for path in paths {
+        println!("{:?}", path);
+        let p = Polygon::from_json(path);
         map.insert(p.num_vertices(), p);
     }
     map
