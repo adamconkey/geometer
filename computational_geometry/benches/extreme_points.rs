@@ -1,11 +1,12 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use itertools::Itertools;
 use std::{collections::HashMap, ffi::OsStr, path::PathBuf};
 use walkdir::WalkDir;
 
 use computational_geometry::polygon::Polygon;
 
 
-fn polygon_map() -> HashMap<usize, Polygon> {
+fn polygon_map_by_num_vertices() -> HashMap<usize, Polygon> {
     let mut map = HashMap::new();
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     root.push("polygons");
@@ -13,15 +14,11 @@ fn polygon_map() -> HashMap<usize, Polygon> {
         .into_iter()
         .filter_map(|e| e.ok())
         .map(|e| e.into_path())
-        // TODO this is a bit hacky, it's meant to account for files ending
-        // in .meta.json but it won't be perfect, should figure out a nicer
-        // way to ensure it picks up exactly the intended files
         .filter(|p| p.is_file())
         .filter(|p| p.extension() == Some(OsStr::new("json")))
+        // Remove .meta.json files
         .filter(|p| p.with_extension("").extension() != Some(OsStr::new("meta")));
-
-    for path in paths {
-        println!("{:?}", path);
+    for path in paths.sorted() {
         let p = Polygon::from_json(path);
         map.insert(p.num_vertices(), p);
     }
@@ -29,7 +26,7 @@ fn polygon_map() -> HashMap<usize, Polygon> {
 }
 
 fn benchmark_extreme_points(c: &mut Criterion) {
-    let polygon_map = polygon_map();
+    let polygon_map = polygon_map_by_num_vertices();
     let mut group = c.benchmark_group("Extreme Points");
 
     for (name, polygon) in polygon_map.iter() {
