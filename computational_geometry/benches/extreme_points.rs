@@ -6,6 +6,7 @@ use computational_geometry::util::polygon_map_by_num_vertices;
 fn benchmark_extreme_points(c: &mut Criterion) {
     let polygon_map = polygon_map_by_num_vertices();
     let mut group = c.benchmark_group("Extreme Points");
+    group.sample_size(10);
 
     for (name, polygon) in polygon_map.iter() {
         group.bench_with_input(
