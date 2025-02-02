@@ -37,11 +37,11 @@ My goal for this repo is to eventually have a complete implementation of the alg
 
 ## Benchmarks
 
-Some simple benchmarking capabilities are provided. These are mostly to provide empirical intuition on the runtime of algorithms. Currently only a couple benchmarks are setup, more will be added as more algorithms are implemented.
+Some simple benchmarking capabilities are provided using [Criterion.rs](https://bheisler.github.io/criterion.rs/book/). These are mostly to provide empirical intuition on the runtime of algorithms. Currently only a couple benchmarks are setup, more will be added as more algorithms are implemented.
 
 You can run the benchmarks yourself with
 ```shell
-cargo bench --bench extreme_points interior_points
+cargo bench --bench extreme_points --bench interior_points
 ```
 
 --
