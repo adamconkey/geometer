@@ -5,7 +5,7 @@
 ![CLIPPY](https://github.com/adamconkey/computational_geometry/actions/workflows/clippy.yml/badge.svg)
 
 
-Repo for playing around with implementing computational geometry algorithms from scratch in Rust.
+Implementations of computational geometry algorithms from scratch in Rust.
 
 🚧👷‍♂️ **Work In Progress:** This repos is under heavy development right now and just in its nascent stages.
 
@@ -35,7 +35,24 @@ My goal for this repo is to eventually have a complete implementation of the alg
 
 ---
 
-## Running the Visualizer
+## Benchmarks
+
+Some simple benchmarking capabilities are provided using [Criterion.rs](https://bheisler.github.io/criterion.rs/book/). These are mostly to provide empirical intuition on the runtime of algorithms. Currently only a couple benchmarks are setup, more will be added as more algorithms are implemented.
+
+You can run the benchmarks yourself with
+```shell
+cargo bench --bench extreme_points --bench interior_points
+```
+
+Here is a visualization of one of the benchmarks to compute extreme points, comparing computing them from extreme edges $O(n^3)$ versus computing them from interior points with triangle checks $O(n^4)$:
+
+![Screen Shot 2025-02-02 at 11 51 21 AM](https://github.com/user-attachments/assets/e6550aec-eac0-4413-b6ec-9fd9526c0ae6)
+
+These are both obviously bad algorithms, but they are what is implemented at the moment and provide some basis for comparison.
+
+---
+
+## Visualizer
 
 A simple visualizer is provided using the [`egui_plot`](https://github.com/emilk/egui_plot) crate. This provides a local webapp to visualize polygons. Currently this is _very_ simple, and just visualizes the polygons themselves as well as a triangulation. Once more algorithms are implemented I plan to add animations so that one can view the different algorithms in action.
 

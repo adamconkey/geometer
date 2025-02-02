@@ -245,7 +245,7 @@ impl Polygon {
         // NOTE: This is slow O(n^4) since the interior point 
         // computation being used has that runtime.
         let ids = self.vertex_map.ids_set();
-        let interior_ids = self.interior_points();
+        let interior_ids = self.interior_points_from_triangle_checks();
         &ids - &interior_ids
     }
 
