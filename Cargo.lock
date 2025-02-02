@@ -118,22 +118,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 
 [[package]]
-name = "computational_geometry"
-version = "0.1.0"
-dependencies = [
- "assert_approx_eq",
- "criterion",
- "itertools 0.14.0",
- "paste",
- "rstest",
- "rstest_reuse",
- "serde",
- "serde_json",
- "tempfile",
- "walkdir",
-]
-
-[[package]]
 name = "criterion"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -269,6 +253,22 @@ dependencies = [
  "pin-project-lite",
  "pin-utils",
  "slab",
+]
+
+[[package]]
+name = "geometer"
+version = "0.1.0"
+dependencies = [
+ "assert_approx_eq",
+ "criterion",
+ "itertools 0.14.0",
+ "paste",
+ "rstest",
+ "rstest_reuse",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "walkdir",
 ]
 
 [[package]]
