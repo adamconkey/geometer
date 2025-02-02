@@ -1,11 +1,10 @@
-# Computational Geometry in Rust
+# Geometer
+
+Implementations of computational geometry algorithms from scratch in Rust.
 
 ![BUILD](https://github.com/adamconkey/computational_geometry/actions/workflows/build.yml/badge.svg)
 ![TEST](https://github.com/adamconkey/computational_geometry/actions/workflows/tests.yml/badge.svg)
 ![CLIPPY](https://github.com/adamconkey/computational_geometry/actions/workflows/clippy.yml/badge.svg)
-
-
-Implementations of computational geometry algorithms from scratch in Rust.
 
 🚧👷‍♂️ **Work In Progress:** This repos is under heavy development right now and just in its nascent stages.
 
@@ -49,26 +48,5 @@ Here is a visualization of one of the benchmarks to compute extreme points, comp
 ![Screen Shot 2025-02-02 at 11 51 21 AM](https://github.com/user-attachments/assets/e6550aec-eac0-4413-b6ec-9fd9526c0ae6)
 
 These are both obviously bad algorithms, but they are what is implemented at the moment and provide some basis for comparison.
-
----
-
-## Visualizer
-
-A simple visualizer is provided using the [`egui_plot`](https://github.com/emilk/egui_plot) crate. This provides a local webapp to visualize polygons. Currently this is _very_ simple, and just visualizes the polygons themselves as well as a triangulation. Once more algorithms are implemented I plan to add animations so that one can view the different algorithms in action.
-
-To run the visualizer, simply do:
-```bash
-cd visualizer
-trunk serve
-```
-
-You can then direct your browser to `localhost:8080` and you'll hopefully see some polygons! If you're in VSCode, it can be handy to use the `SimpleBrowser` offered in the IDE.
-
-### Polygon Visualization
-![Screen Shot 2024-11-23 at 10 48 05 PM](https://github.com/user-attachments/assets/6ebf47f0-57e1-4b9f-9e0f-ffb25827a02c)
-
-
-### Triangulation Visualization
-![Screen Shot 2024-11-23 at 10 47 30 PM](https://github.com/user-attachments/assets/ddeb1724-dde7-4769-b2db-3f48293c4135)
 
 ---

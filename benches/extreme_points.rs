@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-use computational_geometry::util::polygon_map_by_num_vertices;
+use geometer::util::polygon_map_by_num_vertices;
 
 
 fn benchmark_extreme_points(c: &mut Criterion) {

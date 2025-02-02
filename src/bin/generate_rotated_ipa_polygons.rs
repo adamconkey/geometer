@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use computational_geometry::polygon::Polygon;
+use geometer::polygon::Polygon;
 
 fn main() {
     let mut dataset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
