@@ -24,3 +24,7 @@ path = "src/bin/generate_rotated_ipa_polygons.rs"
 [[bench]]
 name = "extreme_points"
 harness = false
+
+[[bench]]
+name = "interior_points"
+harness = false
