@@ -4,7 +4,7 @@ use computational_geometry::util::polygon_map_by_num_vertices;
 
 
 fn benchmark_extreme_points(c: &mut Criterion) {
-    let polygon_map = polygon_map_by_num_vertices();
+    let polygon_map = polygon_map_by_num_vertices(200usize);
     let mut group = c.benchmark_group("Extreme Points");
     group.sample_size(10);
 

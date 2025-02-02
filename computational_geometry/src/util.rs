@@ -5,7 +5,7 @@ use walkdir::WalkDir;
 use crate::polygon::Polygon;
 
 
-pub fn polygon_map_by_num_vertices() -> HashMap<usize, Polygon> {
+pub fn polygon_map_by_num_vertices(vertex_limit: usize) -> HashMap<usize, Polygon> {
     let mut map = HashMap::new();
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     root.push("polygons");
@@ -19,7 +19,9 @@ pub fn polygon_map_by_num_vertices() -> HashMap<usize, Polygon> {
         .filter(|p| p.with_extension("").extension() != Some(OsStr::new("meta")));
     for path in paths.sorted() {
         let p = Polygon::from_json(path);
-        map.insert(p.num_vertices(), p);
+        if p.num_vertices() <= vertex_limit {
+            map.insert(p.num_vertices(), p);
+        }
     }
     map
 }
