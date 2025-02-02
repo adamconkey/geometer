@@ -3,10 +3,11 @@ name="geometer"
 edition = "2021"
 version = "0.1.0"
 rust-version = "1.76"
+default-run = "visualizer"
 
 [dependencies]
 itertools = "0.14.0"
-rerun = "0.18.2"
+rerun = "0.21.0"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.138"
 walkdir = "2.5.0"
@@ -22,6 +23,10 @@ tempfile = "3.16.0"
 [[bin]]
 name = "generate-rotated-ipa-polygons"
 path = "src/bin/generate_rotated_ipa_polygons.rs"
+
+[[bin]]
+name = "visualizer"
+path = "src/bin/visualizer.rs"
 
 [[bench]]
 name = "extreme_points"
