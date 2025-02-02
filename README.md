@@ -44,7 +44,13 @@ You can run the benchmarks yourself with
 cargo bench --bench extreme_points --bench interior_points
 ```
 
---
+Here is a visualization of one of the benchmarks to compute extreme points, comparing computing them from extreme edges $O(n^3)$ versus computing them from interior points with triangle checks $O(n^4)$:
+
+![Screen Shot 2025-02-02 at 11 51 21 AM](https://github.com/user-attachments/assets/e6550aec-eac0-4413-b6ec-9fd9526c0ae6)
+
+These are both obviously bad algorithms, but they are what is implemented at the moment and provide some basis for comparison.
+
+---
 
 ## Visualizer
 
