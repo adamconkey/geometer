@@ -9,7 +9,7 @@ pub struct Triangle<'a> {
     pub p1: &'a Point,
     pub p2: &'a Point,
     pub p3: &'a Point,
-    area: OnceCell<f64>,
+    area: OnceCell<f32>,
 }
 
 impl<'a> Triangle<'a> {
@@ -28,7 +28,7 @@ impl<'a> Triangle<'a> {
         vec![ls1, ls2, ls3]
     }
 
-    pub fn area(&self) -> f64 {
+    pub fn area(&self) -> f32 {
         *self.area.get_or_init(|| {
             let t1 = (self.p2.x - self.p1.x) * (self.p3.y - self.p1.y);
             let t2 = (self.p3.x - self.p1.x) * (self.p2.y - self.p1.y);

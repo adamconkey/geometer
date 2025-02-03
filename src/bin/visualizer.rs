@@ -1,17 +1,26 @@
-use rerun::{demo_util::grid, external::glam};
+use geometer::util::load_polygon;
+
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let rec = rerun::RecordingStreamBuilder::new("rerun_example_minimal").spawn()?;
+    let rec = rerun::RecordingStreamBuilder::new("rerun_example_minimal").connect_tcp()?;
 
-    let points = grid(glam::Vec3::splat(-10.0), glam::Vec3::splat(10.0), 10);
-    let colors = grid(glam::Vec3::ZERO, glam::Vec3::splat(255.0), 10)
-        .map(|v| rerun::Color::from_rgb(v.x as u8, v.y as u8, v.z as u8));
+    let polygon = load_polygon("polygon_2", "custom");
+
+    let polygon_points = polygon.sorted_points().into_iter().map(|p| (p.x, p.y));
+    let mut edge_points: Vec<(f32, f32)> = polygon_points.clone().collect();
+    edge_points.push(edge_points[0]);
+    let points = rerun::Points2D::new(polygon_points);
+    let edges = rerun::LineStrips2D::new([edge_points]);
 
     rec.log(
-        "my_points",
-        &rerun::Points3D::new(points)
-            .with_colors(colors)
+        "polygon_2/vertices",
+        &points
             .with_radii([0.5]),
+    )?;
+
+    rec.log(
+        "polygon_2/edges",
+        &edges
     )?;
 
     Ok(())

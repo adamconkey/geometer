@@ -5,6 +5,15 @@ use walkdir::WalkDir;
 use crate::polygon::Polygon;
 
 
+pub fn load_polygon(name: &str, folder: &str) -> Polygon {
+    let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    path.push("polygons");
+    path.push(folder);
+    path.push(format!("{}.json", name));
+    Polygon::from_json(path)
+}
+
+
 pub fn polygon_map_by_num_vertices(vertex_limit: usize) -> HashMap<usize, Polygon> {
     let mut map = HashMap::new();
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
