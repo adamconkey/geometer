@@ -103,12 +103,12 @@ impl Polygon {
             let id = self.find_ear(&vmap)
                 .expect("valid polygons with 3 or more vertices should have an ear");
             let v = vmap.remove(&id);
-            triangulation.insert(TriangleVertexIds(v.prev, id, v.next));
+            triangulation.push(TriangleVertexIds(v.prev, id, v.next));
         }
         // At this stage there should be exactly 3 vertices left,
         // which form the final triangle of the triangulation
         let v = vmap.anchor();
-        triangulation.insert(TriangleVertexIds(v.prev, v.id, v.next));
+        triangulation.push(TriangleVertexIds(v.prev, v.id, v.next));
 
         triangulation
     }
