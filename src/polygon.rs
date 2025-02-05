@@ -44,7 +44,24 @@ impl Polygon {
         // where it can possibly error on serialization or file write
         fs::write(path, points_str).expect("File should have saved but failed");
     }
-    
+
+    pub fn to_rerun_points(&self) -> rerun::Points3D {
+        rerun::Points3D::new(
+            self.sorted_points()
+                .into_iter()
+                .map(|p| (p.x, p.y, 0.0))
+        )
+    }
+
+    pub fn to_rerun_edges(&self) -> rerun::LineStrips3D {
+        let mut edge_points: Vec<_> = self.sorted_points()
+            .into_iter()
+            .map(|p| (p.x, p.y, 0.0))
+            .collect();
+        edge_points.push(edge_points[0]);
+        rerun::LineStrips3D::new([edge_points])
+    }
+ 
     pub fn sorted_points(&self) -> Vec<Point> {
         self.vertex_map.sorted_points()
     }
