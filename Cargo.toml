@@ -28,7 +28,7 @@ path = "src/bin/generate_rotated_ipa_polygons.rs"
 
 [[bin]]
 name = "visualizer"
-path = "src/bin/visualizer.rs"
+path = "src/bin/run_visualizer.rs"
 
 [[bench]]
 name = "extreme_points"
