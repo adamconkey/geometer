@@ -39,4 +39,21 @@ impl RerunVisualizer {
             ).unwrap();  // TODO don't unwrap
         }
     }
+
+    pub fn visualize_extreme_points(&self, polygon_name: String, folder: String) {
+        // TODO have load function return Result
+        let polygon = load_polygon(&polygon_name, &folder);
+        let extreme_points: Vec<_> = polygon
+            .extreme_points()
+            .iter()
+            .map(|id| polygon.get_point(id))
+            .collect();
+        
+        // TODO will want to add vis of polygon as above, and then vis
+        // the extreme vertices in some way that makes them stand out
+        // more, probably mainly making them bigger but could also 
+        // look into other visualization options. Should probably add
+        // some helpers to clean all this up.
+
+    }
 }
