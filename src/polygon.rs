@@ -126,7 +126,7 @@ impl Polygon {
         self.vertex_map.get(id)
     }
 
-    fn get_point(&self, id: &VertexId) -> Point {
+    pub fn get_point(&self, id: &VertexId) -> Point {
         self.get_vertex(id).coords.clone()
     }
 
