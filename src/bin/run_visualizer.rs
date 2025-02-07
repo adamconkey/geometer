@@ -1,7 +1,14 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
 use geometer::util::load_polygon;
 use geometer::visualizer::RerunVisualizer;
+
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum Visualization {
+    Triangulation,
+    ExtremePoints,
+}
 
 
 /// Visualize polygons and algorithms using Rerun.io``
@@ -15,6 +22,10 @@ struct Args {
     /// Polygon name to visualize (without the .json extension)
     #[arg(short, long, default_value = "skimage_horse")]
     polygon: String,
+
+    /// Type of visualization to generate
+    #[arg(short, long, value_enum)]
+    visualization: Visualization,
 }
 
 
@@ -26,7 +37,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let polygon = load_polygon(&args.polygon, &args.folder);
     let name = format!("{}/{}", args.polygon, args.folder);
 
-    visualizer.visualize_triangulation(&polygon, &name);
+    match args.visualization {
+        Visualization::ExtremePoints => visualizer.visualize_extreme_points(&polygon, &name),
+        Visualization::Triangulation => visualizer.visualize_triangulation(&polygon, &name),
+    };
     
     Ok(())
 }

@@ -248,7 +248,7 @@ impl Polygon {
 
     pub fn extreme_points(&self) -> HashSet<VertexId> {
         // This one is an alias to the current best implementation
-        self.extreme_points_from_interior_points()
+        self.extreme_points_from_extreme_edges()
     }
 
     pub fn extreme_points_from_extreme_edges(&self) -> HashSet<VertexId> {
