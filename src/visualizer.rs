@@ -1,5 +1,4 @@
-use crate::util::load_polygon;
-
+use crate::polygon::Polygon;
 
 pub struct RerunVisualizer {
     rec: rerun::RecordingStream,
@@ -13,36 +12,36 @@ impl RerunVisualizer {
         RerunVisualizer { rec }
     }
 
-    // TODO need to have this return Result and handle errors gracefully
-    pub fn visualize_triangulation(&self, polygon_name: String, folder: String) {
-        // TODO have load function return Result
-        let polygon = load_polygon(&polygon_name, &folder);
-        let triangulation = polygon.triangulation();
-
-        let rerun_meshes = triangulation.to_rerun_meshes();
-
+    pub fn visualize_polygon(&self, polygon: &Polygon, name: &String) {
         self.rec.log(
-            format!("{}/{}/vertices", folder, polygon_name),
+            format!("{}/vertices", name),
             &polygon.to_rerun_points()
                 .with_radii([0.3]),
         ).unwrap();  // TODO don't unwrap
 
         self.rec.log(
-            format!("{}/{}/edges", folder, polygon_name),
+            format!("{}/edges", name),
             &polygon.to_rerun_edges()
         ).unwrap();  // TODO don't unwrap
+    }
 
+    // TODO need to have this return Result and handle errors gracefully
+    pub fn visualize_triangulation(&self, polygon: &Polygon, name: &String) {
+        let triangulation = polygon.triangulation();
+
+        let rerun_meshes = triangulation.to_rerun_meshes();
+
+        self.visualize_polygon(&polygon, name);
+        
         for (i, mesh) in rerun_meshes.iter().enumerate() {
             self.rec.log(
-                format!("{}/{}/triangle_{}", folder, polygon_name, i),
+                format!("{}/triangle_{}", name, i),
                 mesh
             ).unwrap();  // TODO don't unwrap
         }
     }
 
-    pub fn visualize_extreme_points(&self, polygon_name: String, folder: String) {
-        // TODO have load function return Result
-        let polygon = load_polygon(&polygon_name, &folder);
+    pub fn visualize_extreme_points(&self, polygon: &Polygon, name: &String) {
         let extreme_points: Vec<_> = polygon
             .extreme_points()
             .iter()

@@ -1,5 +1,6 @@
 use clap::Parser;
 
+use geometer::util::load_polygon;
 use geometer::visualizer::RerunVisualizer;
 
 
@@ -21,7 +22,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let visualizer = RerunVisualizer::new("Geometer".to_string());
 
-    visualizer.visualize_triangulation(args.polygon, args.folder);
+    // TODO have load function return Result
+    let polygon = load_polygon(&args.polygon, &args.folder);
+    let name = format!("{}/{}", args.polygon, args.folder);
+
+    visualizer.visualize_triangulation(&polygon, &name);
     
     Ok(())
 }
