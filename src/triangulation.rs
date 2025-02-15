@@ -1,4 +1,3 @@
-use random_color::RandomColor;
 use std::{fmt, slice::Iter};
 
 use crate::{point::Point, vertex::VertexId, vertex_map::VertexMap};
@@ -53,17 +52,5 @@ impl<'a> Triangulation<'a> {
                     self.vmap.get(&ids.2).coords.clone()
                 )
             ).collect()        
-    }
-
-    pub fn to_rerun_meshes(&self) -> Vec<rerun::Mesh3D> {
-        let mut meshes = Vec::new();
-        for (p1, p2, p3) in self.to_points().iter() { 
-            let color = RandomColor::new().to_rgb_array();
-            let points = [[p1.x, p1.y, 0.0], [p2.x, p2.y, 0.0], [p3.x, p3.y, 0.0]]; 
-            let mesh = rerun::Mesh3D::new(points)
-                .with_vertex_colors([color, color, color]);
-            meshes.push(mesh);
-        }
-        meshes
     }
 }
