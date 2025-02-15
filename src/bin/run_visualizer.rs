@@ -87,7 +87,7 @@ impl RerunVisualizer {
         let rerun_points = rerun::Points3D::new(
             extreme_points
                 .into_iter()
-                .map(|p| (p.x, p.y, 0.0))
+                .map(|p| (p.x as f32, p.y as f32, 0.0))
         );
 
         self.rec.log(
@@ -102,14 +102,14 @@ impl RerunVisualizer {
         rerun::Points3D::new(
             polygon.sorted_points()
                 .into_iter()
-                .map(|p| (p.x, p.y, 0.0))
+                .map(|p| (p.x as f32, p.y as f32, 0.0))
         )
     }
     
     fn polygon_to_rerun_edges(&self, polygon: &Polygon) -> rerun::LineStrips3D {
         let mut edge_points: Vec<_> = polygon.sorted_points()
             .into_iter()
-            .map(|p| (p.x, p.y, 0.0))
+            .map(|p| (p.x as f32, p.y as f32, 0.0))
             .collect();
         edge_points.push(edge_points[0]);
         rerun::LineStrips3D::new([edge_points])
@@ -119,7 +119,11 @@ impl RerunVisualizer {
         let mut meshes = Vec::new();
         for (p1, p2, p3) in triangulation.to_points().iter() { 
             let color = RandomColor::new().to_rgb_array();
-            let points = [[p1.x, p1.y, 0.0], [p2.x, p2.y, 0.0], [p3.x, p3.y, 0.0]]; 
+            let points = [
+                [p1.x as f32, p1.y as f32, 0.0], 
+                [p2.x as f32, p2.y as f32, 0.0], 
+                [p3.x as f32, p3.y as f32, 0.0]
+            ]; 
             let mesh = rerun::Mesh3D::new(points)
                 .with_vertex_colors([color, color, color]);
             meshes.push(mesh);
