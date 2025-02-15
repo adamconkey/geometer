@@ -1,4 +1,4 @@
-use std::{collections::{hash_set::Iter, HashSet}, fmt};
+use std::{fmt, slice::Iter};
 
 use crate::{point::Point, vertex::VertexId, vertex_map::VertexMap};
 
@@ -18,17 +18,17 @@ pub struct TriangleVertexIds(pub VertexId, pub VertexId, pub VertexId);
 
 
 pub struct Triangulation<'a> {
-    triangles: HashSet<TriangleVertexIds>,
+    triangles: Vec<TriangleVertexIds>,
     vmap: &'a VertexMap,
 }
 
 impl<'a> Triangulation<'a> {
     pub fn new(vmap: &'a VertexMap) -> Self {
-        Self { triangles: HashSet::new(), vmap }
+        Self { triangles: Vec::new(), vmap }
     }    
     
-    pub fn insert(&mut self, value: TriangleVertexIds) -> bool {
-        self.triangles.insert(value)
+    pub fn push(&mut self, value: TriangleVertexIds) {
+        self.triangles.push(value)
     }
 
     pub fn iter(&self) -> Iter<'_, TriangleVertexIds> { 

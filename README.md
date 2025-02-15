@@ -34,6 +34,31 @@ My goal for this repo is to eventually have a complete implementation of the alg
 
 ---
 
+## Visualizer
+
+A visualizer is provided using [rerun.io](https://rerun.io). You must have the `rerun` viewer installed for this to work, you can follow their instructions [here](https://rerun.io/docs/getting-started/installing-viewer#installing-the-viewer). This method worked well for me:
+```shell
+cargo install rerun-cli --locked
+```
+
+Here are some example visualizations (add the `-h` option for further CLI documentation):
+
+```shell
+cargo run --features visualizer -- -v triangulation -f interesting_polygon_archive -p skimage_horse
+```
+
+![Screen Shot 2025-02-15 at 3 31 57 PM](https://github.com/user-attachments/assets/6b603bd3-c45b-4451-8c40-6cb0f6928105)
+
+
+```shell
+cargo run --features visualizer -- -v extreme-points -f interesting_polygon_archive -p skimage_horse
+```
+
+![Screen Shot 2025-02-15 at 3 32 58 PM](https://github.com/user-attachments/assets/5561f855-05c7-4611-9197-ec5c4c63c516)
+
+
+---
+
 ## Benchmarks
 
 Some simple benchmarking capabilities are provided using [Criterion.rs](https://bheisler.github.io/criterion.rs/book/). These are mostly to provide empirical intuition on the runtime of algorithms. Currently only a couple benchmarks are setup, more will be added as more algorithms are implemented.

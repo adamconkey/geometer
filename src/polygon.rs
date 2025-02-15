@@ -44,7 +44,11 @@ impl Polygon {
         // where it can possibly error on serialization or file write
         fs::write(path, points_str).expect("File should have saved but failed");
     }
-    
+ 
+    pub fn sorted_points(&self) -> Vec<Point> {
+        self.vertex_map.sorted_points()
+    }
+
     pub fn num_edges(&self) -> usize {
         self.edges().len()
     }
@@ -82,12 +86,12 @@ impl Polygon {
             let id = self.find_ear(&vmap)
                 .expect("valid polygons with 3 or more vertices should have an ear");
             let v = vmap.remove(&id);
-            triangulation.insert(TriangleVertexIds(v.prev, id, v.next));
+            triangulation.push(TriangleVertexIds(v.prev, id, v.next));
         }
         // At this stage there should be exactly 3 vertices left,
         // which form the final triangle of the triangulation
         let v = vmap.anchor();
-        triangulation.insert(TriangleVertexIds(v.prev, v.id, v.next));
+        triangulation.push(TriangleVertexIds(v.prev, v.id, v.next));
 
         triangulation
     }
@@ -105,7 +109,7 @@ impl Polygon {
         self.vertex_map.get(id)
     }
 
-    fn get_point(&self, id: &VertexId) -> Point {
+    pub fn get_point(&self, id: &VertexId) -> Point {
         self.get_vertex(id).coords.clone()
     }
 
@@ -227,7 +231,7 @@ impl Polygon {
 
     pub fn extreme_points(&self) -> HashSet<VertexId> {
         // This one is an alias to the current best implementation
-        self.extreme_points_from_interior_points()
+        self.extreme_points_from_extreme_edges()
     }
 
     pub fn extreme_points_from_extreme_edges(&self) -> HashSet<VertexId> {
@@ -365,6 +369,7 @@ impl Polygon {
 #[cfg(test)]
 mod tests {
     use crate::F64_ASSERT_PRECISION;
+    use crate::util::load_polygon;
 
     use super::*;
     use assert_approx_eq::assert_approx_eq;
@@ -394,14 +399,6 @@ mod tests {
         fn new(polygon: Polygon, metadata: PolygonMetadata) -> Self {
             PolygonTestCase { polygon, metadata }
         }
-    }
-
-    fn load_polygon(name: &str, folder: &str) -> Polygon {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("polygons");
-        path.push(folder);
-        path.push(format!("{}.json", name));
-        Polygon::from_json(path)
     }
 
     fn load_metadata(name: &str, folder: &str) -> PolygonMetadata {
