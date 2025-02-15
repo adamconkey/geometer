@@ -31,36 +31,6 @@ struct Args {
 }
 
 
-pub fn polygon_to_rerun_points(polygon: &Polygon) -> rerun::Points3D {
-    rerun::Points3D::new(
-        polygon.sorted_points()
-            .into_iter()
-            .map(|p| (p.x, p.y, 0.0))
-    )
-}
-
-pub fn polygon_to_rerun_edges(polygon: &Polygon) -> rerun::LineStrips3D {
-    let mut edge_points: Vec<_> = polygon.sorted_points()
-        .into_iter()
-        .map(|p| (p.x, p.y, 0.0))
-        .collect();
-    edge_points.push(edge_points[0]);
-    rerun::LineStrips3D::new([edge_points])
-}
-
-pub fn triangulation_to_rerun_meshes(triangulation: &Triangulation) -> Vec<rerun::Mesh3D> {
-    let mut meshes = Vec::new();
-    for (p1, p2, p3) in triangulation.to_points().iter() { 
-        let color = RandomColor::new().to_rgb_array();
-        let points = [[p1.x, p1.y, 0.0], [p2.x, p2.y, 0.0], [p3.x, p3.y, 0.0]]; 
-        let mesh = rerun::Mesh3D::new(points)
-            .with_vertex_colors([color, color, color]);
-        meshes.push(mesh);
-    }
-    meshes
-}
-
-
 pub struct RerunVisualizer {
     rec: rerun::RecordingStream,
 }
@@ -76,13 +46,13 @@ impl RerunVisualizer {
     pub fn visualize_polygon(&self, polygon: &Polygon, name: &String) {
         self.rec.log(
             format!("{}/vertices", name),
-            &polygon_to_rerun_points(&polygon)
+            &self.polygon_to_rerun_points(&polygon)
                 .with_radii([5.0]),
         ).unwrap();  // TODO don't unwrap
 
         self.rec.log(
             format!("{}/edges", name),
-            &polygon_to_rerun_edges(&polygon)
+            &self.polygon_to_rerun_edges(&polygon)
                 .with_colors([(3, 144, 252)])
         ).unwrap();  // TODO don't unwrap
     }
@@ -91,7 +61,7 @@ impl RerunVisualizer {
     pub fn visualize_triangulation(&self, polygon: &Polygon, name: &String) {
         let name = format!("{name}/triangulation");
         let triangulation = polygon.triangulation();
-        let rerun_meshes = triangulation_to_rerun_meshes(&triangulation);
+        let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation);
 
         self.visualize_polygon(polygon, &name);
         
@@ -127,6 +97,35 @@ impl RerunVisualizer {
                 .with_radii([10.0])
                 .with_colors([(252, 207, 3)]),
         ).unwrap();  // TODO don't unwrap
+    }
+
+    fn polygon_to_rerun_points(&self, polygon: &Polygon) -> rerun::Points3D {
+        rerun::Points3D::new(
+            polygon.sorted_points()
+                .into_iter()
+                .map(|p| (p.x, p.y, 0.0))
+        )
+    }
+    
+    fn polygon_to_rerun_edges(&self, polygon: &Polygon) -> rerun::LineStrips3D {
+        let mut edge_points: Vec<_> = polygon.sorted_points()
+            .into_iter()
+            .map(|p| (p.x, p.y, 0.0))
+            .collect();
+        edge_points.push(edge_points[0]);
+        rerun::LineStrips3D::new([edge_points])
+    }
+    
+    fn triangulation_to_rerun_meshes(&self, triangulation: &Triangulation) -> Vec<rerun::Mesh3D> {
+        let mut meshes = Vec::new();
+        for (p1, p2, p3) in triangulation.to_points().iter() { 
+            let color = RandomColor::new().to_rgb_array();
+            let points = [[p1.x, p1.y, 0.0], [p2.x, p2.y, 0.0], [p3.x, p3.y, 0.0]]; 
+            let mesh = rerun::Mesh3D::new(points)
+                .with_vertex_colors([color, color, color]);
+            meshes.push(mesh);
+        }
+        meshes
     }
 }
 
