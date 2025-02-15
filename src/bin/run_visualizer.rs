@@ -46,8 +46,7 @@ impl RerunVisualizer {
     pub fn visualize_polygon(&self, polygon: &Polygon, name: &String) {
         self.rec.log(
             format!("{}/vertices", name),
-            &self.polygon_to_rerun_points(&polygon)
-                .with_radii([5.0]),
+            &self.polygon_to_rerun_points(&polygon),
         ).unwrap();  // TODO don't unwrap
 
         self.rec.log(
@@ -94,7 +93,7 @@ impl RerunVisualizer {
         self.rec.log(
             format!("{}/extreme_points", name),
             &rerun_points
-                .with_radii([10.0])
+                .with_radii([5.0])
                 .with_colors([(252, 207, 3)]),
         ).unwrap();  // TODO don't unwrap
     }
@@ -128,7 +127,6 @@ impl RerunVisualizer {
         meshes
     }
 }
-
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
