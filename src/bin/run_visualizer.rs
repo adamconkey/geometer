@@ -46,12 +46,12 @@ impl RerunVisualizer {
     pub fn visualize_polygon(&self, polygon: &Polygon, name: &String) {
         self.rec.log(
             format!("{}/vertices", name),
-            &self.polygon_to_rerun_points(&polygon),
+            &self.polygon_to_rerun_points(polygon),
         ).unwrap();  // TODO don't unwrap
 
         self.rec.log(
             format!("{}/edges", name),
-            &self.polygon_to_rerun_edges(&polygon)
+            &self.polygon_to_rerun_edges(polygon)
                 .with_colors([(3, 144, 252)])
         ).unwrap();  // TODO don't unwrap
     }

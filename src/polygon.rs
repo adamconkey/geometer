@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::{collections::HashSet, f64};
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
