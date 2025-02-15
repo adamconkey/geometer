@@ -61,15 +61,15 @@ impl Vertex {
         self.coords.left_on(ab)
     }
 
-    pub fn translate(&mut self, x: f32, y: f32) {
+    pub fn translate(&mut self, x: f64, y: f64) {
         self.coords.translate(x, y)
     }
 
-    pub fn rotate_about_origin(&mut self, radians: f32) {
+    pub fn rotate_about_origin(&mut self, radians: f64) {
         self.coords.rotate_about_origin(radians);
     }
 
-    pub fn rotate_about_point(&mut self, radians: f32, point: &Point) {
+    pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
         self.coords.rotate_about_point(radians, point);
     }
 

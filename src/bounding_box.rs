@@ -1,15 +1,15 @@
 use crate::point::Point;
 
 pub struct BoundingBox {
-    pub min_x: f32,
-    pub max_x: f32,
-    pub min_y: f32,
-    pub max_y: f32,
+    pub min_x: f64,
+    pub max_x: f64,
+    pub min_y: f64,
+    pub max_y: f64,
 }
 
 
 impl BoundingBox {
-    pub fn new(min_x: f32, max_x: f32, min_y: f32, max_y: f32) -> Self{
+    pub fn new(min_x: f64, max_x: f64, min_y: f64, max_y: f64) -> Self{
         Self { min_x, max_x, min_y, max_y }
     }
 

@@ -107,20 +107,20 @@ impl VertexMap {
         self.values().collect::<Vec<_>>()[0]
     }
 
-    pub fn min_x(&self) -> f32 {
-        self.values().fold(f32::MAX, |acc, v| acc.min(v.coords.x))
+    pub fn min_x(&self) -> f64 {
+        self.values().fold(f64::MAX, |acc, v| acc.min(v.coords.x))
     }
 
-    pub fn max_x(&self) -> f32 {
-        self.values().fold(f32::MIN, |acc, v| acc.max(v.coords.x))
+    pub fn max_x(&self) -> f64 {
+        self.values().fold(f64::MIN, |acc, v| acc.max(v.coords.x))
     }
 
-    pub fn min_y(&self) -> f32 {
-        self.values().fold(f32::MAX, |acc, v| acc.min(v.coords.y))
+    pub fn min_y(&self) -> f64 {
+        self.values().fold(f64::MAX, |acc, v| acc.min(v.coords.y))
     }
 
-    pub fn max_y(&self) -> f32 {
-        self.values().fold(f32::MIN, |acc, v| acc.max(v.coords.y))
+    pub fn max_y(&self) -> f64 {
+        self.values().fold(f64::MIN, |acc, v| acc.max(v.coords.y))
     }
 
     pub fn update_next(&mut self, k: &VertexId, next: &VertexId) {
@@ -131,19 +131,19 @@ impl VertexMap {
         self.get_mut(k).prev = *prev;
     }
 
-    pub fn translate(&mut self, x: f32, y: f32) {
+    pub fn translate(&mut self, x: f64, y: f64) {
         for v in self.values_mut() {
             v.translate(x, y);
         }
     }
 
-    pub fn rotate_vertices_about_origin(&mut self, radians: f32) {
+    pub fn rotate_vertices_about_origin(&mut self, radians: f64) {
         for v in self.values_mut() {
             v.rotate_about_origin(radians);
         }
     }
 
-    pub fn rotate_vertices_about_point(&mut self, radians: f32, point: &Point) {
+    pub fn rotate_vertices_about_point(&mut self, radians: f64, point: &Point) {
         for v in self.values_mut() {
             v.rotate_about_point(radians, point);
         }

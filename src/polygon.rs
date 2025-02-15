@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::collections::HashSet;
+use std::{collections::HashSet, f64};
 use std::fs;
 use std::path::Path;
 
@@ -57,7 +57,7 @@ impl Polygon {
         self.vertex_map.len()
     }
 
-    pub fn area(&self) -> f32 {
+    pub fn area(&self) -> f64 {
         let mut area = 0.0;
         let anchor = self.vertex_map.anchor();
         for v1 in self.vertex_map.values() {
@@ -67,7 +67,7 @@ impl Polygon {
         area
     }
 
-    pub fn area_from_triangulation(&self, triangulation: &Triangulation) -> f32 {
+    pub fn area_from_triangulation(&self, triangulation: &Triangulation) -> f64 {
         // Computes area from a triangulation as the sum of the area of 
         // the individual triangles that constitute the triangulation.
         // This value should always be exactly equal to `self.area()`.
@@ -257,31 +257,31 @@ impl Polygon {
         BoundingBox::new(self.min_x(), self.max_x(), self.min_y(), self.max_y())
     }
 
-    pub fn min_x(&self) -> f32 {
+    pub fn min_x(&self) -> f64 {
         self.vertex_map.min_x()
     }
 
-    pub fn max_x(&self) -> f32 {
+    pub fn max_x(&self) -> f64 {
         self.vertex_map.max_x()
     }
 
-    pub fn min_y(&self) -> f32 {
+    pub fn min_y(&self) -> f64 {
         self.vertex_map.min_y()
     }
 
-    pub fn max_y(&self) -> f32 {
+    pub fn max_y(&self) -> f64 {
         self.vertex_map.max_y()
     }
 
-    pub fn translate(&mut self, x: f32, y: f32) {
+    pub fn translate(&mut self, x: f64, y: f64) {
         self.vertex_map.translate(x, y);
     }
 
-    pub fn rotate_about_origin(&mut self, radians: f32) {
+    pub fn rotate_about_origin(&mut self, radians: f64) {
         self.vertex_map.rotate_vertices_about_origin(radians);
     }
 
-    pub fn rotate_about_point(&mut self, radians: f32, point: &Point) {
+    pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
         self.vertex_map.rotate_vertices_about_point(radians, point);
     }
 
@@ -368,20 +368,21 @@ impl Polygon {
 
 #[cfg(test)]
 mod tests {
-    use crate::F32_ASSERT_PRECISION;
+    use crate::F64_ASSERT_PRECISION;
+    use crate::util::load_polygon;
 
     use super::*;
     use assert_approx_eq::assert_approx_eq;
     use rstest::{fixture, rstest};
     use rstest_reuse::{self, *};
     use serde::Deserialize;
-    use std::f32::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8, PI, SQRT_2};
+    use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8, PI, SQRT_2};
     use std::path::PathBuf;
     use tempfile::NamedTempFile;
 
     #[derive(Deserialize)]
     struct PolygonMetadata {
-        area: f32,
+        area: f64,
         extreme_points: HashSet<VertexId>,
         interior_points: HashSet<VertexId>,
         num_edges: usize,
@@ -398,14 +399,6 @@ mod tests {
         fn new(polygon: Polygon, metadata: PolygonMetadata) -> Self {
             PolygonTestCase { polygon, metadata }
         }
-    }
-
-    fn load_polygon(name: &str, folder: &str) -> Polygon {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("polygons");
-        path.push(folder);
-        path.push(format!("{}.json", name));
-        Polygon::from_json(path)
     }
 
     fn load_metadata(name: &str, folder: &str) -> PolygonMetadata {
@@ -579,27 +572,27 @@ mod tests {
     #[apply(all_polygons)]
     fn test_rotation_about_origin(
         case: PolygonTestCase, 
-        #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f32
+        #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f64
     ) {
         let mut polygon = case.polygon;
         polygon.rotate_about_origin(radians);
         polygon.validate();
         assert_eq!(polygon.num_edges(), case.metadata.num_edges);
         assert_eq!(polygon.num_vertices(), case.metadata.num_vertices);
-        assert_approx_eq!(polygon.area(), case.metadata.area, F32_ASSERT_PRECISION);
+        assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
     }
 
     #[apply(all_polygons)]
     fn test_rotation_about_point(
         case: PolygonTestCase,
-        #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f32,
+        #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f64,
         #[values(Point::new(5.2, 10.0), Point::new(-43.0, PI), Point::new(SQRT_2, 1e8))] point: Point
     ) {
         let mut polygon = case.polygon;
         polygon.rotate_about_point(radians, &point);
         assert_eq!(polygon.num_edges(), case.metadata.num_edges);
         assert_eq!(polygon.num_vertices(), case.metadata.num_vertices);
-        assert_approx_eq!(polygon.area(), case.metadata.area, F32_ASSERT_PRECISION);
+        assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
     }
 
     #[apply(all_polygons)]

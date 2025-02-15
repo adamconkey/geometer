@@ -27,7 +27,7 @@ fn main() {
         let mut orig_bb_center = orig_bb.center();
         orig_bb_center.round();
     
-        polygon.rotate_about_origin(std::f32::consts::PI);
+        polygon.rotate_about_origin(std::f64::consts::PI);
         polygon.round_coordinates();
         
         // Get a new (rounded) bounding box center to compute translation
