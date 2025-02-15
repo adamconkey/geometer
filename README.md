@@ -47,9 +47,15 @@ Here are some example visualizations (add the `-h` option for further CLI docume
 cargo run --features visualizer -- -v triangulation -f interesting_polygon_archive -p skimage_horse
 ```
 
+![Screen Shot 2025-02-15 at 3 31 57 PM](https://github.com/user-attachments/assets/6b603bd3-c45b-4451-8c40-6cb0f6928105)
+
+
 ```shell
 cargo run --features visualizer -- -v extreme-points -f interesting_polygon_archive -p skimage_horse
 ```
+
+![Screen Shot 2025-02-15 at 3 32 58 PM](https://github.com/user-attachments/assets/5561f855-05c7-4611-9197-ec5c4c63c516)
+
 
 ---
 
