@@ -2,10 +2,10 @@ use itertools::Itertools;
 use std::{collections::HashMap, ffi::OsStr, path::PathBuf};
 use walkdir::WalkDir;
 
-use crate::polygon::Polygon;
+use crate::polygon::{FileError, Polygon};
 
 
-pub fn load_polygon(name: &str, folder: &str) -> Result<Polygon, serde_json::Error> {
+pub fn load_polygon(name: &str, folder: &str) -> Result<Polygon, FileError> {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     path.push("polygons");
     path.push(folder);
@@ -14,7 +14,7 @@ pub fn load_polygon(name: &str, folder: &str) -> Result<Polygon, serde_json::Err
 }
 
 
-pub fn polygon_map_by_num_vertices(vertex_limit: usize) -> Result<HashMap<usize, Polygon>, serde_json::Error> {
+pub fn polygon_map_by_num_vertices(vertex_limit: usize) -> Result<HashMap<usize, Polygon>, FileError> {
     let mut map = HashMap::new();
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     root.push("polygons");

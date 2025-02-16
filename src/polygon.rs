@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::collections::HashSet;
+use std::{collections::HashSet, io};
 use std::fs;
 use std::path::Path;
 
@@ -14,10 +14,30 @@ use crate::{
 };
 
 
+#[derive(Debug)]
+pub enum FileError {
+    IOError(io::Error),
+    ParseError(serde_json::Error),
+}
+
+impl From<io::Error> for FileError {
+    fn from(value: io::Error) -> Self {
+        FileError::IOError(value)
+    }
+}
+
+impl From<serde_json::Error> for FileError {
+    fn from(value: serde_json::Error) -> Self {
+        FileError::ParseError(value)
+    }
+}
+
+
 #[derive(Debug, PartialEq)]
 pub struct Polygon {
     vertex_map: VertexMap,
 }
+
 
 impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {
@@ -27,9 +47,8 @@ impl Polygon {
         polygon
     }
 
-    pub fn from_json<P: AsRef<Path>>(path: P) -> Result<Polygon, serde_json::Error> {
-        let polygon_str: String = fs::read_to_string(path)
-            .expect("file should exist and be parseable");
+    pub fn from_json<P: AsRef<Path>>(path: P) -> Result<Polygon, FileError> {
+        let polygon_str: String = fs::read_to_string(path)?;
         let points: Vec<Point> = serde_json::from_str(&polygon_str)?;
         Ok(Polygon::new(points))
     }
