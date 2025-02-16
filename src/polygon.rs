@@ -5,12 +5,13 @@ use std::path::Path;
 
 use crate::{
     bounding_box::BoundingBox, 
+    error::FileError,
     line_segment::LineSegment, 
     point::Point, 
     triangle::Triangle, 
     triangulation::{EarNotFoundError, TriangleVertexIds, Triangulation}, 
     vertex::{Vertex, VertexId}, 
-    vertex_map::VertexMap
+    vertex_map::VertexMap,
 };
 
 
@@ -18,6 +19,7 @@ use crate::{
 pub struct Polygon {
     vertex_map: VertexMap,
 }
+
 
 impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {
@@ -27,22 +29,17 @@ impl Polygon {
         polygon
     }
 
-    pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
-        let polygon_str: String = fs::read_to_string(path)
-            .expect("file should exist and be parseable");
-        // TODO don't unwrap
-        let points: Vec<Point> = serde_json::from_str(&polygon_str).unwrap();
-        Polygon::new(points)
+    pub fn from_json<P: AsRef<Path>>(path: P) -> Result<Polygon, FileError> {
+        let points_str: String = fs::read_to_string(path)?;
+        let points: Vec<Point> = serde_json::from_str(&points_str)?;
+        Ok(Polygon::new(points))
     }
 
-    pub fn to_json<P: AsRef<Path>>(&self, path: P) {
-        // TODO return result
-
+    pub fn to_json<P: AsRef<Path>>(&self, path: P) -> Result<(), FileError>{
         let points = self.vertex_map.sorted_points();
-        let points_str = serde_json::to_string_pretty(&points).unwrap();
-        // TODO don't expect below or unwrap above, want to return result
-        // where it can possibly error on serialization or file write
-        fs::write(path, points_str).expect("File should have saved but failed");
+        let points_str = serde_json::to_string_pretty(&points)?;
+        fs::write(path, points_str)?;
+        Ok(())
     }
  
     pub fn sorted_points(&self) -> Vec<Point> {
@@ -401,14 +398,14 @@ mod tests {
         }
     }
 
-    fn load_metadata(name: &str, folder: &str) -> PolygonMetadata {
+    fn load_metadata(name: &str, folder: &str) -> Result<PolygonMetadata, FileError> {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("polygons");
         path.push(folder);
         path.push(format!("{}.meta.json", name));
-        let metadata_str: String = fs::read_to_string(path)
-            .expect("file should exist and be parseable");
-        serde_json::from_str(&metadata_str).unwrap()
+        let metadata_str: String = fs::read_to_string(path)?;
+        let metadata = serde_json::from_str(&metadata_str)?;
+        Ok(metadata)
     }
 
     #[macro_export]
@@ -417,8 +414,8 @@ mod tests {
             #[fixture]
             fn $name() -> PolygonTestCase {
                 PolygonTestCase::new(
-                    load_polygon(stringify!($name), stringify!($folder)),
-                    load_metadata(stringify!($name), stringify!($folder))
+                    load_polygon(stringify!($name), stringify!($folder)).unwrap(),
+                    load_metadata(stringify!($name), stringify!($folder)).unwrap(),
                 )
             }
         };
@@ -545,8 +542,8 @@ mod tests {
         let filename = NamedTempFile::new()
             .unwrap()
             .into_temp_path();
-        case.polygon.to_json(&filename);
-        let new_polygon = Polygon::from_json(&filename);
+        let _ = case.polygon.to_json(&filename);
+        let new_polygon = Polygon::from_json(&filename).unwrap();
         assert_eq!(case.polygon, new_polygon);
     }
 

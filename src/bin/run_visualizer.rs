@@ -1,4 +1,5 @@
 use clap::{Parser, ValueEnum};
+use geometer::error::FileError;
 use random_color::RandomColor;
 
 use geometer::polygon::Polygon;
@@ -31,52 +32,72 @@ struct Args {
 }
 
 
+#[derive(Debug)]
+pub enum VisualizationError {
+    File(FileError),
+    Rerun(rerun::RecordingStreamError),
+}
+
+impl From<FileError> for VisualizationError {
+    fn from(value: FileError) -> Self {
+        VisualizationError::File(value)
+    }
+}
+
+impl From<rerun::RecordingStreamError> for VisualizationError {
+    fn from(value: rerun::RecordingStreamError) -> Self {
+        VisualizationError::Rerun(value)
+    }
+}
+
+
 pub struct RerunVisualizer {
     rec: rerun::RecordingStream,
 }
 
 
 impl RerunVisualizer {
-    pub fn new(name: String) -> Self {
-        // TODO don't unwrap
-        let rec = rerun::RecordingStreamBuilder::new(name).connect_tcp().unwrap();
-        RerunVisualizer { rec }
+    pub fn new(name: String) -> Result<Self, VisualizationError> {
+        let rec = rerun::RecordingStreamBuilder::new(name).connect_tcp()?;
+        Ok(RerunVisualizer { rec })
     }
 
-    pub fn visualize_polygon(&self, polygon: &Polygon, name: &String) {
+    pub fn visualize_polygon(&self, polygon: &Polygon, name: &String) -> Result<(), VisualizationError> {
         self.rec.log(
             format!("{}/vertices", name),
             &self.polygon_to_rerun_points(polygon),
-        ).unwrap();  // TODO don't unwrap
+        )?;
 
         self.rec.log(
             format!("{}/edges", name),
             &self.polygon_to_rerun_edges(polygon)
                 .with_colors([(3, 144, 252)])
-        ).unwrap();  // TODO don't unwrap
+        )?;
+        
+        Ok(())
     }
 
-    // TODO need to have this return Result and handle errors gracefully
-    pub fn visualize_triangulation(&self, polygon: &Polygon, name: &String) {
+    pub fn visualize_triangulation(&self, polygon: &Polygon, name: &String) -> Result<(), VisualizationError> {
         let name = format!("{name}/triangulation");
         let triangulation = polygon.triangulation();
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation);
 
-        self.visualize_polygon(polygon, &name);
+        let _ = self.visualize_polygon(polygon, &name);
         
         for (i, mesh) in rerun_meshes.iter().enumerate() {
             self.rec.log(
                 format!("{}/triangle_{}", &name, i),
                 mesh
-            ).unwrap();  // TODO don't unwrap
+            )?;
         }
+
+        Ok(())
     }
 
-    // TODO have this return Result
-    pub fn visualize_extreme_points(&self, polygon: &Polygon, name: &String) {
+    pub fn visualize_extreme_points(&self, polygon: &Polygon, name: &String) -> Result<(), VisualizationError> {
         let name = format!("{name}/extreme_points");
         
-        self.visualize_polygon(polygon, &name);
+        let _ = self.visualize_polygon(polygon, &name);
         
         let extreme_points: Vec<_> = polygon
             .extreme_points()
@@ -95,7 +116,9 @@ impl RerunVisualizer {
             &rerun_points
                 .with_radii([5.0])
                 .with_colors([(252, 207, 3)]),
-        ).unwrap();  // TODO don't unwrap
+        )?;
+
+        Ok(())
     }
 
     fn polygon_to_rerun_points(&self, polygon: &Polygon) -> rerun::Points3D {
@@ -133,17 +156,16 @@ impl RerunVisualizer {
 }
 
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), VisualizationError> {
     let args = Args::parse();
     let visualizer = RerunVisualizer::new("Geometer".to_string());
 
-    // TODO have load function return Result
-    let polygon = load_polygon(&args.polygon, &args.folder);
+    let polygon = load_polygon(&args.polygon, &args.folder)?;
     let name = format!("{}/{}", args.polygon, args.folder);
 
     match args.visualization {
-        Visualization::ExtremePoints => visualizer.visualize_extreme_points(&polygon, &name),
-        Visualization::Triangulation => visualizer.visualize_triangulation(&polygon, &name),
+        Visualization::ExtremePoints => visualizer?.visualize_extreme_points(&polygon, &name)?,
+        Visualization::Triangulation => visualizer?.visualize_triangulation(&polygon, &name)?,
     };
     
     Ok(())
