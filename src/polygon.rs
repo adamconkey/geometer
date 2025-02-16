@@ -398,14 +398,14 @@ mod tests {
         }
     }
 
-    fn load_metadata(name: &str, folder: &str) -> PolygonMetadata {
+    fn load_metadata(name: &str, folder: &str) -> Result<PolygonMetadata, FileError> {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("polygons");
         path.push(folder);
         path.push(format!("{}.meta.json", name));
-        let metadata_str: String = fs::read_to_string(path)
-            .expect("file should exist and be parseable");
-        serde_json::from_str(&metadata_str).unwrap()
+        let metadata_str: String = fs::read_to_string(path)?;
+        let metadata = serde_json::from_str(&metadata_str)?;
+        Ok(metadata)
     }
 
     #[macro_export]
@@ -415,7 +415,7 @@ mod tests {
             fn $name() -> PolygonTestCase {
                 PolygonTestCase::new(
                     load_polygon(stringify!($name), stringify!($folder)).unwrap(),
-                    load_metadata(stringify!($name), stringify!($folder))
+                    load_metadata(stringify!($name), stringify!($folder)).unwrap(),
                 )
             }
         };
