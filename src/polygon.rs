@@ -542,7 +542,7 @@ mod tests {
         let filename = NamedTempFile::new()
             .unwrap()
             .into_temp_path();
-        case.polygon.to_json(&filename);
+        let _ = case.polygon.to_json(&filename);
         let new_polygon = Polygon::from_json(&filename).unwrap();
         assert_eq!(case.polygon, new_polygon);
     }
