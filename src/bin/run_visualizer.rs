@@ -31,33 +31,39 @@ struct Args {
 }
 
 
+#[derive(Debug)]
+pub enum VisualizationError {
+    Rerun(rerun::RecordingStreamError),
+}
+
+
 pub struct RerunVisualizer {
     rec: rerun::RecordingStream,
 }
 
 
 impl RerunVisualizer {
-    pub fn new(name: String) -> Self {
-        // TODO don't unwrap
-        let rec = rerun::RecordingStreamBuilder::new(name).connect_tcp().unwrap();
-        RerunVisualizer { rec }
+    pub fn new(name: String) -> Result<Self, VisualizationError> {
+        let rec = rerun::RecordingStreamBuilder::new(name).connect_tcp()?;
+        Ok(RerunVisualizer { rec })
     }
 
-    pub fn visualize_polygon(&self, polygon: &Polygon, name: &String) {
+    pub fn visualize_polygon(&self, polygon: &Polygon, name: &String) -> Result<(), VisualizationError> {
         self.rec.log(
             format!("{}/vertices", name),
             &self.polygon_to_rerun_points(polygon),
-        ).unwrap();  // TODO don't unwrap
+        )?;
 
         self.rec.log(
             format!("{}/edges", name),
             &self.polygon_to_rerun_edges(polygon)
                 .with_colors([(3, 144, 252)])
-        ).unwrap();  // TODO don't unwrap
+        )?;
+        
+        Ok(())
     }
 
-    // TODO need to have this return Result and handle errors gracefully
-    pub fn visualize_triangulation(&self, polygon: &Polygon, name: &String) {
+    pub fn visualize_triangulation(&self, polygon: &Polygon, name: &String) -> Result<(), VisualizationError> {
         let name = format!("{name}/triangulation");
         let triangulation = polygon.triangulation();
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation);
@@ -68,12 +74,13 @@ impl RerunVisualizer {
             self.rec.log(
                 format!("{}/triangle_{}", &name, i),
                 mesh
-            ).unwrap();  // TODO don't unwrap
+            )?;
         }
+
+        Ok(())
     }
 
-    // TODO have this return Result
-    pub fn visualize_extreme_points(&self, polygon: &Polygon, name: &String) {
+    pub fn visualize_extreme_points(&self, polygon: &Polygon, name: &String) -> Result<(), VisualizationError> {
         let name = format!("{name}/extreme_points");
         
         self.visualize_polygon(polygon, &name);
@@ -95,7 +102,9 @@ impl RerunVisualizer {
             &rerun_points
                 .with_radii([5.0])
                 .with_colors([(252, 207, 3)]),
-        ).unwrap();  // TODO don't unwrap
+        )?;
+
+        Ok(())
     }
 
     fn polygon_to_rerun_points(&self, polygon: &Polygon) -> rerun::Points3D {
