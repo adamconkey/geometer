@@ -53,14 +53,11 @@ impl Polygon {
         Ok(Polygon::new(points))
     }
 
-    pub fn to_json<P: AsRef<Path>>(&self, path: P) {
-        // TODO return result
-
+    pub fn to_json<P: AsRef<Path>>(&self, path: P) -> Result<(), FileError>{
         let points = self.vertex_map.sorted_points();
-        let points_str = serde_json::to_string_pretty(&points).unwrap();
-        // TODO don't expect below or unwrap above, want to return result
-        // where it can possibly error on serialization or file write
-        fs::write(path, points_str).expect("File should have saved but failed");
+        let points_str = serde_json::to_string_pretty(&points)?;
+        fs::write(path, points_str)?;
+        Ok(())
     }
  
     pub fn sorted_points(&self) -> Vec<Point> {
