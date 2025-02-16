@@ -1,21 +1,25 @@
 use std::fs;
 use std::path::PathBuf;
 
+use geometer::error::FileError;
 use geometer::polygon::Polygon;
 
-fn main() {
+fn main() -> Result<(), FileError> {
     let mut dataset_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     dataset_path.push("polygons/interesting_polygon_archive");
 
     let mut orig_path = dataset_path.clone();
     orig_path.push("original");
 
-    for path in fs::read_dir(orig_path).unwrap() {
-        let src_json_path = path.unwrap().path();
+    for path in fs::read_dir(orig_path)? {
         let mut dest_json_path = dataset_path.clone();
-        dest_json_path.push(src_json_path.file_name().unwrap());
+        let src_json_path = path?.path();
+        match src_json_path.file_name() {
+            Some(filename) => dest_json_path.push(filename),
+            _ => continue,
+        }
 
-        let mut polygon = Polygon::from_json(&src_json_path).unwrap();
+        let mut polygon = Polygon::from_json(&src_json_path)?;
         
         // Get a (rounded) bounding box center for translation vector
         let orig_bb = polygon.bounding_box();
@@ -36,4 +40,6 @@ fn main() {
 
         let _ = polygon.to_json(dest_json_path);
     }
+
+    Ok(())
 }
