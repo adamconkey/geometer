@@ -2,7 +2,8 @@ use itertools::Itertools;
 use std::{collections::HashMap, ffi::OsStr, path::PathBuf};
 use walkdir::WalkDir;
 
-use crate::polygon::{FileError, Polygon};
+use crate::error::FileError;
+use crate::polygon::Polygon;
 
 
 pub fn load_polygon(name: &str, folder: &str) -> Result<Polygon, FileError> {

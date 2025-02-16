@@ -1,36 +1,18 @@
 use itertools::Itertools;
-use std::{collections::HashSet, io};
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
 use crate::{
     bounding_box::BoundingBox, 
+    error::FileError,
     line_segment::LineSegment, 
     point::Point, 
     triangle::Triangle, 
     triangulation::{EarNotFoundError, TriangleVertexIds, Triangulation}, 
     vertex::{Vertex, VertexId}, 
-    vertex_map::VertexMap
+    vertex_map::VertexMap,
 };
-
-
-#[derive(Debug)]
-pub enum FileError {
-    IOError(io::Error),
-    ParseError(serde_json::Error),
-}
-
-impl From<io::Error> for FileError {
-    fn from(value: io::Error) -> Self {
-        FileError::IOError(value)
-    }
-}
-
-impl From<serde_json::Error> for FileError {
-    fn from(value: serde_json::Error) -> Self {
-        FileError::ParseError(value)
-    }
-}
 
 
 #[derive(Debug, PartialEq)]
