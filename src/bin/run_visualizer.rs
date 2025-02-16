@@ -142,7 +142,7 @@ impl RerunVisualizer {
 }
 
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), VisualizationError> {
     let args = Args::parse();
     let visualizer = RerunVisualizer::new("Geometer".to_string());
 
