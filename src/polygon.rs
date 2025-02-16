@@ -48,8 +48,8 @@ impl Polygon {
     }
 
     pub fn from_json<P: AsRef<Path>>(path: P) -> Result<Polygon, FileError> {
-        let polygon_str: String = fs::read_to_string(path)?;
-        let points: Vec<Point> = serde_json::from_str(&polygon_str)?;
+        let points_str: String = fs::read_to_string(path)?;
+        let points: Vec<Point> = serde_json::from_str(&points_str)?;
         Ok(Polygon::new(points))
     }
 
