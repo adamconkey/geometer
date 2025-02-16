@@ -27,12 +27,11 @@ impl Polygon {
         polygon
     }
 
-    pub fn from_json<P: AsRef<Path>>(path: P) -> Polygon {
+    pub fn from_json<P: AsRef<Path>>(path: P) -> Result<Polygon, serde_json::Error> {
         let polygon_str: String = fs::read_to_string(path)
             .expect("file should exist and be parseable");
-        // TODO don't unwrap
-        let points: Vec<Point> = serde_json::from_str(&polygon_str).unwrap();
-        Polygon::new(points)
+        let points: Vec<Point> = serde_json::from_str(&polygon_str)?;
+        Ok(Polygon::new(points))
     }
 
     pub fn to_json<P: AsRef<Path>>(&self, path: P) {
@@ -417,7 +416,7 @@ mod tests {
             #[fixture]
             fn $name() -> PolygonTestCase {
                 PolygonTestCase::new(
-                    load_polygon(stringify!($name), stringify!($folder)),
+                    load_polygon(stringify!($name), stringify!($folder)).unwrap(),
                     load_metadata(stringify!($name), stringify!($folder))
                 )
             }
@@ -546,7 +545,7 @@ mod tests {
             .unwrap()
             .into_temp_path();
         case.polygon.to_json(&filename);
-        let new_polygon = Polygon::from_json(&filename);
+        let new_polygon = Polygon::from_json(&filename).unwrap();
         assert_eq!(case.polygon, new_polygon);
     }
 

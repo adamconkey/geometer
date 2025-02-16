@@ -20,7 +20,7 @@ fn main() {
         let mut dest_json_path = dataset_path.clone();
         dest_json_path.push(src_json_path.file_name().unwrap());
 
-        let mut polygon = Polygon::from_json(&src_json_path);
+        let mut polygon = Polygon::from_json(&src_json_path).unwrap();
         
         // Get a (rounded) bounding box center for translation vector
         let orig_bb = polygon.bounding_box();
