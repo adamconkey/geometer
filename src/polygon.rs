@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -10,20 +10,40 @@ use crate::{
     point::Point, 
     triangle::Triangle, 
     triangulation::{EarNotFoundError, TriangleVertexIds, Triangulation}, 
-    vertex::{Vertex, VertexId}, 
-    vertex_map::VertexMap,
+    vertex::{Vertex, VertexId},
 };
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Polygon {
-    vertex_map: VertexMap,
+    vertex_map: HashMap<VertexId, Vertex>,
 }
 
 
 impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {
-        let vertex_map = VertexMap::new(points);
+        let mut vertex_map = HashMap::new();
+
+        // TODO currently the IDs are simply generated starting
+        // at 0 and incrementing. If you want to keep this route,
+        // will need to track index on self so that new vertices
+        // could be added. Tried using unique_id::SequenceGenerator
+        // but it was global which was harder to test with
+        let num_points = points.len();
+        let vertex_ids = (0..num_points)
+            .map(VertexId::from)
+            .collect::<Vec<_>>();
+
+        for (i, point) in points.into_iter().enumerate() {
+            let prev_id = vertex_ids[(i + num_points - 1) % num_points];
+            let curr_id = vertex_ids[i];
+            let next_id = vertex_ids[(i + num_points + 1) % num_points];
+            let v = Vertex::new(point, curr_id, prev_id, next_id);
+            vertex_map.insert(curr_id, v);
+        }
+
+
+
         let polygon = Polygon { vertex_map };
         polygon.validate();
         polygon
@@ -36,14 +56,18 @@ impl Polygon {
     }
 
     pub fn to_json<P: AsRef<Path>>(&self, path: P) -> Result<(), FileError>{
-        let points = self.vertex_map.sorted_points();
+        let points = self.sorted_points();
         let points_str = serde_json::to_string_pretty(&points)?;
         fs::write(path, points_str)?;
         Ok(())
     }
- 
-    pub fn sorted_points(&self) -> Vec<Point> {
-        self.vertex_map.sorted_points()
+
+    pub fn anchor(&self) -> &Vertex {
+        // TODO I'm not yet convinced this is something I want, ultimately
+        // need something to initiate algorithms in the vertex chain.
+        // Could consider only exposing keys and then having polygon gen
+        // an anchor
+        self.vertex_map.values().collect::<Vec<_>>()[0]
     }
 
     pub fn num_edges(&self) -> usize {
@@ -54,9 +78,29 @@ impl Polygon {
         self.vertex_map.len()
     }
 
+    pub fn sorted_ids(&self) -> Vec<&VertexId> {
+        let mut ids: Vec<_> = self.vertex_map.keys().collect();
+        ids.sort();
+        ids
+    }
+
+    pub fn sorted_points(&self) -> Vec<Point> {
+        self.sorted_vertices()
+            .iter()
+            .map(|v| v.coords.clone())
+            .collect::<Vec<Point>>()
+    }
+
+    pub fn sorted_vertices(&self) -> Vec<&Vertex> {
+        let mut vertices = self.vertex_map.values()
+            .collect::<Vec<&Vertex>>();
+        vertices.sort_by(|a, b| a.id.cmp(&b.id));
+        vertices
+    }
+
     pub fn area(&self) -> f64 {
         let mut area = 0.0;
-        let anchor = self.vertex_map.anchor();
+        let anchor = self.anchor();
         for v1 in self.vertex_map.values() {
             let v2 = self.get_vertex(&v1.next); 
             area += Triangle::from_vertices(anchor, v1, v2).area();
@@ -76,25 +120,25 @@ impl Polygon {
     }
 
     pub fn triangulation(&self) -> Triangulation {
-        let mut triangulation = Triangulation::new(&self.vertex_map);
-        let mut vmap = self.vertex_map.clone();
+        let mut triangulation = Triangulation::new(&self);
+        let mut polygon = self.clone();
 
-        while vmap.len() > 3 {
-            let id = self.find_ear(&vmap)
+        while polygon.num_vertices() > 3 {
+            let id = polygon.find_ear()
                 .expect("valid polygons with 3 or more vertices should have an ear");
-            let v = vmap.remove(&id);
+            let v = polygon.remove_vertex(&id);
             triangulation.push(TriangleVertexIds(v.prev, id, v.next));
         }
         // At this stage there should be exactly 3 vertices left,
         // which form the final triangle of the triangulation
-        let v = vmap.anchor();
+        let v = polygon.anchor();
         triangulation.push(TriangleVertexIds(v.prev, v.id, v.next));
 
         triangulation
     }
 
-    fn find_ear(&self, vmap: &VertexMap) -> Result<VertexId, EarNotFoundError> {
-        for v in vmap.values() {
+    fn find_ear(&self) -> Result<VertexId, EarNotFoundError> {
+        for v in self.vertex_map.values() {
             if self.diagonal(self.get_vertex(&v.prev), self.get_vertex(&v.next)) {
                 return Ok(v.id);
             }
@@ -102,8 +146,21 @@ impl Polygon {
         Err(EarNotFoundError)
     }
 
+    fn remove_vertex(&mut self, id: &VertexId) -> Vertex {
+        let v = self.vertex_map.remove(id).unwrap();
+        self.get_vertex_mut(&v.prev).next = v.next;
+        self.get_vertex_mut(&v.next).prev = v.prev;
+        v
+    }
+
     fn get_vertex(&self, id: &VertexId) -> &Vertex {
-        self.vertex_map.get(id)
+        // TODO don't unwrap, return option
+        self.vertex_map.get(id).unwrap()
+    }
+
+    fn get_vertex_mut(&mut self, id: &VertexId) -> &mut Vertex {
+        // TODO don't unwrap, return option
+        self.vertex_map.get_mut(id).unwrap()
     }
 
     pub fn get_point(&self, id: &VertexId) -> Point {
@@ -117,16 +174,17 @@ impl Polygon {
     }
 
     fn get_triangle(&self, id_1: &VertexId, id_2: &VertexId, id_3: &VertexId) -> Triangle {
-        let v1 = self.vertex_map.get(id_1);
-        let v2 = self.vertex_map.get(id_2);
-        let v3 = self.vertex_map.get(id_3);
+        // TODO don't unrwap
+        let v1 = self.vertex_map.get(id_1).unwrap();
+        let v2 = self.vertex_map.get(id_2).unwrap();
+        let v3 = self.vertex_map.get(id_3).unwrap();
         Triangle::from_vertices(v1, v2, v3)
     }
 
     pub fn edges(&self) -> HashSet<(VertexId, VertexId)> {
         // TODO could cache this and clear on modification
         let mut edges = HashSet::new();
-        let anchor_id = self.vertex_map.anchor().id;
+        let anchor_id = self.anchor().id;
         let mut current = self.get_vertex(&anchor_id);
         loop {
             edges.insert((current.id, current.next));
@@ -173,14 +231,14 @@ impl Polygon {
     }
 
     pub fn interior_points_from_extreme_edges(&self) -> HashSet<VertexId> {
-        let ids = self.vertex_map.ids_set();
+        let ids: HashSet<_> = self.vertex_map.keys().cloned().collect();
         let extreme_ids = self.extreme_points_from_extreme_edges();
         &ids - &extreme_ids
     }
 
     pub fn interior_points_from_triangle_checks(&self) -> HashSet<VertexId> {
         let mut interior_points = HashSet::new();
-        let ids = self.vertex_map.ids_vec();
+        let ids: HashSet<_> = self.vertex_map.keys().cloned().collect();
 
         // Don't be fooled by the runtime here, it's iterating over all
         // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3), 
@@ -199,7 +257,7 @@ impl Polygon {
     pub fn extreme_edges(&self) -> Vec<(VertexId, VertexId)> {
         // NOTE: This is O(n^3)
         let mut extreme_edges = Vec::new();
-        let ids = self.vertex_map.ids_vec();
+        let ids = self.vertex_map.keys().cloned().collect_vec();
 
         for id1 in ids.iter() {
             for id2 in ids.iter() {
@@ -245,7 +303,7 @@ impl Polygon {
     pub fn extreme_points_from_interior_points(&self) -> HashSet<VertexId> {
         // NOTE: This is slow O(n^4) since the interior point 
         // computation being used has that runtime.
-        let ids = self.vertex_map.ids_set();
+        let ids: HashSet<_> = self.vertex_map.keys().cloned().collect();
         let interior_ids = self.interior_points_from_triangle_checks();
         &ids - &interior_ids
     }
@@ -255,35 +313,43 @@ impl Polygon {
     }
 
     pub fn min_x(&self) -> f64 {
-        self.vertex_map.min_x()
+        self.vertex_map.values().fold(f64::MAX, |acc, v| acc.min(v.coords.x))
     }
 
     pub fn max_x(&self) -> f64 {
-        self.vertex_map.max_x()
+        self.vertex_map.values().fold(f64::MIN, |acc, v| acc.max(v.coords.x))
     }
 
     pub fn min_y(&self) -> f64 {
-        self.vertex_map.min_y()
+        self.vertex_map.values().fold(f64::MAX, |acc, v| acc.min(v.coords.y))
     }
 
     pub fn max_y(&self) -> f64 {
-        self.vertex_map.max_y()
+        self.vertex_map.values().fold(f64::MIN, |acc, v| acc.max(v.coords.y))
     }
 
     pub fn translate(&mut self, x: f64, y: f64) {
-        self.vertex_map.translate(x, y);
+        for v in self.vertex_map.values_mut() {
+            v.translate(x, y);
+        }
     }
 
     pub fn rotate_about_origin(&mut self, radians: f64) {
-        self.vertex_map.rotate_vertices_about_origin(radians);
+        for v in self.vertex_map.values_mut() {
+            v.rotate_about_origin(radians);
+        }    
     }
 
     pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
-        self.vertex_map.rotate_vertices_about_point(radians, point);
+        for v in self.vertex_map.values_mut() {
+            v.rotate_about_point(radians, point);
+        }
     }
 
     pub fn round_coordinates(&mut self) {
-        self.vertex_map.round_coordinates();
+        for v in self.vertex_map.values_mut() {
+            v.round_coordinates();
+        }
     }
 
     pub fn validate(&self) {
@@ -306,20 +372,21 @@ impl Polygon {
         // encountered, then validate every vertex was visited
         // once. Note the loop must terminate since there are
         // finite vertices and visited vertices are tracked.
-        let anchor = self.vertex_map.anchor();
-        let mut current = self.vertex_map.anchor();
+        let anchor = self.anchor();
+        let mut current = self.anchor();
         let mut visited = HashSet::<VertexId>::new();
 
         loop {
             visited.insert(current.id);
-            current = self.vertex_map.get(&current.next);
+            // TODO don't unwrap
+            current = self.vertex_map.get(&current.next).unwrap();
             if current.id == anchor.id || visited.contains(&current.id) {
                 break;
             }
         }
 
         let mut not_visited = HashSet::<VertexId>::new();
-        for v in self.vertex_map.sorted_vertices() {
+        for v in self.sorted_vertices() {
             if !visited.contains(&v.id) {
                 not_visited.insert(v.id);
             }
@@ -333,7 +400,7 @@ impl Polygon {
 
     fn validate_edge_intersections(&self) {
         let mut edges = Vec::new();
-        let anchor_id = self.vertex_map.anchor().id;
+        let anchor_id = self.anchor().id;
         let mut current = self.get_vertex(&anchor_id);
         loop {
             let next = self.get_vertex(&current.next);
@@ -545,6 +612,21 @@ mod tests {
         let _ = case.polygon.to_json(&filename);
         let new_polygon = Polygon::from_json(&filename).unwrap();
         assert_eq!(case.polygon, new_polygon);
+    }
+
+    #[test]
+    fn test_min_max() {
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(5.0, -1.0);
+        let p3 = Point::new(7.0, 6.0);
+        let p4 = Point::new(-4.0, 8.0);
+        let p5 = Point::new(-2.0, -3.0);
+        let points = vec![p1, p2, p3, p4, p5];
+        let polygon = Polygon::new(points);
+        assert_eq!(polygon.min_x(), -4.0);
+        assert_eq!(polygon.max_x(), 7.0);
+        assert_eq!(polygon.min_y(), -3.0);
+        assert_eq!(polygon.max_y(), 8.0);
     }
 
     #[apply(all_polygons)]

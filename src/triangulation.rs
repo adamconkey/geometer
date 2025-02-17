@@ -1,6 +1,6 @@
 use std::{fmt, slice::Iter};
 
-use crate::{point::Point, vertex::VertexId, vertex_map::VertexMap};
+use crate::{point::Point, polygon::Polygon, vertex::VertexId};
 
 
 #[derive(Debug, Clone)]
@@ -19,12 +19,12 @@ pub struct TriangleVertexIds(pub VertexId, pub VertexId, pub VertexId);
 
 pub struct Triangulation<'a> {
     triangles: Vec<TriangleVertexIds>,
-    vmap: &'a VertexMap,
+    polygon: &'a Polygon,
 }
 
 impl<'a> Triangulation<'a> {
-    pub fn new(vmap: &'a VertexMap) -> Self {
-        Self { triangles: Vec::new(), vmap }
+    pub fn new(polygon: &'a Polygon) -> Self {
+        Self { triangles: Vec::new(), polygon }
     }    
     
     pub fn push(&mut self, value: TriangleVertexIds) {
@@ -47,9 +47,9 @@ impl<'a> Triangulation<'a> {
         self.triangles.iter()
             .map(|ids| 
                 (
-                    self.vmap.get(&ids.0).coords.clone(),
-                    self.vmap.get(&ids.1).coords.clone(),
-                    self.vmap.get(&ids.2).coords.clone()
+                    self.polygon.get_point(&ids.0),
+                    self.polygon.get_point(&ids.1),
+                    self.polygon.get_point(&ids.2),
                 )
             ).collect()        
     }

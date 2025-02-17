@@ -15,4 +15,3 @@ pub mod triangle;
 pub mod triangulation;
 pub mod util;
 pub mod vertex;
-pub mod vertex_map;
