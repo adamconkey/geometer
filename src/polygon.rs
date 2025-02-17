@@ -92,8 +92,7 @@ impl Polygon {
     }
 
     pub fn sorted_vertices(&self) -> Vec<&Vertex> {
-        let mut vertices = self.vertex_map.values()
-            .collect::<Vec<&Vertex>>();
+        let mut vertices = self.vertex_map.values().collect_vec();
         vertices.sort_by(|a, b| a.id.cmp(&b.id));
         vertices
     }
@@ -331,6 +330,40 @@ impl Polygon {
         &ids - &interior_ids
     }
 
+    pub fn hull_from_gift_wrapping(&self) -> Vec<LineSegment> {
+        // TODO want to create a Hull type to return instead,
+        // I think it will mainly be a newtype definition. I'm
+        // wondering if I should also switch LineSegment to edge?
+        let hull: Vec<LineSegment> = Vec::new();
+        // Form a horizontal line terminating at lowest point to start
+        let v0 = self.lowest_vertex();
+        let mut p = v0.coords.clone();
+        p.x -= 1.0;
+        let mut current_edge = LineSegment::new(&p, &v0.coords);
+        let mut current_id = v0.id;
+
+        loop {
+            // TODO use current_edge to compute ccw angle to every
+            // vertex that isn't the current vertex i
+
+            
+
+            // TODO select the vertex with id k having smallest angle
+
+            // TODO add (p_i, p_k) as edge to hull
+
+            // TODO set current id as k
+
+
+            if current_id == v0.id {
+                break;
+            }
+        }
+        
+
+        todo!()
+    }
+
     pub fn bounding_box(&self) -> BoundingBox {
         BoundingBox::new(self.min_x(), self.max_x(), self.min_y(), self.max_y())
     }
@@ -350,6 +383,12 @@ impl Polygon {
     pub fn max_y(&self) -> f64 {
         self.vertex_map.values().fold(f64::MIN, |acc, v| acc.max(v.coords.y))
     }
+
+    pub fn lowest_vertex(&self) -> &Vertex {
+        let mut vertices = self.vertex_map.values().collect_vec();
+        vertices.sort_by(|a, b| a.coords.y.partial_cmp(&b.coords.y).unwrap());
+        vertices[0]
+    } 
 
     pub fn translate(&mut self, x: f64, y: f64) {
         for v in self.vertex_map.values_mut() {
@@ -638,6 +677,7 @@ mod tests {
     }
 
     #[test]
+    // TODO could expand this test to polygon cases
     fn test_min_max() {
         let p1 = Point::new(0.0, 0.0);
         let p2 = Point::new(5.0, -1.0);
@@ -650,6 +690,21 @@ mod tests {
         assert_eq!(polygon.max_x(), 7.0);
         assert_eq!(polygon.min_y(), -3.0);
         assert_eq!(polygon.max_y(), 8.0);
+    }
+
+    #[test]
+    // TODO could expand this test to polygon cases
+    fn test_lowest_vertex() {
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(5.0, -1.0);
+        let p3 = Point::new(7.0, 6.0);
+        let p4 = Point::new(-4.0, 8.0);
+        let p5 = Point::new(-2.0, -3.0);
+        let points = vec![p1, p2, p3, p4, p5];
+        let polygon = Polygon::new(points);
+        let lowest = polygon.lowest_vertex();
+        assert_eq!(lowest.coords.x, -2.0);
+        assert_eq!(lowest.coords.y, -3.0);
     }
 
     #[apply(all_polygons)]
