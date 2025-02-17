@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use ordered_float::OrderedFloat;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
@@ -334,34 +335,36 @@ impl Polygon {
         // TODO want to create a Hull type to return instead,
         // I think it will mainly be a newtype definition. I'm
         // wondering if I should also switch LineSegment to edge?
-        let hull: Vec<LineSegment> = Vec::new();
+
+        let mut hull: Vec<LineSegment> = Vec::new();
         // Form a horizontal line terminating at lowest point to start
         let v0 = self.lowest_vertex();
         let mut p = v0.coords.clone();
         p.x -= 1.0;
         let mut current_edge = LineSegment::new(&p, &v0.coords);
-        let mut current_id = v0.id;
+        let mut current_vertex = v0;
 
+        // Perform gift-wrapping, using the previous hull edge as a vector to 
+        // find the point with the least CCW angle w.r.t. the vector. Connect 
+        // that point to the current terminal vertex to form the newest hull 
+        // edge. Repeat until we reach the starting vertex again.
         loop {
-            // TODO use current_edge to compute ccw angle to every
-            // vertex that isn't the current vertex i
+            let min_angle_vertex = self.vertex_map
+                .values()
+                .filter(|v| v.id != current_vertex.id)
+                .min_by_key(|v| OrderedFloat(current_edge.angle_to_point(&v.coords)))
+                .unwrap();
 
-            
+            let hull_edge = LineSegment::from_vertices(current_vertex, min_angle_vertex);
+            hull.push(hull_edge.clone());
 
-            // TODO select the vertex with id k having smallest angle
-
-            // TODO add (p_i, p_k) as edge to hull
-
-            // TODO set current id as k
-
-
-            if current_id == v0.id {
+            current_edge = hull_edge;
+            current_vertex = min_angle_vertex;
+            if current_vertex.id == v0.id {
                 break;
             }
         }
-        
-
-        todo!()
+        hull
     }
 
     pub fn bounding_box(&self) -> BoundingBox {

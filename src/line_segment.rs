@@ -6,7 +6,7 @@ use crate::{
 };
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct LineSegment<'a> {
     pub p1: &'a Point,
     pub p2: &'a Point,

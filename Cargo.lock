@@ -2519,6 +2519,7 @@ dependencies = [
  "clap",
  "criterion",
  "itertools 0.14.0",
+ "ordered-float 4.6.0",
  "paste",
  "random_color",
  "rerun",
