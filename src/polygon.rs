@@ -120,7 +120,7 @@ impl Polygon {
     }
 
     pub fn triangulation(&self) -> Triangulation {
-        let mut triangulation = Triangulation::new(&self);
+        let mut triangulation = Triangulation::new(self);
         let mut polygon = self.clone();
 
         while polygon.num_vertices() > 3 {
