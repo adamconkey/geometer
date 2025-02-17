@@ -14,4 +14,5 @@ pub mod polygon;
 pub mod triangle;
 pub mod triangulation;
 pub mod util;
+pub mod vector;
 pub mod vertex;
