@@ -1,6 +1,7 @@
 use crate::{
     point::Point,
     triangle::Triangle,
+    vector::Vector,
     vertex::Vertex,
 };
 
@@ -77,6 +78,13 @@ impl<'a> LineSegment<'a> {
 
     pub fn incident_to(&self, p: &Point) -> bool {
         self.p1 == p || self.p2 == p
+    }
+
+    pub fn angle_to_point(&self, p: &Point) -> f64 {
+        let a = Vector::from(self);
+        let b = Vector::from(&LineSegment::new(self.p1, p));
+        let cos_theta = a.dot(&b) / (a.magnitude() * b.magnitude());
+        cos_theta.acos()
     }
 }
 
