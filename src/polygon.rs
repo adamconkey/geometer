@@ -102,7 +102,7 @@ impl Polygon {
         let mut area = 0.0;
         let anchor = self.anchor();
         for v1 in self.vertex_map.values() {
-            let v2 = self.get_vertex(&v1.next); 
+            let v2 = self.get_vertex(&v1.next).unwrap(); 
             area += Triangle::from_vertices(anchor, v1, v2).area();
         }
         area
@@ -126,7 +126,8 @@ impl Polygon {
         while polygon.num_vertices() > 3 {
             let id = polygon.find_ear()
                 .expect("valid polygons with 3 or more vertices should have an ear");
-            let v = polygon.remove_vertex(&id);
+            // TODO instead of unwrap, return result with error
+            let v = polygon.remove_vertex(&id).unwrap();
             triangulation.push(TriangleVertexIds(v.prev, id, v.next));
         }
         // At this stage there should be exactly 3 vertices left,
@@ -139,56 +140,73 @@ impl Polygon {
 
     fn find_ear(&self) -> Result<VertexId, EarNotFoundError> {
         for v in self.vertex_map.values() {
-            if self.diagonal(self.get_vertex(&v.prev), self.get_vertex(&v.next)) {
+            let prev = self.get_vertex(&v.prev).unwrap();
+            let next = self.get_vertex(&v.next).unwrap();
+            if self.diagonal(prev, next) {
                 return Ok(v.id);
             }
         }
         Err(EarNotFoundError)
     }
 
-    fn remove_vertex(&mut self, id: &VertexId) -> Vertex {
-        let v = self.vertex_map.remove(id).unwrap();
-        self.get_vertex_mut(&v.prev).next = v.next;
-        self.get_vertex_mut(&v.next).prev = v.prev;
-        v
+    fn remove_vertex(&mut self, id: &VertexId) -> Option<Vertex> {
+        if let Some(v) = self.vertex_map.remove(id) {
+            // TODO this would be an error condition if there was
+            // a vertex for which prev/next weren't in the map,
+            // instead of unwrap could have this func return 
+            // result with an error tailored to this case
+            self.get_vertex_mut(&v.prev).unwrap().next = v.next;
+            self.get_vertex_mut(&v.next).unwrap().prev = v.prev;
+            return Some(v);
+        }
+        None
     }
 
-    fn get_vertex(&self, id: &VertexId) -> &Vertex {
-        // TODO don't unwrap, return option
-        self.vertex_map.get(id).unwrap()
+    fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        self.vertex_map.get(id)
     }
 
-    fn get_vertex_mut(&mut self, id: &VertexId) -> &mut Vertex {
-        // TODO don't unwrap, return option
-        self.vertex_map.get_mut(id).unwrap()
+    fn get_vertex_mut(&mut self, id: &VertexId) -> Option<&mut Vertex> {
+        self.vertex_map.get_mut(id)
     }
 
-    pub fn get_point(&self, id: &VertexId) -> Point {
-        self.get_vertex(id).coords.clone()
+    pub fn get_point(&self, id: &VertexId) -> Option<Point> {
+        if let Some(v) = self.get_vertex(id) {
+            return Some(v.coords.clone())
+        }
+        None
     }
 
-    fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> LineSegment {
-        let v1 = self.get_vertex(id_1);
-        let v2 = self.get_vertex(id_2);
-        LineSegment::from_vertices(v1, v2)
+    fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> Option<LineSegment> {
+        if let Some(v1) = self.get_vertex(id_1) {
+            if let Some(v2) = self.get_vertex(id_2) {
+                return Some(LineSegment::from_vertices(v1, v2))
+            }
+        }
+        None
     }
 
-    fn get_triangle(&self, id_1: &VertexId, id_2: &VertexId, id_3: &VertexId) -> Triangle {
-        // TODO don't unrwap
-        let v1 = self.vertex_map.get(id_1).unwrap();
-        let v2 = self.vertex_map.get(id_2).unwrap();
-        let v3 = self.vertex_map.get(id_3).unwrap();
-        Triangle::from_vertices(v1, v2, v3)
+    fn get_triangle(&self, id_1: &VertexId, id_2: &VertexId, id_3: &VertexId) -> Option<Triangle> {
+        if let Some(v1) = self.vertex_map.get(id_1) {
+            if let Some(v2) = self.vertex_map.get(id_2) {
+                if let Some(v3) = self.vertex_map.get(id_3) {
+                    return Some(Triangle::from_vertices(v1, v2, v3));
+                }
+            }
+        }
+        None
     }
 
     pub fn edges(&self) -> HashSet<(VertexId, VertexId)> {
         // TODO could cache this and clear on modification
         let mut edges = HashSet::new();
         let anchor_id = self.anchor().id;
-        let mut current = self.get_vertex(&anchor_id);
+        // TODO instead of unwrapping these, this function could
+        // return result with an associated error type
+        let mut current = self.get_vertex(&anchor_id).unwrap();
         loop {
             edges.insert((current.id, current.next));
-            current = self.get_vertex(&current.next);
+            current = self.get_vertex(&current.next).unwrap();
             if current.id == anchor_id {
                 break;
             }
@@ -199,8 +217,9 @@ impl Polygon {
     fn in_cone(&self, a: &Vertex, b: &Vertex) -> bool {
         let ab = LineSegment::from_vertices(a, b);
         let ba = &ab.reverse();
-        let a0 = self.get_vertex(&a.prev);
-        let a1 = self.get_vertex(&a.next);
+        // TODO instead of unwrap, return result with error
+        let a0 = self.get_vertex(&a.prev).unwrap();
+        let a1 = self.get_vertex(&a.next).unwrap();
 
         if a0.left_on(&LineSegment::from_vertices(a, a1)) {
             return a0.left(&ab) && a1.left(ba);
@@ -217,7 +236,8 @@ impl Polygon {
     fn diagonal_internal_external(&self, a: &Vertex, b: &Vertex) -> bool {
         let ab = &LineSegment::from_vertices(a, b);
         for (id1, id2) in self.edges() {
-            let e = self.get_line_segment(&id1, &id2);
+            // TODO instead of unwrap, return result with error
+            let e = self.get_line_segment(&id1, &id2).unwrap();
             if !e.connected_to(ab) && e.intersects(ab) {
                 return false;
             }
@@ -245,8 +265,9 @@ impl Polygon {
         // so it's still O(n^4), this is just more compact than 4 nested
         // for-loops.
         for perm in ids.into_iter().permutations(4) {
-            let p = self.get_point(&perm[0]);
-            let triangle = self.get_triangle(&perm[1], &perm[2], &perm[3]);
+            // TODO instead of unwrap, return result with error
+            let p = self.get_point(&perm[0]).unwrap();
+            let triangle = self.get_triangle(&perm[1], &perm[2], &perm[3]).unwrap();
             if triangle.contains(p) {
                 interior_points.insert(perm[0]);
             }
@@ -264,13 +285,15 @@ impl Polygon {
                 if id2 == id1 {
                     continue;
                 }
-                let ls = self.get_line_segment(id1, id2);
+                // TODO instead of unwrap, return result with error
+                let ls = self.get_line_segment(id1, id2).unwrap();
                 let mut is_extreme = true;
                 for id3 in ids.iter() {
                     if id3 == id1 || id3 == id2 {
                         continue;
                     }
-                    let p = self.get_point(id3);
+                    // TODO instead of unwrap, return result with error
+                    let p = self.get_point(id3).unwrap();
                     if !p.left_on(&ls) {
                         is_extreme = false;
                         break;
@@ -401,9 +424,9 @@ impl Polygon {
     fn validate_edge_intersections(&self) {
         let mut edges = Vec::new();
         let anchor_id = self.anchor().id;
-        let mut current = self.get_vertex(&anchor_id);
+        let mut current = self.get_vertex(&anchor_id).unwrap();
         loop {
-            let next = self.get_vertex(&current.next);
+            let next = self.get_vertex(&current.next).unwrap();
             let ls = LineSegment::from_vertices(current, next);
             edges.push(ls);
             current = next;

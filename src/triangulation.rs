@@ -47,9 +47,9 @@ impl<'a> Triangulation<'a> {
         self.triangles.iter()
             .map(|ids| 
                 (
-                    self.polygon.get_point(&ids.0),
-                    self.polygon.get_point(&ids.1),
-                    self.polygon.get_point(&ids.2),
+                    self.polygon.get_point(&ids.0).unwrap(),
+                    self.polygon.get_point(&ids.1).unwrap(),
+                    self.polygon.get_point(&ids.2).unwrap(),
                 )
             ).collect()        
     }

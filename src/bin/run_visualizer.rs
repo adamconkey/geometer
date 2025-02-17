@@ -102,7 +102,7 @@ impl RerunVisualizer {
         let extreme_points: Vec<_> = polygon
             .extreme_points()
             .iter()
-            .map(|id| polygon.get_point(id))
+            .map(|id| polygon.get_point(id).unwrap())
             .collect();
 
         let rerun_points = rerun::Points3D::new(
