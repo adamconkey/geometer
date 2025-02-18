@@ -340,7 +340,7 @@ impl Polygon {
         // Form a horizontal line terminating at lowest point to start
         let v0 = self.lowest_vertex();
         let mut p = v0.coords.clone();
-        p.x -= 1.0;
+        p.x -= 1.0;  // Arbitrary distance
         let mut current_edge = LineSegment::new(&p, &v0.coords);
         let mut current_vertex = v0;
 
@@ -814,6 +814,30 @@ mod tests {
             extreme_points.difference(&case.metadata.extreme_points),
             case.metadata.extreme_points.difference(&extreme_points)
         );
+    }
+
+    #[rstest]
+    // TODO will want to incorporate this into the TC metadata
+    // and parametrize on more polygons. Will be easier with a 
+    // Hull type that you can deserialize from
+    #[case::polygon_1(polygon_1())]
+    fn test_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
+        let hull = case.polygon.hull_from_gift_wrapping();
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(6.0, 2.0);
+        let p3 = Point::new(7.0, 6.0);
+        let p4 = Point::new(3.0, 9.0);
+        let p5 = Point::new(-2.0, 7.0);
+        let e1 = LineSegment::new(&p1, &p2);
+        let e2 = LineSegment::new(&p2, &p3);
+        let e3 = LineSegment::new(&p3, &p4);
+        let e4 = LineSegment::new(&p4, &p5);
+        let e5 = LineSegment::new(&p5, &p1);
+        let expected_hull = vec![e1, e2, e3, e4, e5];
+
+        // TODO this is failing, would be good to unit test some other 
+        // intermediate results to validate more easily
+        assert_eq!(hull, expected_hull);
     }
 
     #[apply(all_polygons)]
