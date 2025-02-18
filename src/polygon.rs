@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
+use crate::convex_hull::ConvexHull;
 use crate::{
     bounding_box::BoundingBox, 
     error::FileError,
@@ -331,17 +332,17 @@ impl Polygon {
         &ids - &interior_ids
     }
 
-    pub fn hull_from_gift_wrapping(&self) -> Vec<LineSegment> {
+    pub fn convex_hull_from_gift_wrapping(&self) -> ConvexHull {
         // TODO want to create a Hull type to return instead,
         // I think it will mainly be a newtype definition. I'm
         // wondering if I should also switch LineSegment to edge?
 
-        let mut hull: Vec<LineSegment> = Vec::new();
+        let mut hull = ConvexHull::new();
         // Form a horizontal line terminating at lowest point to start
         let v0 = self.lowest_vertex();
         let mut p = v0.coords.clone();
         p.x -= 1.0;  // Arbitrary distance
-        let mut current_edge = LineSegment::new(&p, &v0.coords);
+        let mut current_edge = LineSegment::new(p, v0.coords);
         let mut current_vertex = v0;
 
         // Perform gift-wrapping, using the previous hull edge as a vector to 
@@ -356,7 +357,7 @@ impl Polygon {
                 .unwrap();
 
             let hull_edge = LineSegment::from_vertices(current_vertex, min_angle_vertex);
-            hull.push(hull_edge.clone());
+            hull.edges.push(hull_edge.clone());
 
             current_edge = hull_edge;
             current_vertex = min_angle_vertex;
@@ -480,15 +481,15 @@ impl Polygon {
         for i in 0..(edges.len() - 1) {
             let e1 = &edges[i];
             // Adjacent edges should share a common vertex
-            assert!(e1.incident_to(edges[i+1].p1));
+            assert!(e1.incident_to(&edges[i+1].p1));
             for e2 in edges.iter().take(edges.len() -1).skip(i+2) {
                 // Non-adjacent edges should have no intersection
                 assert!(!e1.intersects(e2));
-                assert!(!e1.incident_to(e2.p1));
-                assert!(!e1.incident_to(e2.p2));
+                assert!(!e1.incident_to(&e2.p1));
+                assert!(!e1.incident_to(&e2.p2));
                 assert!(!e2.intersects(e1));
-                assert!(!e2.incident_to(e1.p1));
-                assert!(!e2.incident_to(e1.p2));
+                assert!(!e2.incident_to(&e1.p1));
+                assert!(!e2.incident_to(&e1.p2));
             }
         }
     }
@@ -821,22 +822,19 @@ mod tests {
     // and parametrize on more polygons. Will be easier with a 
     // Hull type that you can deserialize from
     #[case::polygon_1(polygon_1())]
-    fn test_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
-        let hull = case.polygon.hull_from_gift_wrapping();
+    fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
+        let hull = case.polygon.convex_hull_from_gift_wrapping();
         let p1 = Point::new(0.0, 0.0);
         let p2 = Point::new(6.0, 2.0);
         let p3 = Point::new(7.0, 6.0);
         let p4 = Point::new(3.0, 9.0);
         let p5 = Point::new(-2.0, 7.0);
-        let e1 = LineSegment::new(&p1, &p2);
-        let e2 = LineSegment::new(&p2, &p3);
-        let e3 = LineSegment::new(&p3, &p4);
-        let e4 = LineSegment::new(&p4, &p5);
-        let e5 = LineSegment::new(&p5, &p1);
-        let expected_hull = vec![e1, e2, e3, e4, e5];
-
-        // TODO this is failing, would be good to unit test some other 
-        // intermediate results to validate more easily
+        let mut expected_hull = ConvexHull::new();
+        expected_hull.edges.push(LineSegment::new(p1, p2));
+        expected_hull.edges.push(LineSegment::new(p2, p3));
+        expected_hull.edges.push(LineSegment::new(p3, p4));
+        expected_hull.edges.push(LineSegment::new(p4, p5));
+        expected_hull.edges.push(LineSegment::new(p5, p1));
         assert_eq!(hull, expected_hull);
     }
 
