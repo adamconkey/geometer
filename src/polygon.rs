@@ -388,7 +388,7 @@ impl Polygon {
 
     pub fn lowest_vertex(&self) -> &Vertex {
         let mut vertices = self.vertex_map.values().collect_vec();
-        vertices.sort_by(|a, b| a.coords.y.partial_cmp(&b.coords.y).unwrap());
+        vertices.sort_by_key(|v| (OrderedFloat(v.coords.y), OrderedFloat(v.coords.x)));
         vertices[0]
     } 
 
@@ -819,6 +819,7 @@ mod tests {
     #[rstest]
     // TODO will want to parametrize on more polygons when defined
     #[case::polygon_1(polygon_1())]
+    #[case::right_triangle(right_triangle())]
     fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
         let convex_hull = case.polygon.convex_hull_from_gift_wrapping();
         assert_eq!(convex_hull, case.metadata.convex_hull);
