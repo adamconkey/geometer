@@ -1,4 +1,4 @@
-use crate::{line_segment::LineSegment, point::Point};
+use crate::line_segment::LineSegment;
 
 // TODO I am unlikely to keep this as a primitive, I will 
 // probably farm this out to an external linear algebra

@@ -4,12 +4,16 @@ use crate::vertex::VertexId;
 
 
 #[derive(Debug, Deserialize, PartialEq)]
+pub struct Edge(pub VertexId, pub VertexId);
+
+
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct ConvexHull {
-    pub edges: Vec<(VertexId, VertexId)>,
+    pub edges: Vec<Edge>,
 }
 
 impl ConvexHull {
-    pub fn new(edges: Vec<(VertexId, VertexId)>) -> Self {
+    pub fn new(edges: Vec<Edge>) -> Self {
         ConvexHull { edges }
     }
 

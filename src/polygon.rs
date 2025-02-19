@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
-use crate::convex_hull::ConvexHull;
+use crate::convex_hull::{ConvexHull, Edge};
 use crate::{
     bounding_box::BoundingBox, 
     error::FileError,
@@ -339,25 +339,27 @@ impl Polygon {
         let mut p = v0.coords.clone();
         p.x -= 1.0;  // Arbitrary distance
         let mut current_edge = LineSegment::new(&p, &v0.coords);
-        let mut current_vertex = v0;
-
+        let mut current_vertex_id = v0.id;
+        
         // Perform gift-wrapping, using the previous hull edge as a vector to 
         // find the point with the least CCW angle w.r.t. the vector. Connect 
         // that point to the current terminal vertex to form the newest hull 
         // edge. Repeat until we reach the starting vertex again.
         loop {
-            let min_angle_vertex = self.vertex_map
+            let min_angle_vertex_id = self.vertex_map
                 .values()
-                .filter(|v| v.id != current_vertex.id)
+                .filter(|v| v.id != current_vertex_id)
                 .min_by_key(|v| OrderedFloat(current_edge.angle_to_point(&v.coords)))
-                .unwrap();
+                .unwrap()
+                .id;
 
-            let hull_edge = LineSegment::from_vertices(current_vertex, min_angle_vertex);
-            hull.edges.push((current_vertex.id, min_angle_vertex.id));
+            hull.edges.push(Edge(current_vertex_id, min_angle_vertex_id));
 
-            current_edge = hull_edge;
-            current_vertex = min_angle_vertex;
-            if current_vertex.id == v0.id {
+            current_edge = self.get_line_segment(
+                &current_vertex_id, &min_angle_vertex_id
+            ).unwrap();
+            current_vertex_id = min_angle_vertex_id;
+            if current_vertex_id == v0.id {
                 break;
             }
         }
