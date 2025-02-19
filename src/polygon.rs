@@ -333,16 +333,12 @@ impl Polygon {
     }
 
     pub fn convex_hull_from_gift_wrapping(&self) -> ConvexHull {
-        // TODO want to create a Hull type to return instead,
-        // I think it will mainly be a newtype definition. I'm
-        // wondering if I should also switch LineSegment to edge?
-
         let mut hull = ConvexHull::default();
         // Form a horizontal line terminating at lowest point to start
         let v0 = self.lowest_vertex();
         let mut p = v0.coords.clone();
         p.x -= 1.0;  // Arbitrary distance
-        let mut current_edge = LineSegment::new(p, v0.coords);
+        let mut current_edge = LineSegment::new(&p, &v0.coords);
         let mut current_vertex = v0;
 
         // Perform gift-wrapping, using the previous hull edge as a vector to 
@@ -357,7 +353,7 @@ impl Polygon {
                 .unwrap();
 
             let hull_edge = LineSegment::from_vertices(current_vertex, min_angle_vertex);
-            hull.edges.push(hull_edge.clone());
+            hull.edges.push((current_vertex.id, min_angle_vertex.id));
 
             current_edge = hull_edge;
             current_vertex = min_angle_vertex;
