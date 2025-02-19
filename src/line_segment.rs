@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     point::Point,
     triangle::Triangle,
@@ -169,4 +171,3 @@ mod tests {
         assert_eq!(ba.p1, &b);
         assert_eq!(ba.p2, &a);
     }
-}

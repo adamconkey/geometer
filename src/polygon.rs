@@ -337,7 +337,7 @@ impl Polygon {
         // I think it will mainly be a newtype definition. I'm
         // wondering if I should also switch LineSegment to edge?
 
-        let mut hull = ConvexHull::new();
+        let mut hull = ConvexHull::default();
         // Form a horizontal line terminating at lowest point to start
         let v0 = self.lowest_vertex();
         let mut p = v0.coords.clone();
@@ -513,6 +513,7 @@ mod tests {
     #[derive(Deserialize)]
     struct PolygonMetadata {
         area: f64,
+        convex_hull: ConvexHull,
         extreme_points: HashSet<VertexId>,
         interior_points: HashSet<VertexId>,
         num_edges: usize,
@@ -818,24 +819,11 @@ mod tests {
     }
 
     #[rstest]
-    // TODO will want to incorporate this into the TC metadata
-    // and parametrize on more polygons. Will be easier with a 
-    // Hull type that you can deserialize from
+    // TODO will want to parametrize on more polygons when defined
     #[case::polygon_1(polygon_1())]
     fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
-        let hull = case.polygon.convex_hull_from_gift_wrapping();
-        let p1 = Point::new(0.0, 0.0);
-        let p2 = Point::new(6.0, 2.0);
-        let p3 = Point::new(7.0, 6.0);
-        let p4 = Point::new(3.0, 9.0);
-        let p5 = Point::new(-2.0, 7.0);
-        let mut expected_hull = ConvexHull::new();
-        expected_hull.edges.push(LineSegment::new(p1, p2));
-        expected_hull.edges.push(LineSegment::new(p2, p3));
-        expected_hull.edges.push(LineSegment::new(p3, p4));
-        expected_hull.edges.push(LineSegment::new(p4, p5));
-        expected_hull.edges.push(LineSegment::new(p5, p1));
-        assert_eq!(hull, expected_hull);
+        let convex_hull = case.polygon.convex_hull_from_gift_wrapping();
+        assert_eq!(convex_hull, case.metadata.convex_hull);
     }
 
     #[apply(all_polygons)]
