@@ -81,9 +81,14 @@ impl<'a> LineSegment<'a> {
     }
 
     pub fn angle_to_point(&self, p: &Point) -> f64 {
-        let a = Vector::from(self);
-        let b = Vector::from(&LineSegment::new(self.p1, p));
-        let cos_theta = a.dot(&b) / (a.magnitude() * b.magnitude());
+        // TODO this is a specific interpretation of "angle to point"
+        // which is between two vectors p1 -> p2 and p2 -> p. Not
+        // sure it's the best named function but it's nice to have
+        // the function as it makes sorting vecs by the value very
+        // compact. Can consider moving to another struct or renaming
+        let p1_to_p2 = Vector::from(self);
+        let p2_to_p = Vector::from(&LineSegment::new(self.p2, p));
+        let cos_theta = p1_to_p2.dot(&p2_to_p) / (p1_to_p2.magnitude() * p2_to_p.magnitude());
         cos_theta.acos()
     }
 }
