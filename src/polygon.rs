@@ -1,8 +1,10 @@
 use itertools::Itertools;
+use ordered_float::OrderedFloat;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
+use crate::convex_hull::{ConvexHull, Edge};
 use crate::{
     bounding_box::BoundingBox, 
     error::FileError,
@@ -92,8 +94,7 @@ impl Polygon {
     }
 
     pub fn sorted_vertices(&self) -> Vec<&Vertex> {
-        let mut vertices = self.vertex_map.values()
-            .collect::<Vec<&Vertex>>();
+        let mut vertices = self.vertex_map.values().collect_vec();
         vertices.sort_by(|a, b| a.id.cmp(&b.id));
         vertices
     }
@@ -331,6 +332,40 @@ impl Polygon {
         &ids - &interior_ids
     }
 
+    pub fn convex_hull_from_gift_wrapping(&self) -> ConvexHull {
+        let mut hull = ConvexHull::default();
+        // Form a horizontal line terminating at lowest point to start
+        let v0 = self.lowest_vertex();
+        let mut p = v0.coords.clone();
+        p.x -= 1.0;  // Arbitrary distance
+        let mut current_edge = LineSegment::new(&p, &v0.coords);
+        let mut current_vertex_id = v0.id;
+
+        // Perform gift-wrapping, using the previous hull edge as a vector to 
+        // find the point with the least CCW angle w.r.t. the vector. Connect 
+        // that point to the current terminal vertex to form the newest hull 
+        // edge. Repeat until we reach the starting vertex again.
+        loop {
+            let min_angle_vertex_id = self.vertex_map
+                .values()
+                .filter(|v| v.id != current_vertex_id)
+                .min_by_key(|v| OrderedFloat(current_edge.angle_to_point(&v.coords)))
+                .unwrap()
+                .id;
+
+            hull.edges.push(Edge(current_vertex_id, min_angle_vertex_id));
+
+            current_edge = self.get_line_segment(
+                &current_vertex_id, &min_angle_vertex_id
+            ).unwrap();
+            current_vertex_id = min_angle_vertex_id;
+            if current_vertex_id == v0.id {
+                break;
+            }
+        }
+        hull
+    }
+
     pub fn bounding_box(&self) -> BoundingBox {
         BoundingBox::new(self.min_x(), self.max_x(), self.min_y(), self.max_y())
     }
@@ -350,6 +385,13 @@ impl Polygon {
     pub fn max_y(&self) -> f64 {
         self.vertex_map.values().fold(f64::MIN, |acc, v| acc.max(v.coords.y))
     }
+
+    pub fn lowest_vertex(&self) -> &Vertex {
+        let mut vertices = self.vertex_map.values().collect_vec();
+        // This will break ties by taking the left-most point along x-axis
+        vertices.sort_by_key(|v| (OrderedFloat(v.coords.y), OrderedFloat(v.coords.x)));
+        vertices[0]
+    } 
 
     pub fn translate(&mut self, x: f64, y: f64) {
         for v in self.vertex_map.values_mut() {
@@ -470,6 +512,7 @@ mod tests {
     #[derive(Deserialize)]
     struct PolygonMetadata {
         area: f64,
+        convex_hull: ConvexHull,
         extreme_points: HashSet<VertexId>,
         interior_points: HashSet<VertexId>,
         num_edges: usize,
@@ -638,6 +681,7 @@ mod tests {
     }
 
     #[test]
+    // TODO could expand this test to polygon cases
     fn test_min_max() {
         let p1 = Point::new(0.0, 0.0);
         let p2 = Point::new(5.0, -1.0);
@@ -650,6 +694,21 @@ mod tests {
         assert_eq!(polygon.max_x(), 7.0);
         assert_eq!(polygon.min_y(), -3.0);
         assert_eq!(polygon.max_y(), 8.0);
+    }
+
+    #[test]
+    // TODO could expand this test to polygon cases
+    fn test_lowest_vertex() {
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(5.0, -1.0);
+        let p3 = Point::new(7.0, 6.0);
+        let p4 = Point::new(-4.0, 8.0);
+        let p5 = Point::new(-2.0, -3.0);
+        let points = vec![p1, p2, p3, p4, p5];
+        let polygon = Polygon::new(points);
+        let lowest = polygon.lowest_vertex();
+        assert_eq!(lowest.coords.x, -2.0);
+        assert_eq!(lowest.coords.y, -3.0);
     }
 
     #[apply(all_polygons)]
@@ -756,6 +815,13 @@ mod tests {
             extreme_points.difference(&case.metadata.extreme_points),
             case.metadata.extreme_points.difference(&extreme_points)
         );
+    }
+
+    // TODO will want to parametrize on more polygons when defined
+    #[apply(all_custom_polygons)]
+    fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
+        let convex_hull = case.polygon.convex_hull_from_gift_wrapping();
+        assert_eq!(convex_hull, case.metadata.convex_hull);
     }
 
     #[apply(all_polygons)]

@@ -1,5 +1,8 @@
 {
     "area": 2607,
+    "convex_hull": {
+        "edges": []
+    },
     "extreme_points": [],
     "interior_points": [],
     "num_edges": 15,
