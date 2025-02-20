@@ -480,15 +480,15 @@ impl Polygon {
         for i in 0..(edges.len() - 1) {
             let e1 = &edges[i];
             // Adjacent edges should share a common vertex
-            assert!(e1.incident_to(&edges[i+1].p1));
+            assert!(e1.incident_to(edges[i+1].p1));
             for e2 in edges.iter().take(edges.len() -1).skip(i+2) {
                 // Non-adjacent edges should have no intersection
                 assert!(!e1.intersects(e2));
-                assert!(!e1.incident_to(&e2.p1));
-                assert!(!e1.incident_to(&e2.p2));
+                assert!(!e1.incident_to(e2.p1));
+                assert!(!e1.incident_to(e2.p2));
                 assert!(!e2.intersects(e1));
-                assert!(!e2.incident_to(&e1.p1));
-                assert!(!e2.incident_to(&e1.p2));
+                assert!(!e2.incident_to(e1.p1));
+                assert!(!e2.incident_to(e1.p2));
             }
         }
     }

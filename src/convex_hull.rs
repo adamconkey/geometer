@@ -16,8 +16,10 @@ impl ConvexHull {
     pub fn new(edges: Vec<Edge>) -> Self {
         ConvexHull { edges }
     }
+}
 
-    pub fn default() -> Self {
+impl Default for ConvexHull {
+    fn default() -> Self {
         let edges = Vec::new();
         Self::new(edges)
     }
