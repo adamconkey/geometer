@@ -341,8 +341,6 @@ impl Polygon {
         let mut current_edge = LineSegment::new(&p, &v0.coords);
         let mut current_vertex_id = v0.id;
 
-        println!("LOWEST: {:?}", v0.id);
-        
         // Perform gift-wrapping, using the previous hull edge as a vector to 
         // find the point with the least CCW angle w.r.t. the vector. Connect 
         // that point to the current terminal vertex to form the newest hull 
@@ -356,8 +354,6 @@ impl Polygon {
                 .id;
 
             hull.edges.push(Edge(current_vertex_id, min_angle_vertex_id));
-
-            println!("CURRENT: {:?}, NEXT: {:?}", current_vertex_id, min_angle_vertex_id);
 
             current_edge = self.get_line_segment(
                 &current_vertex_id, &min_angle_vertex_id
@@ -822,9 +818,7 @@ mod tests {
     }
 
     // TODO will want to parametrize on more polygons when defined
-    // #[apply(all_custom_polygons)]
-    #[rstest]
-    #[case::polygon_2(polygon_2())]
+    #[apply(all_custom_polygons)]
     fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
         let convex_hull = case.polygon.convex_hull_from_gift_wrapping();
         assert_eq!(convex_hull, case.metadata.convex_hull);
