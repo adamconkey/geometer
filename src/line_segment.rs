@@ -91,6 +91,14 @@ impl<'a> LineSegment<'a> {
         let cos_theta = p1_to_p2.dot(&p2_to_p) / (p1_to_p2.magnitude() * p2_to_p.magnitude());
         cos_theta.acos()
     }
+
+    pub fn distance_to_point(&self, p: &Point) -> f64 {
+        // TODO might be more compact/sensible way to do this
+        // https://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+        let p1_to_p2 = Vector::from(self);
+        let p_to_p1 = Vector::from(&LineSegment::new(p, self.p1));
+        p1_to_p2.cross(&p_to_p1) / p1_to_p2.magnitude()
+    }
 }
 
 #[cfg(test)]

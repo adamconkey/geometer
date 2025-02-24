@@ -344,28 +344,43 @@ impl Polygon {
     // points would be more minimal
     pub fn convex_hull_from_quick_hull(&self) -> HashSet<VertexId> {
         let mut convex_hull = HashSet::new();
-
-        let a = self.lowest_rightmost_vertex().id;
-        let b = self.highest_leftmost_vertex().id;
-        let s = self.vertex_map.values().collect_vec();
-        
         let mut stack = Vec::new();
-        stack.push((a, b, s));
+
+        let x = self.lowest_rightmost_vertex().id;
+        let y = self.highest_leftmost_vertex().id;
+        let xy = self.get_line_segment(&x, &y).unwrap();
+        let s = self.vertex_map.values().collect_vec();
+
+        convex_hull.insert(x);
+        convex_hull.insert(y);
+
+        let (s1, s2): (Vec<_>, Vec<_>) = s
+            .into_iter()
+            .partition(|v| v.right(&xy));
+        
+        stack.push((x, y, s1));
+        stack.push((y, x, s2));
 
         loop {
             let (a, b, s) = stack.pop().unwrap();
             let ab = self.get_line_segment(&a, &b).unwrap();
 
+            // TODO find c with max distance from ab
+            let c = s
+                .iter()
+                .max_by_key(|v| OrderedFloat(ab.distance_to_point(&v.coords)))
+                .unwrap()
+                .id;
+            convex_hull.insert(c);
+
             let (s1, s2): (Vec<_>, Vec<_>) = s
                 .into_iter()
                 .partition(|v| v.right(&ab));
 
-            if !s1.is_empty() { stack.push((a, b, s1)); }
-            if !s2.is_empty() { stack.push((b, a, s2)); }
+            if !s1.is_empty() { stack.push((a, c, s1)); }
+            if !s2.is_empty() { stack.push((c, a, s2)); }
 
-            // TODO find c with max distance from ab
-            let c = a;
-            convex_hull.insert(c);
+            
 
             if stack.is_empty() { break; }
         }

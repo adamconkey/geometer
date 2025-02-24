@@ -22,6 +22,15 @@ impl Vector {
     pub fn magnitude(&self) -> f64 {
         (self.x.powi(2) + self.y.powi(2)).sqrt()
     }
+
+    pub fn cross(&self, other: &Vector) -> f64 {
+        // TODO 2D cross product is a hack and I'm 
+        // not sure it makes sense, trying to include
+        // for now for distance computation
+        
+
+        todo!()
+    }
 }
 
 
