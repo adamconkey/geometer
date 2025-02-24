@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{collections::HashSet, fmt};
 
 use serde::Deserialize;
 
@@ -59,6 +59,14 @@ impl Vertex {
 
     pub fn left_on(&self, ab: &LineSegment) -> bool {
         self.coords.left_on(ab)
+    }
+
+    pub fn right(&self, ab: &LineSegment) -> bool {
+        self.coords.right(ab)
+    }
+
+    pub fn right_on(&self, ab: &LineSegment) -> bool {
+        self.coords.right_on(ab)
     }
 
     pub fn translate(&mut self, x: f64, y: f64) {
