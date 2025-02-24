@@ -332,10 +332,50 @@ impl Polygon {
         &ids - &interior_ids
     }
 
+    pub fn convex_hull(&self) -> ConvexHull {
+        // Alias for the best-performing hull algorithm implemented
+        self.convex_hull_from_gift_wrapping()
+    }
+
+    // TODO will need to think about return types, this algorithm will
+    // only return I believe a set of extreme points. So maybe it makes
+    // sense to define the ConvexHull with that representation, and then
+    // offer an ability to get the edges from it? The set of extreme
+    // points would be more minimal
+    pub fn convex_hull_from_quick_hull(&self) -> HashSet<VertexId> {
+        let mut convex_hull = HashSet::new();
+
+        let a = self.lowest_rightmost_vertex().id;
+        let b = self.highest_leftmost_vertex().id;
+        let s = self.vertex_map.values().collect_vec();
+        
+        let mut stack = Vec::new();
+        stack.push((a, b, s));
+
+        loop {
+            let (a, b, s) = stack.pop().unwrap();
+            let ab = self.get_line_segment(&a, &b).unwrap();
+
+            let (s1, s2): (Vec<_>, Vec<_>) = s
+                .into_iter()
+                .partition(|v| v.right(&ab));
+
+            if !s1.is_empty() { stack.push((a, b, s1)); }
+            if !s2.is_empty() { stack.push((b, a, s2)); }
+
+            // TODO find c with max distance from ab
+            let c = a;
+            convex_hull.insert(c);
+
+            if stack.is_empty() { break; }
+        }
+        convex_hull
+    }
+
     pub fn convex_hull_from_gift_wrapping(&self) -> ConvexHull {
         let mut hull = ConvexHull::default();
         // Form a horizontal line terminating at lowest point to start
-        let v0 = self.lowest_vertex();
+        let v0 = self.leftmost_lowest_vertex();
         let mut p = v0.coords.clone();
         p.x -= 1.0;  // Arbitrary distance
         let mut current_edge = LineSegment::new(&p, &v0.coords);
@@ -386,12 +426,29 @@ impl Polygon {
         self.vertex_map.values().fold(f64::MIN, |acc, v| acc.max(v.coords.y))
     }
 
-    pub fn lowest_vertex(&self) -> &Vertex {
+    pub fn leftmost_lowest_vertex(&self) -> &Vertex {
         let mut vertices = self.vertex_map.values().collect_vec();
-        // This will break ties by taking the left-most point along x-axis
         vertices.sort_by_key(|v| (OrderedFloat(v.coords.y), OrderedFloat(v.coords.x)));
         vertices[0]
-    } 
+    }
+
+    pub fn rightmost_lowest_vertex(&self) -> &Vertex {
+        let mut vertices = self.vertex_map.values().collect_vec();
+        vertices.sort_by_key(|v| (OrderedFloat(v.coords.y), OrderedFloat(-v.coords.x)));
+        vertices[0]
+    }
+
+    pub fn lowest_rightmost_vertex(&self) -> &Vertex {
+        let mut vertices = self.vertex_map.values().collect_vec();
+        vertices.sort_by_key(|v| (OrderedFloat(-v.coords.x), OrderedFloat(v.coords.y)));
+        vertices[0]
+    }
+
+    pub fn highest_leftmost_vertex(&self) -> &Vertex {
+        let mut vertices = self.vertex_map.values().collect_vec();
+        vertices.sort_by_key(|v| (OrderedFloat(v.coords.x), OrderedFloat(-v.coords.y)));
+        vertices[0]
+    }
 
     pub fn translate(&mut self, x: f64, y: f64) {
         for v in self.vertex_map.values_mut() {
@@ -706,7 +763,7 @@ mod tests {
         let p5 = Point::new(-2.0, -3.0);
         let points = vec![p1, p2, p3, p4, p5];
         let polygon = Polygon::new(points);
-        let lowest = polygon.lowest_vertex();
+        let lowest = polygon.leftmost_lowest_vertex();
         assert_eq!(lowest.coords.x, -2.0);
         assert_eq!(lowest.coords.y, -3.0);
     }
