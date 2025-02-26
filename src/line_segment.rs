@@ -93,11 +93,15 @@ impl<'a> LineSegment<'a> {
     }
 
     pub fn distance_to_point(&self, p: &Point) -> f64 {
-        // TODO might be more compact/sensible way to do this
-        // https://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html
+        // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_two_points
         let p1_to_p2 = Vector::from(self);
-        let p_to_p1 = Vector::from(&LineSegment::new(p, self.p1));
-        p1_to_p2.cross(&p_to_p1) / p1_to_p2.magnitude()
+        let numerator = (
+            p1_to_p2.y * p.x - 
+            p1_to_p2.x * p.y + 
+            self.p2.x * self.p1.y - 
+            self.p2.y * self.p1.x
+        ).abs(); 
+        numerator / p1_to_p2.magnitude()
     }
 }
 

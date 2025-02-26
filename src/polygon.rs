@@ -365,7 +365,6 @@ impl Polygon {
             let (a, b, s) = stack.pop().unwrap();
             let ab = self.get_line_segment(&a, &b).unwrap();
 
-            // TODO find c with max distance from ab
             let c = s
                 .iter()
                 .max_by_key(|v| OrderedFloat(ab.distance_to_point(&v.coords)))
@@ -379,9 +378,6 @@ impl Polygon {
 
             if !s1.is_empty() { stack.push((a, c, s1)); }
             if !s2.is_empty() { stack.push((c, a, s2)); }
-
-            
-
             if stack.is_empty() { break; }
         }
         convex_hull
