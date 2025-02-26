@@ -349,7 +349,10 @@ impl Polygon {
         let x = self.lowest_rightmost_vertex().id;
         let y = self.highest_leftmost_vertex().id;
         let xy = self.get_line_segment(&x, &y).unwrap();
-        let s = self.vertex_map.values().collect_vec();
+        let s = self.vertex_map
+            .values()
+            .filter(|v| v.id != x && v.id != y)
+            .collect_vec();
 
         convex_hull.insert(x);
         convex_hull.insert(y);
@@ -363,6 +366,8 @@ impl Polygon {
 
         loop {
             let (a, b, s) = stack.pop().unwrap();
+            println!("POINTS: {:?}", s);
+            println!("A: {:?}, B: {:?}", a, b);
             let ab = self.get_line_segment(&a, &b).unwrap();
 
             let c = s
@@ -370,10 +375,12 @@ impl Polygon {
                 .max_by_key(|v| OrderedFloat(ab.distance_to_point(&v.coords)))
                 .unwrap()
                 .id;
+            println!("C: {:?}", c);
             convex_hull.insert(c);
 
             let (s1, s2): (Vec<_>, Vec<_>) = s
                 .into_iter()
+                .filter(|v| v.id != c)
                 .partition(|v| v.right(&ab));
 
             if !s1.is_empty() { stack.push((a, c, s1)); }
@@ -890,6 +897,16 @@ mod tests {
     fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
         let convex_hull = case.polygon.convex_hull_from_gift_wrapping();
         assert_eq!(convex_hull, case.metadata.convex_hull);
+    }
+
+    // TODO will want to parametrize on more polygons when defined
+    #[rstest]
+    #[case::polygon_1(polygon_1())]
+    fn test_convex_hull_from_quick_hull(#[case] case: PolygonTestCase) {
+        let convex_hull = case.polygon.convex_hull_from_quick_hull();
+        // TODO need to sort out types
+        let expected = HashSet::new();
+        assert_eq!(convex_hull, expected);
     }
 
     #[apply(all_polygons)]
