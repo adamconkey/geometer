@@ -332,11 +332,6 @@ impl Polygon {
         &ids - &interior_ids
     }
 
-    pub fn convex_hull(&self) -> ConvexHull {
-        // Alias for the best-performing hull algorithm implemented
-        self.convex_hull_from_gift_wrapping()
-    }
-
     // TODO will need to think about return types, this algorithm will
     // only return I believe a set of extreme points. So maybe it makes
     // sense to define the ConvexHull with that representation, and then
