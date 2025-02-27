@@ -1,26 +1,23 @@
-use serde::Deserialize;
+use std::{cmp::Reverse, collections::BinaryHeap};
 
-use crate::vertex::VertexId;
-
-
-#[derive(Debug, Deserialize, PartialEq)]
-pub struct Edge(pub VertexId, pub VertexId);
+use crate::{polygon::Polygon, vertex::VertexId};
 
 
-#[derive(Debug, Deserialize, PartialEq)]
-pub struct ConvexHull {
-    pub edges: Vec<Edge>,
+#[derive(Debug)]
+pub struct ConvexHull<'a> {
+    // Using Reverse makes this a min-heap, so 
+    // that we get CCW order going min to max
+    vertices: BinaryHeap<Reverse<VertexId>>,
+    polygon: &'a Polygon,
 }
 
-impl ConvexHull {
-    pub fn new(edges: Vec<Edge>) -> Self {
-        ConvexHull { edges }
+impl<'a> ConvexHull<'a> {
+    pub fn new(polygon: &'a Polygon) -> Self {
+        let vertices = BinaryHeap::new();
+        ConvexHull { vertices, polygon }
     }
-}
 
-impl Default for ConvexHull {
-    fn default() -> Self {
-        let edges = Vec::new();
-        Self::new(edges)
+    pub fn push(&mut self, vertex_id: VertexId) {
+        self.vertices.push(Reverse(vertex_id));
     }
 }
