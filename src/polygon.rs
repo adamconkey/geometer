@@ -361,8 +361,8 @@ impl Polygon {
             .into_iter()
             .partition(|v| v.right(&xy));
         
-        stack.push((x, y, s1));
-        stack.push((y, x, s2));
+        if !s1.is_empty() { stack.push((x, y, s1)) };
+        if !s2.is_empty() { stack.push((y, x, s2)) };
 
         loop {
             let (a, b, s) = stack.pop().unwrap();
@@ -378,13 +378,23 @@ impl Polygon {
             println!("C: {:?}", c);
             convex_hull.insert(c);
 
-            let (s1, s2): (Vec<_>, Vec<_>) = s
-                .into_iter()
-                .filter(|v| v.id != c)
-                .partition(|v| v.right(&ab));
+            let ac = self.get_line_segment(&a, &c).unwrap();
+            let cb = self.get_line_segment(&c, &b).unwrap();
 
-            if !s1.is_empty() { stack.push((a, c, s1)); }
-            if !s2.is_empty() { stack.push((c, a, s2)); }
+            let s1 = s
+                .iter()
+                .copied() // TODO remove this, couldn't figure out refs
+                .filter(|v| v.right(&ac))
+                .collect_vec();
+
+            let s2 = s
+                .iter()
+                .copied() // TODO remove this, couldn't figure out refs
+                .filter(|v| v.right(&cb))
+                .collect_vec();
+
+            if !s1.is_empty() { println!("PUSHING: a={:?}, c={:?}, s1={:?}", a, c, s1); stack.push((a, c, s1)); }
+            if !s2.is_empty() { println!("PUSHING: c={:?}, b={:?}, s2={:?}", c, b, s2); stack.push((c, b, s2)); }
             if stack.is_empty() { break; }
         }
         convex_hull
@@ -900,13 +910,11 @@ mod tests {
     }
 
     // TODO will want to parametrize on more polygons when defined
-    #[rstest]
-    #[case::polygon_1(polygon_1())]
+    #[apply(extreme_point_cases)]
     fn test_convex_hull_from_quick_hull(#[case] case: PolygonTestCase) {
         let convex_hull = case.polygon.convex_hull_from_quick_hull();
         // TODO need to sort out types
-        let expected = HashSet::new();
-        assert_eq!(convex_hull, expected);
+        assert_eq!(convex_hull, case.metadata.extreme_points);
     }
 
     #[apply(all_polygons)]
