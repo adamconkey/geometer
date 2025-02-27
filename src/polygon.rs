@@ -366,8 +366,6 @@ impl Polygon {
 
         loop {
             let (a, b, s) = stack.pop().unwrap();
-            println!("POINTS: {:?}", s);
-            println!("A: {:?}, B: {:?}", a, b);
             let ab = self.get_line_segment(&a, &b).unwrap();
 
             let c = s
@@ -375,7 +373,6 @@ impl Polygon {
                 .max_by_key(|v| OrderedFloat(ab.distance_to_point(&v.coords)))
                 .unwrap()
                 .id;
-            println!("C: {:?}", c);
             convex_hull.insert(c);
 
             let ac = self.get_line_segment(&a, &c).unwrap();
@@ -393,8 +390,8 @@ impl Polygon {
                 .filter(|v| v.right(&cb))
                 .collect_vec();
 
-            if !s1.is_empty() { println!("PUSHING: a={:?}, c={:?}, s1={:?}", a, c, s1); stack.push((a, c, s1)); }
-            if !s2.is_empty() { println!("PUSHING: c={:?}, b={:?}, s2={:?}", c, b, s2); stack.push((c, b, s2)); }
+            if !s1.is_empty() { stack.push((a, c, s1)); }
+            if !s2.is_empty() { stack.push((c, b, s2)); }
             if stack.is_empty() { break; }
         }
         convex_hull
