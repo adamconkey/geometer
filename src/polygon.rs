@@ -373,15 +373,13 @@ impl Polygon {
             let ac = self.get_line_segment(&a, &c).unwrap();
             let cb = self.get_line_segment(&c, &b).unwrap();
 
-            let s1 = s
-                .iter()
-                .copied() // TODO remove this, couldn't figure out refs
+            let s1 = s.iter()
+                .copied()
                 .filter(|v| v.right(&ac))
                 .collect_vec();
 
-            let s2 = s
-                .iter()
-                .copied() // TODO remove this, couldn't figure out refs
+            let s2 = s.iter()
+                .copied()
                 .filter(|v| v.right(&cb))
                 .collect_vec();
 
