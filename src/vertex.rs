@@ -61,6 +61,14 @@ impl Vertex {
         self.coords.left_on(ab)
     }
 
+    pub fn right(&self, ab: &LineSegment) -> bool {
+        self.coords.right(ab)
+    }
+
+    pub fn right_on(&self, ab: &LineSegment) -> bool {
+        self.coords.right_on(ab)
+    }
+
     pub fn translate(&mut self, x: f64, y: f64) {
         self.coords.translate(x, y)
     }

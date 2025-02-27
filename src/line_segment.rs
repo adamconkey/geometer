@@ -91,6 +91,18 @@ impl<'a> LineSegment<'a> {
         let cos_theta = p1_to_p2.dot(&p2_to_p) / (p1_to_p2.magnitude() * p2_to_p.magnitude());
         cos_theta.acos()
     }
+
+    pub fn distance_to_point(&self, p: &Point) -> f64 {
+        // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_two_points
+        let p1_to_p2 = Vector::from(self);
+        let numerator = (
+            p1_to_p2.y * p.x - 
+            p1_to_p2.x * p.y + 
+            self.p2.x * self.p1.y - 
+            self.p2.y * self.p1.x
+        ).abs(); 
+        numerator / p1_to_p2.magnitude()
+    }
 }
 
 #[cfg(test)]

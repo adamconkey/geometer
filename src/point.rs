@@ -39,6 +39,14 @@ impl Point {
         Triangle::new(ab.p1, ab.p2, self).area() >= 0.0
     }
 
+    pub fn right(&self, ab: &LineSegment) -> bool {
+        Triangle::new(ab.p1, ab.p2, self).area() < 0.0
+    }
+
+    pub fn right_on(&self, ab: &LineSegment) -> bool {
+        Triangle::new(ab.p1, ab.p2, self).area() <= 0.0
+    }
+
     pub fn translate(&mut self, x: f64, y: f64) {
         self.x += x;
         self.y += y;
