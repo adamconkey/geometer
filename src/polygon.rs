@@ -893,15 +893,13 @@ mod tests {
         );
     }
 
-    // TODO will want to parametrize on more polygons when defined
-    #[apply(all_custom_polygons)]
+    #[apply(extreme_point_cases)]
     fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
         let hull = case.polygon.convex_hull_from_gift_wrapping();
         let expected_hull = ConvexHull::new(case.metadata.extreme_points);
         assert_eq!(hull, expected_hull);
     }
 
-    // TODO will want to parametrize on more polygons when defined
     #[apply(extreme_point_cases)]
     fn test_convex_hull_from_quick_hull(#[case] case: PolygonTestCase) {
         let hull = case.polygon.convex_hull_from_quick_hull();
