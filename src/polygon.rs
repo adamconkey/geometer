@@ -338,7 +338,7 @@ impl Polygon {
     // offer an ability to get the edges from it? The set of extreme
     // points would be more minimal
     pub fn convex_hull_from_quick_hull(&self) -> ConvexHull {
-        let mut hull = ConvexHull::new(&self);
+        let mut hull = ConvexHull::default();
         let mut stack = Vec::new();
 
         let x = self.lowest_rightmost_vertex().id;
@@ -349,8 +349,8 @@ impl Polygon {
             .filter(|v| v.id != x && v.id != y)
             .collect_vec();
 
-        hull.push(x);
-        hull.push(y);
+        hull.add_vertex(x);
+        hull.add_vertex(y);
 
         let (s1, s2): (Vec<_>, Vec<_>) = s
             .into_iter()
@@ -368,7 +368,7 @@ impl Polygon {
                 .max_by_key(|v| OrderedFloat(ab.distance_to_point(&v.coords)))
                 .unwrap()
                 .id;
-            hull.push(c);
+            hull.add_vertex(c);
 
             let ac = self.get_line_segment(&a, &c).unwrap();
             let cb = self.get_line_segment(&c, &b).unwrap();
@@ -391,14 +391,14 @@ impl Polygon {
     }
 
     pub fn convex_hull_from_gift_wrapping(&self) -> ConvexHull {
-        let mut hull = ConvexHull::new(&self);
+        let mut hull = ConvexHull::default();
         // Form a horizontal line terminating at lowest point to start
         let v0 = self.leftmost_lowest_vertex();
         let mut p = v0.coords.clone();
         p.x -= 1.0;  // Arbitrary distance
         let mut current_edge = LineSegment::new(&p, &v0.coords);
         let mut current_vertex_id = v0.id;
-        hull.push(current_vertex_id);
+        hull.add_vertex(current_vertex_id);
 
         // Perform gift-wrapping, using the previous hull edge as a vector to 
         // find the point with the least CCW angle w.r.t. the vector. Connect 
@@ -412,15 +412,16 @@ impl Polygon {
                 .unwrap()
                 .id;
 
-            hull.push(min_angle_vertex_id);
-
             current_edge = self.get_line_segment(
                 &current_vertex_id, &min_angle_vertex_id
             ).unwrap();
             current_vertex_id = min_angle_vertex_id;
             if current_vertex_id == v0.id {
                 break;
+            } else {
+                hull.add_vertex(current_vertex_id);
             }
+
         }
         hull
     }
@@ -895,17 +896,17 @@ mod tests {
     // TODO will want to parametrize on more polygons when defined
     #[apply(all_custom_polygons)]
     fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
-        let convex_hull = case.polygon.convex_hull_from_gift_wrapping();
-        // TODO fix this
-        // assert_eq!(convex_hull, case.metadata.convex_hull);
+        let hull = case.polygon.convex_hull_from_gift_wrapping();
+        let expected_hull = ConvexHull::new(case.metadata.extreme_points);
+        assert_eq!(hull, expected_hull);
     }
 
     // TODO will want to parametrize on more polygons when defined
     #[apply(extreme_point_cases)]
     fn test_convex_hull_from_quick_hull(#[case] case: PolygonTestCase) {
-        let convex_hull = case.polygon.convex_hull_from_quick_hull();
-        // TODO need to sort out types
-        // assert_eq!(convex_hull, case.metadata.extreme_points);
+        let hull = case.polygon.convex_hull_from_quick_hull();
+        let expected_hull = ConvexHull::new(case.metadata.extreme_points);
+        assert_eq!(hull, expected_hull);
     }
 
     #[apply(all_polygons)]
