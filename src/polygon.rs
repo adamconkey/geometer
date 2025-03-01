@@ -336,64 +336,6 @@ impl Polygon {
         &ids - &interior_ids
     }
 
-    // TODO will need to think about return types, this algorithm will
-    // only return I believe a set of extreme points. So maybe it makes
-    // sense to define the ConvexHull with that representation, and then
-    // offer an ability to get the edges from it? The set of extreme
-    // points would be more minimal
-    pub fn convex_hull_from_quick_hull(&self) -> ConvexHull {
-        let mut hull = ConvexHull::default();
-        let mut stack = Vec::new();
-
-        let x = self.lowest_rightmost_vertex().id;
-        let y = self.highest_leftmost_vertex().id;
-        let xy = self.get_line_segment(&x, &y).unwrap();
-        let s = self.vertex_map
-            .values()
-            .filter(|v| v.id != x && v.id != y)
-            .collect_vec();
-
-        hull.add_vertex(x);
-        hull.add_vertex(y);
-
-        let (s1, s2): (Vec<_>, Vec<_>) = s
-            .into_iter()
-            .partition(|v| v.right(&xy));
-        
-        if !s1.is_empty() { stack.push((x, y, s1)) };
-        if !s2.is_empty() { stack.push((y, x, s2)) };
-
-        loop {
-            let (a, b, s) = stack.pop().unwrap();
-            let ab = self.get_line_segment(&a, &b).unwrap();
-
-            let c = s
-                .iter()
-                .max_by_key(|v| OrderedFloat(ab.distance_to_point(&v.coords)))
-                .unwrap()
-                .id;
-            hull.add_vertex(c);
-
-            let ac = self.get_line_segment(&a, &c).unwrap();
-            let cb = self.get_line_segment(&c, &b).unwrap();
-
-            let s1 = s.iter()
-                .copied()
-                .filter(|v| v.right(&ac))
-                .collect_vec();
-
-            let s2 = s.iter()
-                .copied()
-                .filter(|v| v.right(&cb))
-                .collect_vec();
-
-            if !s1.is_empty() { stack.push((a, c, s1)); }
-            if !s2.is_empty() { stack.push((c, b, s2)); }
-            if stack.is_empty() { break; }
-        }
-        hull
-    }
-
     pub fn bounding_box(&self) -> BoundingBox {
         BoundingBox::new(self.min_x(), self.max_x(), self.min_y(), self.max_y())
     }
@@ -721,13 +663,6 @@ mod tests {
             extreme_points.difference(&case.metadata.extreme_points),
             case.metadata.extreme_points.difference(&extreme_points)
         );
-    }
-
-    #[apply(extreme_point_cases)]
-    fn test_convex_hull_from_quick_hull(#[case] case: PolygonTestCase) {
-        let hull = case.polygon.convex_hull_from_quick_hull();
-        let expected_hull = ConvexHull::new(case.metadata.extreme_points);
-        assert_eq!(hull, expected_hull);
     }
 
     #[apply(all_polygons)]

@@ -65,10 +65,6 @@ pub trait ConvexHullComputer {
 pub struct GiftWrapping;
 
 
-
-
-
-
 impl ConvexHullComputer for GiftWrapping {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
         let mut hull = ConvexHull::default();
@@ -108,6 +104,65 @@ impl ConvexHullComputer for GiftWrapping {
 }
 
 
+#[derive(Default)]
+pub struct QuickHull;
+
+
+impl ConvexHullComputer for QuickHull {
+
+    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
+        let mut hull = ConvexHull::default();
+        let mut stack = Vec::new();
+
+        let x = polygon.lowest_rightmost_vertex().id;
+        let y = polygon.highest_leftmost_vertex().id;
+        let xy = polygon.get_line_segment(&x, &y).unwrap();
+        let s = polygon.vertices()
+            .into_iter()
+            .filter(|v| v.id != x && v.id != y)
+            .collect_vec();
+
+        hull.add_vertex(x);
+        hull.add_vertex(y);
+
+        let (s1, s2): (Vec<_>, Vec<_>) = s
+            .into_iter()
+            .partition(|v| v.right(&xy));
+
+        if !s1.is_empty() { stack.push((x, y, s1)) };
+        if !s2.is_empty() { stack.push((y, x, s2)) };
+
+        loop {
+            let (a, b, s) = stack.pop().unwrap();
+            let ab = polygon.get_line_segment(&a, &b).unwrap();
+
+            let c = s.iter()
+                .max_by_key(|v| OrderedFloat(ab.distance_to_point(&v.coords)))
+                .unwrap()
+                .id;
+            hull.add_vertex(c);
+
+            let ac = polygon.get_line_segment(&a, &c).unwrap();
+            let cb = polygon.get_line_segment(&c, &b).unwrap();
+
+            let s1 = s.iter()
+                .copied()
+                .filter(|v| v.right(&ac))
+                .collect_vec();
+
+            let s2 = s.iter()
+                .copied()
+                .filter(|v| v.right(&cb))
+                .collect_vec();
+
+            if !s1.is_empty() { stack.push((a, c, s1)); }
+            if !s2.is_empty() { stack.push((c, b, s2)); }
+            if stack.is_empty() { break; }
+        }
+        hull
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -116,9 +171,19 @@ mod tests {
     use rstest_reuse::{self, *};
     use crate::test_util::*;
 
+    // TODO doing it this way, can you also parametrize on algorithm?
+
     #[apply(extreme_point_cases)]
     fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
         let computer = GiftWrapping::default();
+        let hull = computer.convex_hull(&case.polygon);
+        let expected_hull = ConvexHull::new(case.metadata.extreme_points);
+        assert_eq!(hull, expected_hull);
+    }
+
+    #[apply(extreme_point_cases)]
+    fn test_convex_hull_from_quick_hull(#[case] case: PolygonTestCase) {
+        let computer = QuickHull::default();
         let hull = computer.convex_hull(&case.polygon);
         let expected_hull = ConvexHull::new(case.metadata.extreme_points);
         assert_eq!(hull, expected_hull);
