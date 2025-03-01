@@ -171,22 +171,15 @@ mod tests {
     use rstest_reuse::{self, *};
     use crate::test_util::*;
 
-    // TODO doing it this way, can you also parametrize on algorithm?
-
     #[apply(extreme_point_cases)]
-    fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
-        let computer = GiftWrapping::default();
+    fn test_convex_hull(
+        #[case] 
+        case: PolygonTestCase, 
+        #[values(GiftWrapping, QuickHull)]
+        computer: impl ConvexHullComputer
+    ) {
         let hull = computer.convex_hull(&case.polygon);
         let expected_hull = ConvexHull::new(case.metadata.extreme_points);
         assert_eq!(hull, expected_hull);
     }
-
-    #[apply(extreme_point_cases)]
-    fn test_convex_hull_from_quick_hull(#[case] case: PolygonTestCase) {
-        let computer = QuickHull::default();
-        let hull = computer.convex_hull(&case.polygon);
-        let expected_hull = ConvexHull::new(case.metadata.extreme_points);
-        assert_eq!(hull, expected_hull);
-    }
-
 }
