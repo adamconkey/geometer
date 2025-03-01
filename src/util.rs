@@ -1,9 +1,13 @@
 use itertools::Itertools;
+use serde::Deserialize;
+use std::collections::HashSet;
+use std::fs;
 use std::{collections::HashMap, ffi::OsStr, path::PathBuf};
 use walkdir::WalkDir;
 
 use crate::error::FileError;
 use crate::polygon::Polygon;
+use crate::vertex::VertexId;
 
 
 pub fn load_polygon(name: &str, folder: &str) -> Result<Polygon, FileError> {
