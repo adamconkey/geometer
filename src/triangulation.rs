@@ -105,8 +105,12 @@ mod tests {
         // if holes are present and then this assert would be conditional
         assert_eq!(case.metadata.num_triangles, case.metadata.num_edges - 2);
 
-        // TODO need to sort this out
-        // let triangulation_area = case.polygon.area_from_triangulation(&triangulation);
-        // assert_eq!(triangulation_area, case.metadata.area);
+        // Check that the aggregated area over the triangles is as expected
+        let mut triangulation_area = 0.0;
+        for ids in triangulation.iter() {
+            let t = case.polygon.get_triangle(&ids.0, &ids.1, &ids.2).unwrap();
+            triangulation_area += t.area();
+        }
+        assert_eq!(triangulation_area, case.metadata.area);
     }
 }

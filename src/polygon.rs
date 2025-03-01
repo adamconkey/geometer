@@ -111,17 +111,6 @@ impl Polygon {
         area
     }
 
-    // pub fn area_from_triangulation(&self, triangulation: &Triangulation) -> f64 {
-    //     // Computes area from a triangulation as the sum of the area of 
-    //     // the individual triangles that constitute the triangulation.
-    //     // This value should always be exactly equal to `self.area()`.
-    //     let mut area = 0.0;
-    //     for (p1, p2, p3) in triangulation.to_points().iter() {
-    //         area += Triangle::new(p1, p2, p3).area();
-    //     }
-    //     area
-    // }
-
     pub fn remove_vertex(&mut self, id: &VertexId) -> Option<Vertex> {
         if let Some(v) = self.vertex_map.remove(id) {
             // TODO this would be an error condition if there was
