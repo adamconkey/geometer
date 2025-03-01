@@ -1,9 +1,12 @@
-use std::collections::HashSet;
-
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
+use std::collections::HashSet;
 
-use crate::{line_segment::LineSegment, polygon::Polygon, vertex::VertexId};
+use crate::{
+    line_segment::LineSegment, 
+    polygon::Polygon, 
+    vertex::VertexId
+};
 
 
 #[derive(Debug)]
@@ -64,7 +67,6 @@ pub trait ConvexHullComputer {
 #[derive(Default)]
 pub struct GiftWrapping;
 
-
 impl ConvexHullComputer for GiftWrapping {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
         let mut hull = ConvexHull::default();
@@ -97,7 +99,6 @@ impl ConvexHullComputer for GiftWrapping {
             } else {
                 hull.add_vertex(current_vertex_id);
             }
-
         }
         hull
     }
@@ -107,9 +108,7 @@ impl ConvexHullComputer for GiftWrapping {
 #[derive(Default)]
 pub struct QuickHull;
 
-
 impl ConvexHullComputer for QuickHull {
-
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
         let mut hull = ConvexHull::default();
         let mut stack = Vec::new();
