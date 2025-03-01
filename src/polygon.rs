@@ -4,9 +4,9 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
-use crate::convex_hull::{ConvexHull, Edge};
 use crate::{
-    bounding_box::BoundingBox, 
+    bounding_box::BoundingBox,
+    convex_hull::ConvexHull,
     error::FileError,
     line_segment::LineSegment, 
     point::Point, 
@@ -337,8 +337,8 @@ impl Polygon {
     // sense to define the ConvexHull with that representation, and then
     // offer an ability to get the edges from it? The set of extreme
     // points would be more minimal
-    pub fn convex_hull_from_quick_hull(&self) -> HashSet<VertexId> {
-        let mut convex_hull = HashSet::new();
+    pub fn convex_hull_from_quick_hull(&self) -> ConvexHull {
+        let mut hull = ConvexHull::default();
         let mut stack = Vec::new();
 
         let x = self.lowest_rightmost_vertex().id;
@@ -349,8 +349,8 @@ impl Polygon {
             .filter(|v| v.id != x && v.id != y)
             .collect_vec();
 
-        convex_hull.insert(x);
-        convex_hull.insert(y);
+        hull.add_vertex(x);
+        hull.add_vertex(y);
 
         let (s1, s2): (Vec<_>, Vec<_>) = s
             .into_iter()
@@ -368,7 +368,7 @@ impl Polygon {
                 .max_by_key(|v| OrderedFloat(ab.distance_to_point(&v.coords)))
                 .unwrap()
                 .id;
-            convex_hull.insert(c);
+            hull.add_vertex(c);
 
             let ac = self.get_line_segment(&a, &c).unwrap();
             let cb = self.get_line_segment(&c, &b).unwrap();
@@ -387,7 +387,7 @@ impl Polygon {
             if !s2.is_empty() { stack.push((c, b, s2)); }
             if stack.is_empty() { break; }
         }
-        convex_hull
+        hull
     }
 
     pub fn convex_hull_from_gift_wrapping(&self) -> ConvexHull {
@@ -398,6 +398,7 @@ impl Polygon {
         p.x -= 1.0;  // Arbitrary distance
         let mut current_edge = LineSegment::new(&p, &v0.coords);
         let mut current_vertex_id = v0.id;
+        hull.add_vertex(current_vertex_id);
 
         // Perform gift-wrapping, using the previous hull edge as a vector to 
         // find the point with the least CCW angle w.r.t. the vector. Connect 
@@ -411,15 +412,16 @@ impl Polygon {
                 .unwrap()
                 .id;
 
-            hull.edges.push(Edge(current_vertex_id, min_angle_vertex_id));
-
             current_edge = self.get_line_segment(
                 &current_vertex_id, &min_angle_vertex_id
             ).unwrap();
             current_vertex_id = min_angle_vertex_id;
             if current_vertex_id == v0.id {
                 break;
+            } else {
+                hull.add_vertex(current_vertex_id);
             }
+
         }
         hull
     }
@@ -587,7 +589,6 @@ mod tests {
     #[derive(Deserialize)]
     struct PolygonMetadata {
         area: f64,
-        convex_hull: ConvexHull,
         extreme_points: HashSet<VertexId>,
         interior_points: HashSet<VertexId>,
         num_edges: usize,
@@ -892,19 +893,18 @@ mod tests {
         );
     }
 
-    // TODO will want to parametrize on more polygons when defined
-    #[apply(all_custom_polygons)]
+    #[apply(extreme_point_cases)]
     fn test_convex_hull_from_gift_wrapping(#[case] case: PolygonTestCase) {
-        let convex_hull = case.polygon.convex_hull_from_gift_wrapping();
-        assert_eq!(convex_hull, case.metadata.convex_hull);
+        let hull = case.polygon.convex_hull_from_gift_wrapping();
+        let expected_hull = ConvexHull::new(case.metadata.extreme_points);
+        assert_eq!(hull, expected_hull);
     }
 
-    // TODO will want to parametrize on more polygons when defined
     #[apply(extreme_point_cases)]
     fn test_convex_hull_from_quick_hull(#[case] case: PolygonTestCase) {
-        let convex_hull = case.polygon.convex_hull_from_quick_hull();
-        // TODO need to sort out types
-        assert_eq!(convex_hull, case.metadata.extreme_points);
+        let hull = case.polygon.convex_hull_from_quick_hull();
+        let expected_hull = ConvexHull::new(case.metadata.extreme_points);
+        assert_eq!(hull, expected_hull);
     }
 
     #[apply(all_polygons)]
