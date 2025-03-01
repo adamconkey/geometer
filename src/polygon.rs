@@ -42,8 +42,6 @@ impl Polygon {
             vertex_map.insert(curr_id, v);
         }
 
-
-
         let polygon = Polygon { vertex_map };
         polygon.validate();
         polygon
@@ -60,14 +58,6 @@ impl Polygon {
         let points_str = serde_json::to_string_pretty(&points)?;
         fs::write(path, points_str)?;
         Ok(())
-    }
-
-    pub fn anchor(&self) -> &Vertex {
-        // TODO I'm not yet convinced this is something I want, ultimately
-        // need something to initiate algorithms in the vertex chain.
-        // Could consider only exposing keys and then having polygon gen
-        // an anchor
-        self.vertices()[0]
     }
 
     pub fn num_edges(&self) -> usize {
@@ -103,7 +93,7 @@ impl Polygon {
 
     pub fn area(&self) -> f64 {
         let mut area = 0.0;
-        let anchor = self.anchor();
+        let anchor = self.vertices()[0];
         for v1 in self.vertex_map.values() {
             let v2 = self.get_vertex(&v1.next).unwrap(); 
             area += Triangle::from_vertices(anchor, v1, v2).area();
@@ -162,7 +152,7 @@ impl Polygon {
     pub fn edges(&self) -> HashSet<(VertexId, VertexId)> {
         // TODO could cache this and clear on modification
         let mut edges = HashSet::new();
-        let anchor_id = self.anchor().id;
+        let anchor_id = self.vertices()[0].id;
         // TODO instead of unwrapping these, this function could
         // return result with an associated error type
         let mut current = self.get_vertex(&anchor_id).unwrap();
@@ -381,8 +371,8 @@ impl Polygon {
         // encountered, then validate every vertex was visited
         // once. Note the loop must terminate since there are
         // finite vertices and visited vertices are tracked.
-        let anchor = self.anchor();
-        let mut current = self.anchor();
+        let anchor = self.vertices()[0];
+        let mut current = anchor;
         let mut visited = HashSet::<VertexId>::new();
 
         loop {
@@ -409,7 +399,7 @@ impl Polygon {
 
     fn validate_edge_intersections(&self) {
         let mut edges = Vec::new();
-        let anchor_id = self.anchor().id;
+        let anchor_id = self.vertices()[0].id;
         let mut current = self.get_vertex(&anchor_id).unwrap();
         loop {
             let next = self.get_vertex(&current.next).unwrap();

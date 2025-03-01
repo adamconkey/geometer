@@ -76,7 +76,7 @@ impl TriangulationComputer for EarClipping {
         }
         // At this stage there should be exactly 3 vertices left,
         // which form the final triangle of the triangulation
-        let v = polygon.anchor();
+        let v = polygon.vertices()[0];
         triangulation.push(TriangleVertexIds(v.prev, v.id, v.next));
 
         triangulation
