@@ -6,7 +6,6 @@ use std::path::Path;
 
 use crate::{
     bounding_box::BoundingBox,
-    convex_hull::ConvexHull,
     error::FileError,
     line_segment::LineSegment, 
     point::Point, 

@@ -1,11 +1,14 @@
-use rstest::{fixture, rstest};
+use rstest::fixture;
 use rstest_reuse::{self, *};    
 use serde::Deserialize;
 use std::{collections::HashSet, fs, path::PathBuf};
 
-use crate::{error::FileError, polygon::Polygon, vertex::VertexId};
-use crate::util::load_polygon;
-
+use crate::{
+    error::FileError, 
+    polygon::Polygon,
+    util::load_polygon, 
+    vertex::VertexId
+};
 
 
 #[derive(Deserialize)]
