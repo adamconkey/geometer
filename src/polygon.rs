@@ -9,8 +9,7 @@ use crate::{
     error::FileError,
     line_segment::LineSegment, 
     point::Point, 
-    triangle::Triangle, 
-    triangulation::{EarNotFoundError, TriangleVertexIds, Triangulation}, 
+    triangle::Triangle,
     vertex::{Vertex, VertexId},
 };
 
@@ -112,48 +111,18 @@ impl Polygon {
         area
     }
 
-    pub fn area_from_triangulation(&self, triangulation: &Triangulation) -> f64 {
-        // Computes area from a triangulation as the sum of the area of 
-        // the individual triangles that constitute the triangulation.
-        // This value should always be exactly equal to `self.area()`.
-        let mut area = 0.0;
-        for (p1, p2, p3) in triangulation.to_points().iter() {
-            area += Triangle::new(p1, p2, p3).area();
-        }
-        area
-    }
+    // pub fn area_from_triangulation(&self, triangulation: &Triangulation) -> f64 {
+    //     // Computes area from a triangulation as the sum of the area of 
+    //     // the individual triangles that constitute the triangulation.
+    //     // This value should always be exactly equal to `self.area()`.
+    //     let mut area = 0.0;
+    //     for (p1, p2, p3) in triangulation.to_points().iter() {
+    //         area += Triangle::new(p1, p2, p3).area();
+    //     }
+    //     area
+    // }
 
-    pub fn triangulation(&self) -> Triangulation {
-        let mut triangulation = Triangulation::new(self);
-        let mut polygon = self.clone();
-
-        while polygon.num_vertices() > 3 {
-            let id = polygon.find_ear()
-                .expect("valid polygons with 3 or more vertices should have an ear");
-            // TODO instead of unwrap, return result with error
-            let v = polygon.remove_vertex(&id).unwrap();
-            triangulation.push(TriangleVertexIds(v.prev, id, v.next));
-        }
-        // At this stage there should be exactly 3 vertices left,
-        // which form the final triangle of the triangulation
-        let v = polygon.anchor();
-        triangulation.push(TriangleVertexIds(v.prev, v.id, v.next));
-
-        triangulation
-    }
-
-    fn find_ear(&self) -> Result<VertexId, EarNotFoundError> {
-        for v in self.vertex_map.values() {
-            let prev = self.get_vertex(&v.prev).unwrap();
-            let next = self.get_vertex(&v.next).unwrap();
-            if self.diagonal(prev, next) {
-                return Ok(v.id);
-            }
-        }
-        Err(EarNotFoundError)
-    }
-
-    fn remove_vertex(&mut self, id: &VertexId) -> Option<Vertex> {
+    pub fn remove_vertex(&mut self, id: &VertexId) -> Option<Vertex> {
         if let Some(v) = self.vertex_map.remove(id) {
             // TODO this would be an error condition if there was
             // a vertex for which prev/next weren't in the map,
@@ -601,19 +570,6 @@ mod tests {
         assert_eq!(polygon.num_edges(), case.metadata.num_edges);
         assert_eq!(polygon.num_vertices(), case.metadata.num_vertices);
         assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
-    }
-
-    #[apply(all_polygons)]
-    fn test_triangulation(case: PolygonTestCase) {
-        let triangulation = case.polygon.triangulation();
-        assert_eq!(triangulation.len(), case.metadata.num_triangles);
-        // This meta-assert is only valid for polygons without holes, holes 
-        // are not yet supported. Will need a flag in the metadata to know 
-        // if holes are present and then this assert would be conditional
-        assert_eq!(case.metadata.num_triangles, case.metadata.num_edges - 2);
-
-        let triangulation_area = case.polygon.area_from_triangulation(&triangulation);
-        assert_eq!(triangulation_area, case.metadata.area);
     }
 
     #[apply(extreme_point_cases)]
