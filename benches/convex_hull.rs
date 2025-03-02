@@ -15,22 +15,22 @@ fn benchmark_convex_hull(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("interior_points", name),
             polygon, 
-            |b, polygon| b.iter(|| InteriorPoints::default().convex_hull(&polygon))
+            |b, polygon| b.iter(|| InteriorPoints.convex_hull(polygon))
         );
         group.bench_with_input(
             BenchmarkId::new("extreme_edges", name),
             polygon, 
-            |b, polygon| b.iter(|| ExtremeEdges::default().convex_hull(&polygon))
+            |b, polygon| b.iter(|| ExtremeEdges.convex_hull(polygon))
         );
         group.bench_with_input(
             BenchmarkId::new("gift_wrapping", name),
             polygon, 
-            |b, polygon| b.iter(|| GiftWrapping::default().convex_hull(&polygon))
+            |b, polygon| b.iter(|| GiftWrapping.convex_hull(polygon))
         );
         group.bench_with_input(
             BenchmarkId::new("quick_hull", name),
             polygon, 
-            |b, polygon| b.iter(|| QuickHull::default().convex_hull(&polygon))
+            |b, polygon| b.iter(|| QuickHull.convex_hull(polygon))
         );
     }
     group.finish();

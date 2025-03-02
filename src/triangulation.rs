@@ -49,8 +49,8 @@ pub trait TriangulationComputer {
 #[derive(Default)]
 pub struct EarClipping;
 
-impl<'a> EarClipping {
-    fn find_ear(&self, polygon: &'a Polygon) -> Result<VertexId, EarNotFoundError> {
+impl EarClipping {
+    fn find_ear(&self, polygon: & Polygon) -> Result<VertexId, EarNotFoundError> {
         for v in polygon.vertices() {
             let prev = polygon.get_vertex(&v.prev).unwrap();
             let next = polygon.get_vertex(&v.next).unwrap();

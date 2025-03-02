@@ -5,7 +5,7 @@ use itertools::Itertools;
 use random_color::RandomColor;
 
 use geometer::polygon::Polygon;
-use geometer::triangulation::{self, EarClipping, Triangulation, TriangulationComputer};
+use geometer::triangulation::{EarClipping, Triangulation, TriangulationComputer};
 use geometer::util::load_polygon;
 
 
@@ -90,8 +90,7 @@ impl RerunVisualizer {
 
     pub fn visualize_triangulation(&self, polygon: &Polygon, name: &String) -> Result<(), VisualizationError> {
         let name = format!("{name}/triangulation");
-        let computer = EarClipping::default();
-        let triangulation = computer.triangulation(polygon);
+        let triangulation = EarClipping.triangulation(polygon);
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation, polygon);
 
         let _ = self.visualize_polygon(polygon, &name, 5.0);
@@ -109,8 +108,7 @@ impl RerunVisualizer {
     pub fn visualize_convex_hull(&self, polygon: &Polygon, name: &String) -> Result<(), VisualizationError> {    
         let _ = self.visualize_polygon(polygon, &format!("{name}/polygon"), 5.0);
         
-        let computer = QuickHull::default();
-        let hull = computer.convex_hull(polygon);
+        let hull = QuickHull.convex_hull(polygon);
         let points = hull.get_vertices()
             .iter()
             .map(|id| polygon.get_vertex(id).unwrap().coords.clone())
