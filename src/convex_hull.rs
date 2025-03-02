@@ -64,33 +64,42 @@ pub trait ConvexHullComputer {
 }
 
 
-// pub fn interior_points_from_triangle_checks(&self) -> HashSet<VertexId> {
-//     let mut interior_points = HashSet::new();
-//     let ids: HashSet<_> = self.vertex_map.keys().cloned().collect();
+#[derive(Default)]
+pub struct InteriorPoints; 
 
-//     // Don't be fooled by the runtime here, it's iterating over all
-//     // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3), 
-//     // so it's still O(n^4), this is just more compact than 4 nested
-//     // for-loops.
-//     for perm in ids.into_iter().permutations(4) {
-//         // TODO instead of unwrap, return result with error
-//         let p = self.get_point(&perm[0]).unwrap();
-//         let triangle = self.get_triangle(&perm[1], &perm[2], &perm[3]).unwrap();
-//         if triangle.contains(p) {
-//             interior_points.insert(perm[0]);
-//         }
-//     }
-//     interior_points
-// }
+impl InteriorPoints {
+    pub fn interior_points(&self, polygon: &Polygon) -> HashSet<VertexId> {
+        let mut interior_points = HashSet::new();
+        let ids = polygon.vertex_ids();
 
+        // Don't be fooled by the runtime here, it's iterating over all
+        // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3), 
+        // so it's still O(n^4), this is just more compact than 4 nested
+        // for-loops.
+        for perm in ids.into_iter().permutations(4) {
+            // TODO instead of unwrap, return result with error
+            let p = polygon.get_point(&perm[0]).unwrap();
+            let triangle = polygon.get_triangle(&perm[1], &perm[2], &perm[3]).unwrap();
+            if triangle.contains(p) {
+                interior_points.insert(perm[0]);
+            }
+        }
+        interior_points
+    }
+}
 
-// pub fn extreme_points_from_interior_points(&self) -> HashSet<VertexId> {
-//     // NOTE: This is slow O(n^4) since the interior point 
-//     // computation being used has that runtime.
-//     let ids: HashSet<_> = self.vertex_map.keys().cloned().collect();
-//     let interior_ids = self.interior_points_from_triangle_checks();
-//     &ids - &interior_ids
-// }
+impl ConvexHullComputer for InteriorPoints {
+    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
+        let mut hull = ConvexHull::default();
+        // NOTE: This is slow O(n^4) since the interior point 
+        // computation being used has that runtime.
+        let ids = polygon.vertex_ids_set();
+        let interior_ids = self.interior_points(polygon);
+        let extreme_ids = &ids - &interior_ids;
+        hull.add_vertices(extreme_ids);
+        hull
+    }
+}
 
 
 #[derive(Default)]
@@ -252,7 +261,7 @@ mod tests {
     fn test_convex_hull(
         #[case] 
         case: PolygonTestCase, 
-        #[values(ExtremeEdges, GiftWrapping, QuickHull)]
+        #[values(ExtremeEdges, GiftWrapping, InteriorPoints, QuickHull)]
         computer: impl ConvexHullComputer
     ) {
         let hull = computer.convex_hull(&case.polygon);
