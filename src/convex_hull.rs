@@ -64,6 +64,84 @@ pub trait ConvexHullComputer {
 }
 
 
+// pub fn interior_points_from_triangle_checks(&self) -> HashSet<VertexId> {
+//     let mut interior_points = HashSet::new();
+//     let ids: HashSet<_> = self.vertex_map.keys().cloned().collect();
+
+//     // Don't be fooled by the runtime here, it's iterating over all
+//     // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3), 
+//     // so it's still O(n^4), this is just more compact than 4 nested
+//     // for-loops.
+//     for perm in ids.into_iter().permutations(4) {
+//         // TODO instead of unwrap, return result with error
+//         let p = self.get_point(&perm[0]).unwrap();
+//         let triangle = self.get_triangle(&perm[1], &perm[2], &perm[3]).unwrap();
+//         if triangle.contains(p) {
+//             interior_points.insert(perm[0]);
+//         }
+//     }
+//     interior_points
+// }
+
+
+// pub fn extreme_points_from_interior_points(&self) -> HashSet<VertexId> {
+//     // NOTE: This is slow O(n^4) since the interior point 
+//     // computation being used has that runtime.
+//     let ids: HashSet<_> = self.vertex_map.keys().cloned().collect();
+//     let interior_ids = self.interior_points_from_triangle_checks();
+//     &ids - &interior_ids
+// }
+
+
+#[derive(Default)]
+pub struct ExtremeEdges;
+
+impl ExtremeEdges {
+    fn extreme_edges(&self, polygon: &Polygon) -> Vec<(VertexId, VertexId)> {
+        // NOTE: This is O(n^3)
+        let mut extreme_edges = Vec::new();
+        let ids = polygon.vertex_ids();
+    
+        for id1 in ids.iter() {
+            for id2 in ids.iter() {
+                if id2 == id1 {
+                    continue;
+                }
+                // TODO instead of unwrap, return result with error
+                let ls = polygon.get_line_segment(id1, id2).unwrap();
+                let mut is_extreme = true;
+                for id3 in ids.iter() {
+                    if id3 == id1 || id3 == id2 {
+                        continue;
+                    }
+                    // TODO instead of unwrap, return result with error
+                    let p = polygon.get_point(id3).unwrap();
+                    if !p.left_on(&ls) {
+                        is_extreme = false;
+                        break;
+                    }
+                }
+                if is_extreme {
+                    extreme_edges.push((*id1, *id2));
+                }
+            }
+        }
+        extreme_edges
+    }
+}
+
+impl ConvexHullComputer for ExtremeEdges {
+    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
+        let mut hull = ConvexHull::default();
+        for (id1, id2) in self.extreme_edges(polygon).into_iter() {
+            hull.add_vertex(id1);
+            hull.add_vertex(id2);
+        }
+        hull
+    }    
+}
+
+
 #[derive(Default)]
 pub struct GiftWrapping;
 
@@ -174,7 +252,7 @@ mod tests {
     fn test_convex_hull(
         #[case] 
         case: PolygonTestCase, 
-        #[values(GiftWrapping, QuickHull)]
+        #[values(ExtremeEdges, GiftWrapping, QuickHull)]
         computer: impl ConvexHullComputer
     ) {
         let hull = computer.convex_hull(&case.polygon);

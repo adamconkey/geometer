@@ -85,6 +85,10 @@ impl Polygon {
         self.vertex_map.values().collect_vec()
     }
 
+    pub fn vertex_ids(&self) -> Vec<VertexId> {
+        self.vertex_map.keys().cloned().collect_vec()
+    }
+
     pub fn sorted_vertices(&self) -> Vec<&Vertex> {
         let mut vertices = self.vertices();
         vertices.sort_by(|a, b| a.id.cmp(&b.id));
@@ -195,92 +199,6 @@ impl Polygon {
             }
         } 
         true
-    }
-
-    pub fn interior_points(&self) -> HashSet<VertexId> {
-        // This is just an alias to the current best implementation
-        self.interior_points_from_extreme_edges()
-    }
-
-    pub fn interior_points_from_extreme_edges(&self) -> HashSet<VertexId> {
-        let ids: HashSet<_> = self.vertex_map.keys().cloned().collect();
-        let extreme_ids = self.extreme_points_from_extreme_edges();
-        &ids - &extreme_ids
-    }
-
-    pub fn interior_points_from_triangle_checks(&self) -> HashSet<VertexId> {
-        let mut interior_points = HashSet::new();
-        let ids: HashSet<_> = self.vertex_map.keys().cloned().collect();
-
-        // Don't be fooled by the runtime here, it's iterating over all
-        // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3), 
-        // so it's still O(n^4), this is just more compact than 4 nested
-        // for-loops.
-        for perm in ids.into_iter().permutations(4) {
-            // TODO instead of unwrap, return result with error
-            let p = self.get_point(&perm[0]).unwrap();
-            let triangle = self.get_triangle(&perm[1], &perm[2], &perm[3]).unwrap();
-            if triangle.contains(p) {
-                interior_points.insert(perm[0]);
-            }
-        }
-        interior_points
-    }
-
-    pub fn extreme_edges(&self) -> Vec<(VertexId, VertexId)> {
-        // NOTE: This is O(n^3)
-        let mut extreme_edges = Vec::new();
-        let ids = self.vertex_map.keys().cloned().collect_vec();
-
-        for id1 in ids.iter() {
-            for id2 in ids.iter() {
-                if id2 == id1 {
-                    continue;
-                }
-                // TODO instead of unwrap, return result with error
-                let ls = self.get_line_segment(id1, id2).unwrap();
-                let mut is_extreme = true;
-                for id3 in ids.iter() {
-                    if id3 == id1 || id3 == id2 {
-                        continue;
-                    }
-                    // TODO instead of unwrap, return result with error
-                    let p = self.get_point(id3).unwrap();
-                    if !p.left_on(&ls) {
-                        is_extreme = false;
-                        break;
-                    }
-                }
-                if is_extreme {
-                    extreme_edges.push((*id1, *id2));
-                }
-            }
-        }
-        extreme_edges
-    }
-
-    pub fn extreme_points(&self) -> HashSet<VertexId> {
-        // This one is an alias to the current best implementation
-        self.extreme_points_from_extreme_edges()
-    }
-
-    pub fn extreme_points_from_extreme_edges(&self) -> HashSet<VertexId> {
-        // NOTE: This is O(n^3) since the extreme edges computation
-        // has that runtime
-        let mut extreme_points = HashSet::new();
-        for (id1, id2) in self.extreme_edges().into_iter() {
-            extreme_points.insert(id1);
-            extreme_points.insert(id2);
-        }
-        extreme_points
-    }
-
-    pub fn extreme_points_from_interior_points(&self) -> HashSet<VertexId> {
-        // NOTE: This is slow O(n^4) since the interior point 
-        // computation being used has that runtime.
-        let ids: HashSet<_> = self.vertex_map.keys().cloned().collect();
-        let interior_ids = self.interior_points_from_triangle_checks();
-        &ids - &interior_ids
     }
 
     pub fn bounding_box(&self) -> BoundingBox {
@@ -549,54 +467,6 @@ mod tests {
         assert_eq!(polygon.num_edges(), case.metadata.num_edges);
         assert_eq!(polygon.num_vertices(), case.metadata.num_vertices);
         assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
-    }
-
-    #[apply(extreme_point_cases)]
-    fn test_interior_points_from_triangle_checks(#[case] case: PolygonTestCase) {
-        let interior_points = case.polygon.interior_points_from_triangle_checks();
-        assert_eq!(
-            interior_points, 
-            case.metadata.interior_points,
-            "Extra computed: {:?}, Extra in metadata: {:?}", 
-            interior_points.difference(&case.metadata.interior_points),
-            case.metadata.interior_points.difference(&interior_points)
-        );
-    }
-
-    #[apply(extreme_point_cases)]
-    fn test_interior_points_from_extreme_edges(#[case] case: PolygonTestCase) {
-        let interior_points = case.polygon.interior_points_from_extreme_edges();
-        assert_eq!(
-            interior_points, 
-            case.metadata.interior_points,
-            "Extra computed: {:?}, Extra in metadata: {:?}", 
-            interior_points.difference(&case.metadata.interior_points),
-            case.metadata.interior_points.difference(&interior_points)
-        );
-    }
-
-    #[apply(extreme_point_cases)]
-    fn test_extreme_points_from_interior_points(#[case] case: PolygonTestCase) {
-        let extreme_points = case.polygon.extreme_points_from_interior_points();
-        assert_eq!(
-            extreme_points,
-            case.metadata.extreme_points,
-            "Extra computed: {:?}, Extra in metadata: {:?}", 
-            extreme_points.difference(&case.metadata.extreme_points),
-            case.metadata.extreme_points.difference(&extreme_points)
-        );
-    }
-
-    #[apply(extreme_point_cases)]
-    fn test_extreme_points_from_extreme_edges(#[case] case: PolygonTestCase) {
-        let extreme_points = case.polygon.extreme_points_from_extreme_edges();
-        assert_eq!(
-            extreme_points,
-            case.metadata.extreme_points,
-            "Extra computed: {:?}, Extra in metadata: {:?}", 
-            extreme_points.difference(&case.metadata.extreme_points),
-            case.metadata.extreme_points.difference(&extreme_points)
-        );
     }
 
     #[apply(all_polygons)]
