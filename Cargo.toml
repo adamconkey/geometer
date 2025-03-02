@@ -35,6 +35,6 @@ name = "visualizer"
 path = "src/bin/run_visualizer.rs"
 required-features = ["visualizer"]
 
-# [[bench]]
-# name = "extreme_points"
-# harness = false
+[[bench]]
+name = "convex_hull"
+harness = false
