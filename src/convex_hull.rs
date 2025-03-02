@@ -60,7 +60,7 @@ impl Default for ConvexHull {
 
 
 pub trait ConvexHullComputer {
-    fn convex_hull(&self, polgyon: &Polygon) -> ConvexHull;
+    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull;
 }
 
 

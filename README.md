@@ -55,7 +55,7 @@ cargo run --features visualizer -- -v triangulation -f interesting_polygon_archi
 
 
 ```shell
-cargo run --features visualizer -- -v extreme-points -f interesting_polygon_archive -p skimage_horse
+cargo run --features visualizer -- -v convex_hull -f interesting_polygon_archive -p skimage_horse
 ```
 
 ![Screen Shot 2025-02-15 at 3 32 58 PM](https://github.com/user-attachments/assets/5561f855-05c7-4611-9197-ec5c4c63c516)

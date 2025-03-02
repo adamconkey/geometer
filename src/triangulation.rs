@@ -42,7 +42,7 @@ impl Triangulation {
 
 
 pub trait TriangulationComputer {
-    fn triangulation(&self, polgyon: &Polygon) -> Triangulation;
+    fn triangulation(&self, polygon: &Polygon) -> Triangulation;
 }
 
 
