@@ -58,7 +58,8 @@ cargo run --features visualizer -- -v triangulation -f interesting_polygon_archi
 cargo run --features visualizer -- -v convex_hull -f interesting_polygon_archive -p skimage_horse
 ```
 
-![Screen Shot 2025-02-15 at 3 32 58 PM](https://github.com/user-attachments/assets/5561f855-05c7-4611-9197-ec5c4c63c516)
+![Screen Shot 2025-03-02 at 11 00 53 AM](https://github.com/user-attachments/assets/1d10839e-d725-48cc-93c0-5031c9af075d)
+
 
 
 ---
