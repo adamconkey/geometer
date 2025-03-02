@@ -74,7 +74,7 @@ cargo bench --bench convex_hull
 
 Here is a visualization comparing the various implementations:
 
-
+![Screen Shot 2025-03-02 at 10 07 37 AM](https://github.com/user-attachments/assets/e085b69f-bf81-41be-b875-ce22cbe0350c)
 
 This is obviously not super informative, but exists more as a starting infrastructure for benchmarking than a meaningful comparison at this stage.
 
