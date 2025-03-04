@@ -106,7 +106,7 @@ impl ConvexHullComputer for InteriorPoints {
 pub struct ExtremeEdges;
 
 impl ExtremeEdges {
-    fn extreme_edges(&self, polygon: &Polygon) -> Vec<(VertexId, VertexId)> {
+    pub fn extreme_edges(&self, polygon: &Polygon) -> Vec<(VertexId, VertexId)> {
         // NOTE: This is O(n^3)
         let mut extreme_edges = Vec::new();
         let ids = polygon.vertex_ids();
