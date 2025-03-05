@@ -1,8 +1,10 @@
 use itertools::Itertools;
 use ordered_float::OrderedFloat;
+use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
+use struct_field_names_as_array::FieldNamesAsArray;
 
 use crate::{
     bounding_box::BoundingBox,
@@ -12,6 +14,17 @@ use crate::{
     triangle::Triangle,
     vertex::{Vertex, VertexId},
 };
+
+
+#[derive(Deserialize, FieldNamesAsArray)]
+pub struct PolygonMetadata {
+    pub area: f64,
+    pub extreme_points: HashSet<VertexId>,
+    pub interior_points: HashSet<VertexId>,
+    pub num_edges: usize,
+    pub num_triangles: usize,
+    pub num_vertices: usize,
+}
 
 
 #[derive(Clone, Debug, PartialEq)]
