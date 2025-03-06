@@ -1,25 +1,13 @@
 use rstest::fixture;
 use rstest_reuse::{self, *};    
-use serde::Deserialize;
-use std::{collections::HashSet, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 use crate::{
     error::FileError, 
-    polygon::Polygon,
+    polygon::{Polygon, PolygonMetadata},
     util::load_polygon, 
-    vertex::VertexId
 };
 
-
-#[derive(Deserialize)]
-pub struct PolygonMetadata {
-    pub area: f64,
-    pub extreme_points: HashSet<VertexId>,
-    pub interior_points: HashSet<VertexId>,
-    pub num_edges: usize,
-    pub num_triangles: usize,
-    pub num_vertices: usize,
-}
 
 pub struct PolygonTestCase {
     pub polygon: Polygon,
