@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
 use std::fs;
 use std::{ffi::OsStr, path::PathBuf};
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use walkdir::WalkDir;
 
 use geometer::error::FileError;
@@ -17,9 +17,8 @@ enum Action {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum FieldType {
     Number, 
-    Vec,
+    Array,
 }
-
 
 
 #[derive(Parser, Debug)]
@@ -31,15 +30,31 @@ struct Args {
     #[arg(short, long)]
     action: Action,
 
-    #[arg(long, default_value = "number")]
+    #[arg(short = 't', long, default_value = "number")]
     field_type: FieldType,
+
+    #[arg(short, long, default_value = "false")]
+    dry_run: bool,
+}
+
+
+fn add_field(metadata: &mut Map<String, Value>, field: &str, field_type: &FieldType) {
+    let value = match field_type {
+        FieldType::Array => json!([]),
+        FieldType::Number => json!(0),
+    };
+
+    metadata.insert(field.to_string(), value);
+}
+
+fn remove_field(metadata: &mut Map<String, Value>, field: &str) {
+    metadata.remove(field);
 }
 
 
 fn main() -> Result<(), FileError> {
     let args = Args::parse();
     
-
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     root.push("polygons");
     let paths = WalkDir::new(root)
@@ -54,15 +69,18 @@ fn main() -> Result<(), FileError> {
         let metadata_str: String = fs::read_to_string(&path)?;
         let mut metadata: Map<String, Value> = serde_json::from_str(&metadata_str)?;
 
-        // TODO should be able to read from args from here to do what you want
+        match args.action {
+            Action::Add => add_field(&mut metadata, &args.field, &args.field_type),
+            Action::Remove => remove_field(&mut metadata, &args.field),
+        };
 
-        metadata.remove("num_vertices");
-
-        // let metadata_str = serde_json::to_string_pretty(&metadata)?;
-        // fs::write(path, metadata_str)?;
-
-        println!("META: {:?}", metadata);
+        if args.dry_run {
+            println!("{:?}", metadata);
+        } else {
+            let metadata_str = serde_json::to_string_pretty(&metadata)?;
+            fs::write(path, metadata_str)?;
+        }
     }
-
+    
     Ok(())
 }
