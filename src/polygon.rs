@@ -4,7 +4,6 @@ use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
-use struct_field_names_as_array::FieldNamesAsArray;
 
 use crate::{
     bounding_box::BoundingBox,
@@ -16,7 +15,7 @@ use crate::{
 };
 
 
-#[derive(Deserialize, FieldNamesAsArray)]
+#[derive(Deserialize)]
 pub struct PolygonMetadata {
     pub area: f64,
     pub extreme_points: HashSet<VertexId>,
