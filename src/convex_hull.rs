@@ -255,7 +255,21 @@ struct GrahamScan;
 
 impl ConvexHullComputer for GrahamScan {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
-        todo!()
+        let mut stack = Vec::new();
+        let p0 = polygon.rightmost_lowest_vertex();
+        stack.push(p0);
+
+        // TODO sort points angularly about p0, will need to 
+        // remove duplicates and address ties by removing
+        // closest to p0
+
+        // TODO process list, pushing each vertex onto stack if
+        // it's left of top of stack line segment, otherwise
+        // pop off top of stack vertex
+
+        // TODO populate the hull from the stack
+        let hull = ConvexHull::default();
+        hull
     }
 }
 
