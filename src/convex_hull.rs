@@ -250,6 +250,16 @@ impl ConvexHullComputer for QuickHull {
 }
 
 
+#[derive(Default)]
+struct GrahamScan;
+
+impl ConvexHullComputer for GrahamScan {
+    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
+        todo!()
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
