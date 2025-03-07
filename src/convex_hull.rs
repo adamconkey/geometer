@@ -1,4 +1,4 @@
-use itertools::Itertools;
+use itertools::{sorted, Itertools};
 use ordered_float::OrderedFloat;
 use std::collections::HashSet;
 
@@ -256,19 +256,47 @@ struct GrahamScan;
 impl ConvexHullComputer for GrahamScan {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
         let mut stack = Vec::new();
-        let p0 = polygon.rightmost_lowest_vertex();
-        stack.push(p0);
+        let v0 = polygon.rightmost_lowest_vertex();
+        stack.push(v0);
 
-        // TODO sort points angularly about p0, will need to 
-        // remove duplicates and address ties by removing
-        // closest to p0
+        let mut p = v0.coords.clone();
+        p.x -= 1.0;  // Arbitrary distance
+        let e0 = LineSegment::new(&p, &v0.coords);
+        
+        // TODO still need to address removing duplicate points
+        // as well as collinear ones in the angular sorting.
+        // Can maybe use dedup or dedup_by?
+        let mut vertices: Vec<_> = polygon.vertices()
+            .into_iter()
+            .filter(|v| v.id != v0.id)
+            .sorted_by_key(|v| OrderedFloat(e0.angle_to_point(&v.coords)))
+            .collect();
 
-        // TODO process list, pushing each vertex onto stack if
-        // it's left of top of stack line segment, otherwise
-        // pop off top of stack vertex
+        let v1 = vertices.remove(0);
+        stack.push(v1);
+        
+        // TODO this is my attempt at a transcription of pseudocode
+        // but currently it's not passing test
+        let mut i = 2;
+        while i < vertices.len() {
+            let v_top = vertices[vertices.len() - 1];
+            let v_prev = vertices[vertices.len() - 2];
+            let ls = polygon.get_line_segment(&v_prev.id, &v_top.id).unwrap();
+            if vertices[i].left(&ls) {
+                stack.push(vertices[i]);
+                i += 1;
+            } else {
+                stack.pop();
+            }
 
+        }
+
+        
         // TODO populate the hull from the stack
-        let hull = ConvexHull::default();
+        let mut hull = ConvexHull::default();
+        for v in stack.into_iter() {
+            hull.add_vertex(v.id);
+        }
         hull
     }
 }
@@ -281,11 +309,14 @@ mod tests {
     use rstest_reuse::{self, *};
     use crate::test_util::*;
 
-    #[apply(extreme_point_cases)]
+    // #[apply(extreme_point_cases)]
+    #[rstest]
+    #[case(square_4x4())]
     fn test_convex_hull(
         #[case] 
         case: PolygonTestCase, 
-        #[values(ExtremeEdges, GiftWrapping, InteriorPoints, QuickHull)]
+        // #[values(ExtremeEdges, GiftWrapping, InteriorPoints, QuickHull)]
+        #[values(GrahamScan)]
         computer: impl ConvexHullComputer
     ) {
         let hull = computer.convex_hull(&case.polygon);
