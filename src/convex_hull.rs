@@ -272,25 +272,30 @@ impl ConvexHullComputer for GrahamScan {
             .sorted_by_key(|v| OrderedFloat(e0.angle_to_point(&v.coords)))
             .collect();
 
-        let v1 = vertices.remove(0);
-        stack.push(v1);
+        // Add next vertex to have 2 on the stack to create a line segment.
+        // Guaranteed to be extreme after sorting/cleaning above.
+        stack.push(vertices.remove(0));
         
-        let mut i = 0;
-        while i < vertices.len() {
-            let v_top = stack[stack.len() - 1];
-            let v_prev = stack[stack.len() - 2];
-            let ls = polygon.get_line_segment(&v_prev.id, &v_top.id).unwrap();
-            if vertices[i].left(&ls) {
-                stack.push(vertices[i]);
-                i += 1;
-            } else {
-                stack.pop();
+        for v in vertices.iter() {
+            // If current vertex is a left turn from current segment off 
+            // top of stack, add vertex to incremental hull on stack and 
+            // continue to next vertex. Otherwise the current hull on 
+            // stack is wrong, continue popping until it's corrected.  
+            loop {
+                assert!(stack.len() >= 2);
+                let v_top = stack[stack.len() - 1];
+                let v_prev = stack[stack.len() - 2];
+                let ls = polygon.get_line_segment(&v_prev.id, &v_top.id).unwrap();
+                if v.left(&ls) {
+                    stack.push(v);
+                    break;
+                } else {
+                    stack.pop();
+                }
             }
         }
         
-        let mut hull = ConvexHull::default();
-        hull.add_vertices(stack.iter().map(|v| v.id));
-        hull
+        ConvexHull::new(stack.iter().map(|v| v.id).collect())
     }
 }
 
