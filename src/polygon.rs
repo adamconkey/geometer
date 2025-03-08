@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ordered_float::OrderedFloat;
+use ordered_float::OrderedFloat as OF;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -108,6 +108,24 @@ impl Polygon {
     pub fn sorted_vertices(&self) -> Vec<&Vertex> {
         let mut vertices = self.vertices();
         vertices.sort_by(|a, b| a.id.cmp(&b.id));
+        vertices
+    }
+
+    pub fn min_angle_sorted_vertices(&self) -> Vec<&Vertex> {
+        let v0 = self.rightmost_lowest_vertex();
+        let mut p = v0.coords.clone();
+        p.x -= 1.0;  // Arbitrary distance
+        let e0 = LineSegment::new(&p, &v0.coords);
+        
+        let vertices: Vec<_> = self.vertices()
+            .into_iter()
+            .filter(|v| v.id != v0.id)
+            // Break ties by sorting farthest to closes so that the dedup
+            // will keep the first instance (farthest) so it will favor
+            // extreme points
+            .sorted_by_key(|v| (OF(e0.angle_to_point(&v.coords)), OF(-v0.distance_to(v))))
+            .dedup_by(|a, b| e0.angle_to_point(&a.coords) == e0.angle_to_point(&b.coords))
+            .collect();
         vertices
     }
 
@@ -239,25 +257,25 @@ impl Polygon {
 
     pub fn leftmost_lowest_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OrderedFloat(v.coords.y), OrderedFloat(v.coords.x)));
+        vertices.sort_by_key(|v| (OF(v.coords.y), OF(v.coords.x)));
         vertices[0]
     }
 
     pub fn rightmost_lowest_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OrderedFloat(v.coords.y), OrderedFloat(-v.coords.x)));
+        vertices.sort_by_key(|v| (OF(v.coords.y), OF(-v.coords.x)));
         vertices[0]
     }
 
     pub fn lowest_rightmost_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OrderedFloat(-v.coords.x), OrderedFloat(v.coords.y)));
+        vertices.sort_by_key(|v| (OF(-v.coords.x), OF(v.coords.y)));
         vertices[0]
     }
 
     pub fn highest_leftmost_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OrderedFloat(v.coords.x), OrderedFloat(-v.coords.y)));
+        vertices.sort_by_key(|v| (OF(v.coords.x), OF(-v.coords.y)));
         vertices[0]
     }
 

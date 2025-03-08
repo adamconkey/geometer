@@ -5,6 +5,7 @@ use serde::Deserialize;
 use crate::{
     line_segment::LineSegment,
     point::Point,
+    vector::Vector,
 };
 
 
@@ -83,5 +84,10 @@ impl Vertex {
 
     pub fn round_coordinates(&mut self) {
         self.coords.round();
+    }
+
+    pub fn distance_to(&self, v: &Vertex) -> f64 {
+        let vec = Vector::new(v.coords.x - self.coords.x, v.coords.y - self.coords.y);
+        vec.magnitude()
     }
 }

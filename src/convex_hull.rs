@@ -255,25 +255,13 @@ pub struct GrahamScan;
 
 impl ConvexHullComputer for GrahamScan {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
-        let mut stack = Vec::new();
-        let v0 = polygon.rightmost_lowest_vertex();
-        stack.push(v0);
+        let mut stack = Vec::new();        
+        let mut vertices = polygon.min_angle_sorted_vertices();
 
-        let mut p = v0.coords.clone();
-        p.x -= 1.0;  // Arbitrary distance
-        let e0 = LineSegment::new(&p, &v0.coords);
-        
-        // TODO still need to address removing duplicate points
-        // as well as collinear ones in the angular sorting.
-        // Can maybe use dedup or dedup_by?
-        let mut vertices: Vec<_> = polygon.vertices()
-            .into_iter()
-            .filter(|v| v.id != v0.id)
-            .sorted_by_key(|v| OrderedFloat(e0.angle_to_point(&v.coords)))
-            .collect();
-
-        // Add next vertex to have 2 on the stack to create a line segment.
-        // Guaranteed to be extreme after sorting/cleaning above.
+        // Add rightmost lowest vertex and the next min-angle vertex
+        // to stack to create initial line segment, both guaranteed
+        // to be extreme based on vertices being sorted/cleaned
+        stack.push(polygon.rightmost_lowest_vertex());
         stack.push(vertices.remove(0));
         
         for v in vertices.iter() {
