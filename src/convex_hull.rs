@@ -275,8 +275,6 @@ impl ConvexHullComputer for GrahamScan {
         let v1 = vertices.remove(0);
         stack.push(v1);
         
-        // TODO this is my attempt at a transcription of pseudocode
-        // but currently it's not passing test
         let mut i = 0;
         while i < vertices.len() {
             let v_top = stack[stack.len() - 1];
@@ -290,7 +288,6 @@ impl ConvexHullComputer for GrahamScan {
             }
         }
         
-        // TODO populate the hull from the stack
         let mut hull = ConvexHull::default();
         hull.add_vertices(stack.iter().map(|v| v.id));
         hull
