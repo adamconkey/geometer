@@ -1,4 +1,4 @@
-use itertools::{sorted, Itertools};
+use itertools::Itertools;
 use ordered_float::OrderedFloat;
 use std::collections::HashSet;
 
@@ -251,7 +251,7 @@ impl ConvexHullComputer for QuickHull {
 
 
 #[derive(Default)]
-struct GrahamScan;
+pub struct GrahamScan;
 
 impl ConvexHullComputer for GrahamScan {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
@@ -277,10 +277,10 @@ impl ConvexHullComputer for GrahamScan {
         
         // TODO this is my attempt at a transcription of pseudocode
         // but currently it's not passing test
-        let mut i = 2;
+        let mut i = 0;
         while i < vertices.len() {
-            let v_top = vertices[vertices.len() - 1];
-            let v_prev = vertices[vertices.len() - 2];
+            let v_top = stack[stack.len() - 1];
+            let v_prev = stack[stack.len() - 2];
             let ls = polygon.get_line_segment(&v_prev.id, &v_top.id).unwrap();
             if vertices[i].left(&ls) {
                 stack.push(vertices[i]);
@@ -288,15 +288,11 @@ impl ConvexHullComputer for GrahamScan {
             } else {
                 stack.pop();
             }
-
         }
-
         
         // TODO populate the hull from the stack
         let mut hull = ConvexHull::default();
-        for v in stack.into_iter() {
-            hull.add_vertex(v.id);
-        }
+        hull.add_vertices(stack.iter().map(|v| v.id));
         hull
     }
 }
@@ -309,9 +305,9 @@ mod tests {
     use rstest_reuse::{self, *};
     use crate::test_util::*;
 
-    // #[apply(extreme_point_cases)]
-    #[rstest]
-    #[case(square_4x4())]
+    #[apply(extreme_point_cases)]
+    // #[rstest]
+    // #[case(polygon_1())]
     fn test_convex_hull(
         #[case] 
         case: PolygonTestCase, 
