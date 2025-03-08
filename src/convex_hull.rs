@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ordered_float::OrderedFloat;
+use ordered_float::OrderedFloat as OF;
 use std::collections::HashSet;
 
 use crate::{
@@ -156,35 +156,34 @@ pub struct GiftWrapping;
 
 impl ConvexHullComputer for GiftWrapping {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
-        let mut hull = ConvexHull::default();
         // Form a horizontal line terminating at lowest point to start
-        let v0 = polygon.leftmost_lowest_vertex();
+        let v0 = polygon.rightmost_lowest_vertex();
         let mut p = v0.coords.clone();
         p.x -= 1.0;  // Arbitrary distance
-        let mut current_edge = LineSegment::new(&p, &v0.coords);
-        let mut current_vertex_id = v0.id;
-        hull.add_vertex(current_vertex_id);
+        let mut e = LineSegment::new(&p, &v0.coords);
+        let mut v_i = v0;
+        
+        let mut hull = ConvexHull::default();
+        hull.add_vertex(v_i.id);
 
         // Perform gift-wrapping, using the previous hull edge as a vector to 
         // find the point with the least CCW angle w.r.t. the vector. Connect 
         // that point to the current terminal vertex to form the newest hull 
         // edge. Repeat until we reach the starting vertex again.
         loop {
-            let min_angle_vertex_id = polygon.vertices()
-                .iter()
-                .filter(|v| v.id != current_vertex_id)
-                .min_by_key(|v| OrderedFloat(current_edge.angle_to_point(&v.coords)))
-                .unwrap()
-                .id;
+            let v_min_angle = polygon.vertices()
+                .into_iter()
+                .filter(|v| v.id != v_i.id)
+                .sorted_by_key(|v| (OF(e.angle_to_point(&v.coords)), OF(-v_i.distance_to(v))))
+                .dedup_by(|a, b| e.angle_to_point(&a.coords) == e.angle_to_point(&b.coords))
+                .collect::<Vec<_>>()[0];
 
-            current_edge = polygon.get_line_segment(
-                &current_vertex_id, &min_angle_vertex_id
-            ).unwrap();
-            current_vertex_id = min_angle_vertex_id;
-            if current_vertex_id == v0.id {
+            e = polygon.get_line_segment(&v_i.id, &v_min_angle.id).unwrap();
+            v_i = v_min_angle;
+            if v_i.id == v0.id {
                 break;
             } else {
-                hull.add_vertex(current_vertex_id);
+                hull.add_vertex(v_i.id);
             }
         }
         hull
@@ -223,7 +222,7 @@ impl ConvexHullComputer for QuickHull {
             let ab = polygon.get_line_segment(&a, &b).unwrap();
 
             let c = s.iter()
-                .max_by_key(|v| OrderedFloat(ab.distance_to_point(&v.coords)))
+                .max_by_key(|v| OF(ab.distance_to_point(&v.coords)))
                 .unwrap()
                 .id;
             hull.add_vertex(c);
@@ -255,7 +254,7 @@ pub struct GrahamScan;
 
 impl ConvexHullComputer for GrahamScan {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
-        let mut stack = Vec::new();        
+        let mut stack = Vec::new();
         let mut vertices = polygon.min_angle_sorted_vertices();
 
         // Add rightmost lowest vertex and the next min-angle vertex
@@ -301,8 +300,7 @@ mod tests {
     fn test_convex_hull(
         #[case] 
         case: PolygonTestCase, 
-        // #[values(ExtremeEdges, GiftWrapping, InteriorPoints, QuickHull)]
-        #[values(GrahamScan)]
+        #[values(ExtremeEdges, GiftWrapping, GrahamScan, InteriorPoints, QuickHull)]
         computer: impl ConvexHullComputer
     ) {
         let hull = computer.convex_hull(&case.polygon);

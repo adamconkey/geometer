@@ -133,7 +133,4 @@ pub fn all_custom_polygons(#[case] case: PolygonTestCase) {}
 #[case::held_12(held_12())]
 #[case::held_3(held_3())]
 #[case::o_rourke_3_8(o_rourke_3_8())]
-// TODO can add more test cases here, but I've just been going through
-// and manually verifying they're correct. Some have so many vertices
-// though it's not practical
 pub fn extreme_point_cases(#[case] case: PolygonTestCase) {}
