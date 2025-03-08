@@ -90,14 +90,11 @@ impl InteriorPoints {
 
 impl ConvexHullComputer for InteriorPoints {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
-        let mut hull = ConvexHull::default();
         // NOTE: This is slow O(n^4) since the interior point 
         // computation being used has that runtime.
-        let ids = polygon.vertex_ids_set();
         let interior_ids = self.interior_points(polygon);
-        let extreme_ids = &ids - &interior_ids;
-        hull.add_vertices(extreme_ids);
-        hull
+        let extreme_ids = &polygon.vertex_ids_set() - &interior_ids;
+        ConvexHull::new(extreme_ids)
     }
 }
 
