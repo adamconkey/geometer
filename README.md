@@ -29,9 +29,9 @@ My goal for this repo is to eventually have a complete implementation of the alg
     - From extreme edges $O(n^3)$
     - GiftWrapping $O(nh)$ for $h$ hull edges
     - QuickHull $O(n^2)$
+    - GrahamScan $O(n \log n)$
 
 ### On the Roadmap
-- Graham scan for 2D convex hull
 - Convex Hull 3D
 - Voronoi Diagram
 - Animated visualizations of algorithms
