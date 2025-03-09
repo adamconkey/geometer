@@ -41,6 +41,9 @@ impl<'a> Triangle<'a> {
     }
 
     pub fn contains(&self, p: Point) -> bool {
+        if self.has_collinear_points() {
+            return false;
+        }
         for ls in self.to_line_segments() {
             if !p.left_on(&ls) {
                 return false;

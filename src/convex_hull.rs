@@ -1,6 +1,6 @@
 use itertools::Itertools;
-use ordered_float::OrderedFloat;
-use std::collections::HashSet;
+use ordered_float::OrderedFloat as OF;
+use std::{cmp::Reverse, collections::HashSet};
 
 use crate::{
     line_segment::LineSegment, 
@@ -90,14 +90,11 @@ impl InteriorPoints {
 
 impl ConvexHullComputer for InteriorPoints {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
-        let mut hull = ConvexHull::default();
         // NOTE: This is slow O(n^4) since the interior point 
         // computation being used has that runtime.
-        let ids = polygon.vertex_ids_set();
         let interior_ids = self.interior_points(polygon);
-        let extreme_ids = &ids - &interior_ids;
-        hull.add_vertices(extreme_ids);
-        hull
+        let extreme_ids = &polygon.vertex_ids_set() - &interior_ids;
+        ConvexHull::new(extreme_ids)
     }
 }
 
@@ -111,31 +108,38 @@ impl ExtremeEdges {
         let mut extreme_edges = Vec::new();
         let ids = polygon.vertex_ids();
     
-        for id1 in ids.iter() {
-            for id2 in ids.iter() {
-                if id2 == id1 {
-                    continue;
-                }
+        for perm in ids.iter().permutations(2) {
+            // TODO instead of unwrap, return result with error
+            let ls = polygon.get_line_segment(perm[0], perm[1]).unwrap();
+            let mut is_extreme = true;
+            for id3 in ids.iter().filter(|id| !perm.contains(id)) {
                 // TODO instead of unwrap, return result with error
-                let ls = polygon.get_line_segment(id1, id2).unwrap();
-                let mut is_extreme = true;
-                for id3 in ids.iter() {
-                    if id3 == id1 || id3 == id2 {
-                        continue;
-                    }
-                    // TODO instead of unwrap, return result with error
-                    let p = polygon.get_point(id3).unwrap();
-                    if !p.left_on(&ls) {
-                        is_extreme = false;
-                        break;
-                    }
-                }
-                if is_extreme {
-                    extreme_edges.push((*id1, *id2));
+                let p = polygon.get_point(id3).unwrap();
+                if !p.left_on(&ls) {
+                    is_extreme = false;
+                    break;
                 }
             }
+            if is_extreme {
+                extreme_edges.push((*perm[0], *perm[1]));
+            }
         }
+
+        // Have to do this cleaning step to account for collinear points in
+        // the edge chain. Note the edge chain as-is could have collinear
+        // points even if the polygon itself does not have collinear points.
+        // If there's a chain xyz, this procedure will keep xz being the two
+        // points furthest from each other no matter how many collinear
+        // points exist between those two.
+        self.remove_collinear(&mut extreme_edges, polygon);
         extreme_edges
+    }
+
+    fn remove_collinear(&self, edges: &mut Vec<(VertexId, VertexId)>, p: &Polygon) {
+        edges.sort_by_key(|(id1, id2)| (*id1, Reverse(OF(p.distance_between(id1, id2)))));
+        edges.dedup_by(|a, b| a.0 == b.0);
+        edges.sort_by_key(|(id1, id2)| (*id2, Reverse(OF(p.distance_between(id1, id2)))));
+        edges.dedup_by(|a, b| a.1 == b.1);
     }
 }
 
@@ -156,35 +160,34 @@ pub struct GiftWrapping;
 
 impl ConvexHullComputer for GiftWrapping {
     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
-        let mut hull = ConvexHull::default();
         // Form a horizontal line terminating at lowest point to start
-        let v0 = polygon.leftmost_lowest_vertex();
+        let v0 = polygon.rightmost_lowest_vertex();
         let mut p = v0.coords.clone();
         p.x -= 1.0;  // Arbitrary distance
-        let mut current_edge = LineSegment::new(&p, &v0.coords);
-        let mut current_vertex_id = v0.id;
-        hull.add_vertex(current_vertex_id);
+        let mut e = LineSegment::new(&p, &v0.coords);
+        let mut v_i = v0;
+        
+        let mut hull = ConvexHull::default();
+        hull.add_vertex(v_i.id);
 
         // Perform gift-wrapping, using the previous hull edge as a vector to 
         // find the point with the least CCW angle w.r.t. the vector. Connect 
         // that point to the current terminal vertex to form the newest hull 
         // edge. Repeat until we reach the starting vertex again.
         loop {
-            let min_angle_vertex_id = polygon.vertices()
-                .iter()
-                .filter(|v| v.id != current_vertex_id)
-                .min_by_key(|v| OrderedFloat(current_edge.angle_to_point(&v.coords)))
-                .unwrap()
-                .id;
+            let v_min_angle = polygon.vertices()
+                .into_iter()
+                .filter(|v| v.id != v_i.id)
+                .sorted_by_key(|v| (OF(e.angle_to_point(&v.coords)), Reverse(OF(v_i.distance_to(v)))))
+                .dedup_by(|a, b| e.angle_to_point(&a.coords) == e.angle_to_point(&b.coords))
+                .collect::<Vec<_>>()[0];
 
-            current_edge = polygon.get_line_segment(
-                &current_vertex_id, &min_angle_vertex_id
-            ).unwrap();
-            current_vertex_id = min_angle_vertex_id;
-            if current_vertex_id == v0.id {
+            e = polygon.get_line_segment(&v_i.id, &v_min_angle.id).unwrap();
+            v_i = v_min_angle;
+            if v_i.id == v0.id {
                 break;
             } else {
-                hull.add_vertex(current_vertex_id);
+                hull.add_vertex(v_i.id);
             }
         }
         hull
@@ -223,7 +226,7 @@ impl ConvexHullComputer for QuickHull {
             let ab = polygon.get_line_segment(&a, &b).unwrap();
 
             let c = s.iter()
-                .max_by_key(|v| OrderedFloat(ab.distance_to_point(&v.coords)))
+                .max_by_key(|v| OF(ab.distance_to_point(&v.coords)))
                 .unwrap()
                 .id;
             hull.add_vertex(c);
@@ -250,6 +253,44 @@ impl ConvexHullComputer for QuickHull {
 }
 
 
+#[derive(Default)]
+pub struct GrahamScan;
+
+impl ConvexHullComputer for GrahamScan {
+    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
+        let mut stack = Vec::new();
+        let mut vertices = polygon.min_angle_sorted_vertices();
+
+        // Add rightmost lowest vertex and the next min-angle vertex
+        // to stack to create initial line segment, both guaranteed
+        // to be extreme based on vertices being sorted/cleaned
+        stack.push(polygon.rightmost_lowest_vertex());
+        stack.push(vertices.remove(0));
+        
+        for v in vertices.iter() {
+            // If current vertex is a left turn from current segment off 
+            // top of stack, add vertex to incremental hull on stack and 
+            // continue to next vertex. Otherwise the current hull on 
+            // stack is wrong, continue popping until it's corrected.  
+            loop {
+                assert!(stack.len() >= 2);
+                let v_top = stack[stack.len() - 1];
+                let v_prev = stack[stack.len() - 2];
+                let ls = polygon.get_line_segment(&v_prev.id, &v_top.id).unwrap();
+                if v.left(&ls) {
+                    stack.push(v);
+                    break;
+                } else {
+                    stack.pop();
+                }
+            }
+        }
+        
+        ConvexHull::new(stack.iter().map(|v| v.id).collect())
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -261,7 +302,7 @@ mod tests {
     fn test_convex_hull(
         #[case] 
         case: PolygonTestCase, 
-        #[values(ExtremeEdges, GiftWrapping, InteriorPoints, QuickHull)]
+        #[values(ExtremeEdges, GiftWrapping, GrahamScan, InteriorPoints, QuickHull)]
         computer: impl ConvexHullComputer
     ) {
         let hull = computer.convex_hull(&case.polygon);

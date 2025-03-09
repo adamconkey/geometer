@@ -80,6 +80,10 @@ impl<'a> LineSegment<'a> {
         self.p1 == p || self.p2 == p
     }
 
+    pub fn length(&self) -> f64 {
+        Vector::from(self).magnitude()
+    }
+
     pub fn angle_to_point(&self, p: &Point) -> f64 {
         // TODO this is a specific interpretation of "angle to point"
         // which is between two vectors p1 -> p2 and p2 -> p. Not

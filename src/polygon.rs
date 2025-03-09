@@ -1,6 +1,7 @@
 use itertools::Itertools;
-use ordered_float::OrderedFloat;
+use ordered_float::OrderedFloat as OF;
 use serde::Deserialize;
+use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
@@ -111,6 +112,24 @@ impl Polygon {
         vertices
     }
 
+    pub fn min_angle_sorted_vertices(&self) -> Vec<&Vertex> {
+        let v0 = self.rightmost_lowest_vertex();
+        let mut p = v0.coords.clone();
+        p.x -= 1.0;  // Arbitrary distance
+        let e0 = LineSegment::new(&p, &v0.coords);
+        
+        let vertices: Vec<_> = self.vertices()
+            .into_iter()
+            .filter(|v| v.id != v0.id)
+            // Break ties by sorting farthest to closest so that the dedup
+            // will keep the first instance (farthest) so it will favor
+            // extreme points
+            .sorted_by_key(|v| (OF(e0.angle_to_point(&v.coords)), Reverse(OF(v0.distance_to(v)))))
+            .dedup_by(|a, b| e0.angle_to_point(&a.coords) == e0.angle_to_point(&b.coords))
+            .collect();
+        vertices
+    }
+
     pub fn area(&self) -> f64 {
         let mut area = 0.0;
         let anchor = self.vertices()[0];
@@ -167,6 +186,10 @@ impl Polygon {
             }
         }
         None
+    }
+
+    pub fn distance_between(&self, id_1: &VertexId, id_2: &VertexId) -> f64 {
+        self.get_line_segment(id_1, id_2).unwrap().length()
     }
 
     pub fn edges(&self) -> HashSet<(VertexId, VertexId)> {
@@ -239,25 +262,25 @@ impl Polygon {
 
     pub fn leftmost_lowest_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OrderedFloat(v.coords.y), OrderedFloat(v.coords.x)));
+        vertices.sort_by_key(|v| (OF(v.coords.y), OF(v.coords.x)));
         vertices[0]
     }
 
     pub fn rightmost_lowest_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OrderedFloat(v.coords.y), OrderedFloat(-v.coords.x)));
+        vertices.sort_by_key(|v| (OF(v.coords.y), Reverse(OF(v.coords.x))));
         vertices[0]
     }
 
     pub fn lowest_rightmost_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OrderedFloat(-v.coords.x), OrderedFloat(v.coords.y)));
+        vertices.sort_by_key(|v| (Reverse(OF(v.coords.x)), OF(v.coords.y)));
         vertices[0]
     }
 
     pub fn highest_leftmost_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OrderedFloat(v.coords.x), OrderedFloat(-v.coords.y)));
+        vertices.sort_by_key(|v| (OF(v.coords.x), Reverse(OF(v.coords.y))));
         vertices[0]
     }
 
