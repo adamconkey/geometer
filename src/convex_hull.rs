@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use ordered_float::OrderedFloat as OF;
-use std::collections::HashSet;
+use std::{cmp::Reverse, collections::HashSet};
 
 use crate::{
     line_segment::LineSegment, 
@@ -109,17 +109,11 @@ impl ExtremeEdges {
         let ids = polygon.vertex_ids();
     
         for id1 in ids.iter() {
-            for id2 in ids.iter() {
-                if id2 == id1 {
-                    continue;
-                }
+            for id2 in ids.iter().filter(|&id| id != id1) {
                 // TODO instead of unwrap, return result with error
                 let ls = polygon.get_line_segment(id1, id2).unwrap();
                 let mut is_extreme = true;
-                for id3 in ids.iter() {
-                    if id3 == id1 || id3 == id2 {
-                        continue;
-                    }
+                for id3 in ids.iter().filter(|&id| id != id1 && id != id2) {
                     // TODO instead of unwrap, return result with error
                     let p = polygon.get_point(id3).unwrap();
                     if !p.left_on(&ls) {
@@ -132,6 +126,21 @@ impl ExtremeEdges {
                 }
             }
         }
+
+        // Have to do this cleaning step to account for collinear points in
+        // the edge chain. Note the edge chain as-is could have collinear
+        // points even if the polygon itself does not have collinear points.
+        // If there's a chain xyz, this procedure will keep xz being the two
+        // points furthest from each other no matter how many collinear
+        // points exist between those two.
+        extreme_edges.sort_by_key(
+            |(id1, id2)| (*id1, Reverse(OF(polygon.distance_between(id1, id2))))
+        );
+        extreme_edges.dedup_by(|a, b| a.0 == b.0);
+        extreme_edges.sort_by_key(
+            |(id1, id2)| (*id2, Reverse(OF(polygon.distance_between(id1, id2))))
+        );
+        extreme_edges.dedup_by(|a, b| a.1 == b.1);
         extreme_edges
     }
 }

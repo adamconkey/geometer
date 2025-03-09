@@ -129,16 +129,6 @@ impl Polygon {
         vertices
     }
 
-    pub fn clean_collinear(&self, vertices: &Vec<VertexId>) -> Vec<VertexId> {
-        // TODO want to iterate over the vertices and see if there
-        // are any collinear, remove middle vertex ID if so. Need
-        // to do this in a loop until we make a pass where no
-        // modifications were made. Not the most efficient probably
-        // but it should work.
-
-        todo!()
-    }
-
     pub fn area(&self) -> f64 {
         let mut area = 0.0;
         let anchor = self.vertices()[0];
@@ -195,6 +185,10 @@ impl Polygon {
             }
         }
         None
+    }
+
+    pub fn distance_between(&self, id_1: &VertexId, id_2: &VertexId) -> f64 {
+        self.get_line_segment(id_1, id_2).unwrap().length()
     }
 
     pub fn edges(&self) -> HashSet<(VertexId, VertexId)> {
