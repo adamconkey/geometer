@@ -131,15 +131,15 @@ impl ExtremeEdges {
         // If there's a chain xyz, this procedure will keep xz being the two
         // points furthest from each other no matter how many collinear
         // points exist between those two.
-        extreme_edges.sort_by_key(
-            |(id1, id2)| (*id1, Reverse(OF(polygon.distance_between(id1, id2))))
-        );
-        extreme_edges.dedup_by(|a, b| a.0 == b.0);
-        extreme_edges.sort_by_key(
-            |(id1, id2)| (*id2, Reverse(OF(polygon.distance_between(id1, id2))))
-        );
-        extreme_edges.dedup_by(|a, b| a.1 == b.1);
+        self.remove_collinear(&mut extreme_edges, polygon);
         extreme_edges
+    }
+
+    fn remove_collinear(&self, edges: &mut Vec<(VertexId, VertexId)>, p: &Polygon) {
+        edges.sort_by_key(|(id1, id2)| (*id1, Reverse(OF(p.distance_between(id1, id2)))));
+        edges.dedup_by(|a, b| a.0 == b.0);
+        edges.sort_by_key(|(id1, id2)| (*id2, Reverse(OF(p.distance_between(id1, id2)))));
+        edges.dedup_by(|a, b| a.1 == b.1);
     }
 }
 
