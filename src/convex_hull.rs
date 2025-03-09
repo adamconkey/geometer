@@ -178,7 +178,7 @@ impl ConvexHullComputer for GiftWrapping {
             let v_min_angle = polygon.vertices()
                 .into_iter()
                 .filter(|v| v.id != v_i.id)
-                .sorted_by_key(|v| (OF(e.angle_to_point(&v.coords)), OF(-v_i.distance_to(v))))
+                .sorted_by_key(|v| (OF(e.angle_to_point(&v.coords)), Reverse(OF(v_i.distance_to(v)))))
                 .dedup_by(|a, b| e.angle_to_point(&a.coords) == e.angle_to_point(&b.coords))
                 .collect::<Vec<_>>()[0];
 

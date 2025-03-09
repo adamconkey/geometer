@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use ordered_float::OrderedFloat as OF;
 use serde::Deserialize;
+use std::cmp::Reverse;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
@@ -123,7 +124,7 @@ impl Polygon {
             // Break ties by sorting farthest to closes so that the dedup
             // will keep the first instance (farthest) so it will favor
             // extreme points
-            .sorted_by_key(|v| (OF(e0.angle_to_point(&v.coords)), OF(-v0.distance_to(v))))
+            .sorted_by_key(|v| (OF(e0.angle_to_point(&v.coords)), Reverse(OF(v0.distance_to(v)))))
             .dedup_by(|a, b| e0.angle_to_point(&a.coords) == e0.angle_to_point(&b.coords))
             .collect();
         vertices
@@ -267,19 +268,19 @@ impl Polygon {
 
     pub fn rightmost_lowest_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OF(v.coords.y), OF(-v.coords.x)));
+        vertices.sort_by_key(|v| (OF(v.coords.y), Reverse(OF(v.coords.x))));
         vertices[0]
     }
 
     pub fn lowest_rightmost_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OF(-v.coords.x), OF(v.coords.y)));
+        vertices.sort_by_key(|v| (Reverse(OF(v.coords.x)), OF(v.coords.y)));
         vertices[0]
     }
 
     pub fn highest_leftmost_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| (OF(v.coords.x), OF(-v.coords.y)));
+        vertices.sort_by_key(|v| (OF(v.coords.x), Reverse(OF(v.coords.y))));
         vertices[0]
     }
 
