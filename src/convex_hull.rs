@@ -108,22 +108,20 @@ impl ExtremeEdges {
         let mut extreme_edges = Vec::new();
         let ids = polygon.vertex_ids();
     
-        for id1 in ids.iter() {
-            for id2 in ids.iter().filter(|&id| id != id1) {
+        for perm in ids.iter().permutations(2) {
+            // TODO instead of unwrap, return result with error
+            let ls = polygon.get_line_segment(perm[0], perm[1]).unwrap();
+            let mut is_extreme = true;
+            for id3 in ids.iter().filter(|id| !perm.contains(id)) {
                 // TODO instead of unwrap, return result with error
-                let ls = polygon.get_line_segment(id1, id2).unwrap();
-                let mut is_extreme = true;
-                for id3 in ids.iter().filter(|&id| id != id1 && id != id2) {
-                    // TODO instead of unwrap, return result with error
-                    let p = polygon.get_point(id3).unwrap();
-                    if !p.left_on(&ls) {
-                        is_extreme = false;
-                        break;
-                    }
+                let p = polygon.get_point(id3).unwrap();
+                if !p.left_on(&ls) {
+                    is_extreme = false;
+                    break;
                 }
-                if is_extreme {
-                    extreme_edges.push((*id1, *id2));
-                }
+            }
+            if is_extreme {
+                extreme_edges.push((*perm[0], *perm[1]));
             }
         }
 
