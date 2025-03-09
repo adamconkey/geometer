@@ -121,7 +121,7 @@ impl Polygon {
         let vertices: Vec<_> = self.vertices()
             .into_iter()
             .filter(|v| v.id != v0.id)
-            // Break ties by sorting farthest to closes so that the dedup
+            // Break ties by sorting farthest to closest so that the dedup
             // will keep the first instance (farthest) so it will favor
             // extreme points
             .sorted_by_key(|v| (OF(e0.angle_to_point(&v.coords)), Reverse(OF(v0.distance_to(v)))))
