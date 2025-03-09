@@ -301,8 +301,6 @@ mod tests {
     use crate::test_util::*;
 
     #[apply(extreme_point_cases)]
-    // #[rstest]
-    // #[case(polygon_1())]
     fn test_convex_hull(
         #[case] 
         case: PolygonTestCase, 
