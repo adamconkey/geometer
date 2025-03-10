@@ -179,11 +179,6 @@ impl Polygon {
         self.vertex_map.get_mut(id)
     }
 
-    pub fn get_vertices(&self, ids: impl IntoIterator<Item = VertexId>) -> Vec<&Vertex> {
-        // TODO don't unwrap
-        ids.into_iter().map(|id| self.get_vertex(&id).unwrap()).collect_vec()
-    }
-
     pub fn get_vertex_ids(&self) -> HashSet<VertexId> {
         self.vertex_map.keys().cloned().collect()
     }
@@ -216,14 +211,14 @@ impl Polygon {
     }
 
     pub fn get_polygon(&self, ids: impl IntoIterator<Item = VertexId>) -> Polygon {
-        let mut vertices = self.get_vertices(ids)
-            .into_iter()
-            .cloned()
-            .collect_vec();
         // Note this is currently sorting as its primary use is in convex hull,
         // if it proves useful for this sorting to be optional (i.e. assume the
         // order of input IDs is as desired) then can make this optional
-        vertices.sort_by_key(|v| v.id);
+        let vertices = ids.into_iter()
+            .map(|id| self.get_vertex(&id).unwrap()) // TODO don't unwrap
+            .cloned()
+            .sorted_by_key(|v| v.id)
+            .collect_vec();
         Polygon::from_vertices(vertices)
     }
 
