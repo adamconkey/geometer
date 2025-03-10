@@ -1,7 +1,6 @@
 use clap::{Parser, ValueEnum};
 use geometer::convex_hull::{ConvexHullComputer, QuickHull};
 use geometer::error::FileError;
-use itertools::Itertools;
 use random_color::RandomColor;
 
 use geometer::polygon::Polygon;
@@ -109,13 +108,7 @@ impl RerunVisualizer {
         let _ = self.visualize_polygon(polygon, &format!("{name}/polygon"), 5.0);
         
         let hull = QuickHull.convex_hull(polygon);
-        let points = hull.get_vertices()
-            .iter()
-            .map(|id| polygon.get_vertex(id).unwrap().coords.clone())
-            .collect_vec();
-        let hull_polygon = Polygon::new(points);
-
-        let _ = self.visualize_polygon(&hull_polygon, &format!("{name}/convex_hull"), 10.0);
+        let _ = self.visualize_polygon(&hull, &format!("{name}/convex_hull"), 10.0);
 
         Ok(())
     }
