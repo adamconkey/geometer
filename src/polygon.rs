@@ -27,16 +27,9 @@ pub struct PolygonMetadata {
 }
 
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Polygon {
     vertex_map: HashMap<VertexId, Vertex>,
-}
-
-
-impl Default for Polygon {
-    fn default() -> Self {
-        Self { vertex_map: Default::default() }
-    }
 }
 
 
@@ -220,6 +213,18 @@ impl Polygon {
             }
         }
         None
+    }
+
+    pub fn get_polygon(&self, ids: impl IntoIterator<Item = VertexId>) -> Polygon {
+        let mut vertices = self.get_vertices(ids)
+            .into_iter()
+            .cloned()
+            .collect_vec();
+        // Note this is currently sorting as its primary use is in convex hull,
+        // if it proves useful for this sorting to be optional (i.e. assume the
+        // order of input IDs is as desired) then can make this optional
+        vertices.sort_by_key(|v| v.id);
+        Polygon::from_vertices(vertices)
     }
 
     pub fn distance_between(&self, id_1: &VertexId, id_2: &VertexId) -> f64 {

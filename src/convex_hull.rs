@@ -9,56 +9,6 @@ use crate::{
 };
 
 
-// #[derive(Debug)]
-// pub struct ConvexHull {
-//     vertices: HashSet<VertexId>,
-// }
-
-// impl ConvexHull {
-//     pub fn new(vertices: HashSet<VertexId>) -> Self {
-//         ConvexHull { vertices }
-//     }
-
-//     pub fn add_vertex(&mut self, vertex_id: VertexId) {
-//         self.vertices.insert(vertex_id);
-//     }
-
-//     pub fn add_vertices(&mut self, vertices: impl IntoIterator<Item = VertexId>) {
-//         for v in vertices {
-//             self.add_vertex(v);
-//         }
-//     }
-
-//     pub fn get_vertices(&self) -> Vec<VertexId> {
-//         // TODO this is a little silly to sort on every retrieval 
-//         // especially if nothing changes. I originally had a 
-//         // min-heap but found you still had to clone/sort to get 
-//         // the whole vec (not just peek/pop from top), so just 
-//         // doing vec seemed simpler, then I added lazy sorting
-//         // but realized if going that route, should just maintain
-//         // sort order on input. Long story short there are smarter
-//         // ways to do this but this is simple and fast, should
-//         // do this smarter at a later time. 
-//         let mut sorted = self.vertices.iter().cloned().collect_vec();
-//         sorted.sort();
-//         sorted
-//     }
-// }
-
-// impl PartialEq for ConvexHull {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.get_vertices() == other.get_vertices()
-//     }
-// }
-
-// impl Default for ConvexHull {
-//     fn default() -> Self {
-//         let vertices = HashSet::new();
-//         ConvexHull { vertices }
-//     }
-// }
-
-
 pub trait ConvexHullComputer {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon;
 }
@@ -94,13 +44,7 @@ impl ConvexHullComputer for InteriorPoints {
         // computation being used has that runtime.
         let interior_ids = self.interior_points(polygon);
         let hull_ids = &polygon.vertex_ids_set() - &interior_ids;
-        let mut hull_vertices = polygon
-            .get_vertices(hull_ids)
-            .into_iter()
-            .cloned()
-            .collect_vec();
-        hull_vertices.sort_by_key(|v| v.id);
-        Polygon::from_vertices(hull_vertices)
+        polygon.get_polygon(hull_ids)
     }
 }
 
@@ -156,13 +100,7 @@ impl ConvexHullComputer for ExtremeEdges {
             hull_ids.insert(id1);
             hull_ids.insert(id2);
         }
-        let mut hull_vertices = polygon
-            .get_vertices(hull_ids)
-            .into_iter()
-            .cloned()
-            .collect_vec();
-        hull_vertices.sort_by_key(|v| v.id);
-        Polygon::from_vertices(hull_vertices)
+        polygon.get_polygon(hull_ids)
     }    
 }
 
@@ -202,13 +140,8 @@ impl ConvexHullComputer for GiftWrapping {
                 hull_ids.insert(v_i.id);
             }
         }
-        let mut hull_vertices = polygon
-            .get_vertices(hull_ids)
-            .into_iter()
-            .cloned()
-            .collect_vec();
-        hull_vertices.sort_by_key(|v| v.id);
-        Polygon::from_vertices(hull_vertices)
+
+        polygon.get_polygon(hull_ids)
     }
 }
 
@@ -226,15 +159,12 @@ impl ConvexHullComputer for QuickHull {
         let xy = polygon.get_line_segment(&x, &y).unwrap();
         let s = polygon.vertices()
             .into_iter()
-            .filter(|v| v.id != x && v.id != y)
-            .collect_vec();
+            .filter(|v| ![x, y].contains(&v.id));
 
         hull_ids.insert(x);
         hull_ids.insert(y);
 
-        let (s1, s2): (Vec<_>, Vec<_>) = s
-            .into_iter()
-            .partition(|v| v.right(&xy));
+        let (s1, s2): (Vec<_>, Vec<_>) = s.partition(|v| v.right(&xy));
 
         if !s1.is_empty() { stack.push((x, y, s1)) };
         if !s2.is_empty() { stack.push((y, x, s2)) };
@@ -266,13 +196,8 @@ impl ConvexHullComputer for QuickHull {
             if !s2.is_empty() { stack.push((c, b, s2)); }
             if stack.is_empty() { break; }
         }
-        let mut hull_vertices = polygon
-            .get_vertices(hull_ids)
-            .into_iter()
-            .cloned()
-            .collect_vec();
-        hull_vertices.sort_by_key(|v| v.id);
-        Polygon::from_vertices(hull_vertices)
+        
+        polygon.get_polygon(hull_ids)
     }
 }
 
@@ -310,52 +235,35 @@ impl ConvexHullComputer for GrahamScan {
             }
         }
         
-        let hull_ids = stack.iter().map(|v| v.id).collect_vec();
-        let mut hull_vertices = polygon
-            .get_vertices(hull_ids)
-            .into_iter()
-            .cloned()
-            .collect_vec();
-        hull_vertices.sort_by_key(|v| v.id);
-        Polygon::from_vertices(hull_vertices)
+        // The stack at the end has all hull vertices
+        polygon.get_polygon(stack.iter().map(|v| v.id))
     }
 }
 
 
-// #[derive(Default)]
-// pub struct Incremental;
+#[derive(Default)]
+pub struct Incremental;
 
-// impl ConvexHullComputer for Incremental {
-    
-//     // TODO it's at this stage that it may make sense to consider
-//     // making the ConvexHull just, a Polygon. Not sure yet how
-//     // difficult that would be yet but it could make a lot of
-//     // sense, since now I'll need to be updating refs and
-//     // maintaining a sorted vec of vertices, which is all stuff
-//     // offered already by Polygon. Plus you'd get a lot for free
-//     // with whatever else would be called on Polygon that also
-//     // applies to hull. 
-    
-//     fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
-//         let mut vertices = polygon.vertices();
-//         vertices.sort_by_key(|v| OF(v.coords.x));
+impl ConvexHullComputer for Incremental { 
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
+        let mut vertices = polygon.vertices();
+        vertices.sort_by_key(|v| OF(v.coords.x));
 
-//         let mut hull = ConvexHull::default();
 
-//         // TODO populate hull with first 3 vertices (triangle)
+        // TODO populate hull with first 3 vertices (triangle)
 
-//         // TODO iterate over vertices, for each one, find the
-//         // upper and lower tangents from the point to the hull.
-//         // I think since they're sorted left-to-right, should
-//         // able to take uppermost and lowermost vertices of
-//         // hull?
+        // TODO iterate over vertices, for each one, find the
+        // upper and lower tangents from the point to the hull.
+        // I think since they're sorted left-to-right, should
+        // able to take uppermost and lowermost vertices of
+        // hull?
 
-//         // TODO update hull chain prev/next refs to form new
-//         // hull.
+        // TODO update hull chain prev/next refs to form new
+        // hull.
 
-//         hull
-//     }
-// }
+        todo!()
+    }
+}
 
 
 #[cfg(test)]
