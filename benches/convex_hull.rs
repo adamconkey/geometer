@@ -1,7 +1,7 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
 use geometer::{
-    convex_hull::{ConvexHullComputer, ExtremeEdges, GiftWrapping, InteriorPoints, QuickHull}, 
+    convex_hull::{ConvexHullComputer, ExtremeEdges, GiftWrapping, GrahamScan, InteriorPoints, QuickHull}, 
     util::polygon_map_by_num_vertices
 };
 
@@ -31,6 +31,11 @@ fn benchmark_convex_hull(c: &mut Criterion) {
             BenchmarkId::new("quick_hull", name),
             polygon, 
             |b, polygon| b.iter(|| QuickHull.convex_hull(polygon))
+        );
+        group.bench_with_input(
+            BenchmarkId::new("graham_scan", name),
+            polygon,
+            |b, polygon| b.iter(|| GrahamScan.convex_hull(polygon))
         );
     }
     group.finish();
