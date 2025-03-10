@@ -33,6 +33,13 @@ pub struct Polygon {
 }
 
 
+impl Default for Polygon {
+    fn default() -> Self {
+        Self { vertex_map: Default::default() }
+    }
+}
+
+
 impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {
         let mut vertex_map = HashMap::new();
@@ -59,6 +66,24 @@ impl Polygon {
         polygon.validate();
         polygon
     }
+
+    pub fn from_vertices(vertices: Vec<Vertex>) -> Polygon {
+        let mut vertex_map = HashMap::new();
+
+        let num_vs = vertices.len();
+        let vertex_ids = vertices.iter().map(|v| v.id).collect_vec();
+
+        for (i, mut v) in vertices.iter().cloned().enumerate() {
+            v.prev = vertex_ids[(i + num_vs - 1) % num_vs];
+            v.next = vertex_ids[(i + num_vs + 1) % num_vs];
+            vertex_map.insert(v.id, v);
+        }
+
+        let polygon = Polygon { vertex_map };
+        polygon.validate();
+        polygon
+    }
+    
 
     pub fn from_json<P: AsRef<Path>>(path: P) -> Result<Polygon, FileError> {
         let points_str: String = fs::read_to_string(path)?;
@@ -159,6 +184,15 @@ impl Polygon {
 
     pub fn get_vertex_mut(&mut self, id: &VertexId) -> Option<&mut Vertex> {
         self.vertex_map.get_mut(id)
+    }
+
+    pub fn get_vertices(&self, ids: impl IntoIterator<Item = VertexId>) -> Vec<&Vertex> {
+        // TODO don't unwrap
+        ids.into_iter().map(|id| self.get_vertex(&id).unwrap()).collect_vec()
+    }
+
+    pub fn get_vertex_ids(&self) -> HashSet<VertexId> {
+        self.vertex_map.keys().cloned().collect()
     }
 
     pub fn get_point(&self, id: &VertexId) -> Option<Point> {
