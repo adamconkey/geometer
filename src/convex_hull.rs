@@ -291,6 +291,42 @@ impl ConvexHullComputer for GrahamScan {
 }
 
 
+#[derive(Default)]
+pub struct Incremental;
+
+impl ConvexHullComputer for Incremental {
+    
+    // TODO it's at this stage that it may make sense to consider
+    // making the ConvexHull just, a Polygon. Not sure yet how
+    // difficult that would be yet but it could make a lot of
+    // sense, since now I'll need to be updating refs and
+    // maintaining a sorted vec of vertices, which is all stuff
+    // offered already by Polygon. Plus you'd get a lot for free
+    // with whatever else would be called on Polygon that also
+    // applies to hull. 
+    
+    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
+        let mut vertices = polygon.vertices();
+        vertices.sort_by_key(|v| OF(v.coords.x));
+
+        let mut hull = ConvexHull::default();
+
+        // TODO populate hull with first 3 vertices (triangle)
+
+        // TODO iterate over vertices, for each one, find the
+        // upper and lower tangents from the point to the hull.
+        // I think since they're sorted left-to-right, should
+        // able to take uppermost and lowermost vertices of
+        // hull?
+
+        // TODO update hull chain prev/next refs to form new
+        // hull.
+
+        hull
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
