@@ -241,28 +241,6 @@ impl ConvexHullComputer for GrahamScan {
 }
 
 
-#[derive(Default)]
-pub struct Incremental;
-
-impl ConvexHullComputer for Incremental { 
-    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
-        let mut ids = polygon.get_vertex_ids().into_iter().collect_vec();
-        ids.sort();
-
-        // Initialize hull with three leftmost vertices
-        let hull = polygon.get_polygon(ids.split_off(3));
-        
-        // TODO iterate over vertices, for each one, find the
-        // upper and lower tangents from the point to the hull.
-
-        // TODO update hull chain prev/next refs to form new
-        // hull.
-
-        todo!()
-    }
-}
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
