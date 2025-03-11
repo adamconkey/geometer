@@ -241,6 +241,19 @@ impl ConvexHullComputer for GrahamScan {
 }
 
 
+#[derive(Default)]
+pub struct DivideConquer;
+
+impl ConvexHullComputer for DivideConquer {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
+
+        
+
+        todo!()
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
