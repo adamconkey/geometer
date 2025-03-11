@@ -27,7 +27,7 @@ pub struct PolygonMetadata {
 }
 
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Polygon {
     vertex_map: HashMap<VertexId, Vertex>,
 }
@@ -59,6 +59,24 @@ impl Polygon {
         polygon.validate();
         polygon
     }
+
+    pub fn from_vertices(vertices: Vec<Vertex>) -> Polygon {
+        let mut vertex_map = HashMap::new();
+
+        let num_vs = vertices.len();
+        let vertex_ids = vertices.iter().map(|v| v.id).collect_vec();
+
+        for (i, mut v) in vertices.iter().cloned().enumerate() {
+            v.prev = vertex_ids[(i + num_vs - 1) % num_vs];
+            v.next = vertex_ids[(i + num_vs + 1) % num_vs];
+            vertex_map.insert(v.id, v);
+        }
+
+        let polygon = Polygon { vertex_map };
+        polygon.validate();
+        polygon
+    }
+    
 
     pub fn from_json<P: AsRef<Path>>(path: P) -> Result<Polygon, FileError> {
         let points_str: String = fs::read_to_string(path)?;
@@ -161,6 +179,10 @@ impl Polygon {
         self.vertex_map.get_mut(id)
     }
 
+    pub fn get_vertex_ids(&self) -> HashSet<VertexId> {
+        self.vertex_map.keys().cloned().collect()
+    }
+
     pub fn get_point(&self, id: &VertexId) -> Option<Point> {
         if let Some(v) = self.get_vertex(id) {
             return Some(v.coords.clone())
@@ -186,6 +208,18 @@ impl Polygon {
             }
         }
         None
+    }
+
+    pub fn get_polygon(&self, ids: impl IntoIterator<Item = VertexId>) -> Polygon {
+        // Note this is currently sorting as its primary use is in convex hull,
+        // if it proves useful for this sorting to be optional (i.e. assume the
+        // order of input IDs is as desired) then can make this optional
+        let vertices = ids.into_iter()
+            .map(|id| self.get_vertex(&id).unwrap()) // TODO don't unwrap
+            .cloned()
+            .sorted_by_key(|v| v.id)
+            .collect_vec();
+        Polygon::from_vertices(vertices)
     }
 
     pub fn distance_between(&self, id_1: &VertexId, id_2: &VertexId) -> f64 {

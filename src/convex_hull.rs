@@ -9,58 +9,8 @@ use crate::{
 };
 
 
-#[derive(Debug)]
-pub struct ConvexHull {
-    vertices: HashSet<VertexId>,
-}
-
-impl ConvexHull {
-    pub fn new(vertices: HashSet<VertexId>) -> Self {
-        ConvexHull { vertices }
-    }
-
-    pub fn add_vertex(&mut self, vertex_id: VertexId) {
-        self.vertices.insert(vertex_id);
-    }
-
-    pub fn add_vertices(&mut self, vertices: impl IntoIterator<Item = VertexId>) {
-        for v in vertices {
-            self.add_vertex(v);
-        }
-    }
-
-    pub fn get_vertices(&self) -> Vec<VertexId> {
-        // TODO this is a little silly to sort on every retrieval 
-        // especially if nothing changes. I originally had a 
-        // min-heap but found you still had to clone/sort to get 
-        // the whole vec (not just peek/pop from top), so just 
-        // doing vec seemed simpler, then I added lazy sorting
-        // but realized if going that route, should just maintain
-        // sort order on input. Long story short there are smarter
-        // ways to do this but this is simple and fast, should
-        // do this smarter at a later time. 
-        let mut sorted = self.vertices.iter().cloned().collect_vec();
-        sorted.sort();
-        sorted
-    }
-}
-
-impl PartialEq for ConvexHull {
-    fn eq(&self, other: &Self) -> bool {
-        self.get_vertices() == other.get_vertices()
-    }
-}
-
-impl Default for ConvexHull {
-    fn default() -> Self {
-        let vertices = HashSet::new();
-        ConvexHull { vertices }
-    }
-}
-
-
 pub trait ConvexHullComputer {
-    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull;
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon;
 }
 
 
@@ -89,12 +39,12 @@ impl InteriorPoints {
 }
 
 impl ConvexHullComputer for InteriorPoints {
-    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
         // NOTE: This is slow O(n^4) since the interior point 
         // computation being used has that runtime.
         let interior_ids = self.interior_points(polygon);
-        let extreme_ids = &polygon.vertex_ids_set() - &interior_ids;
-        ConvexHull::new(extreme_ids)
+        let hull_ids = &polygon.vertex_ids_set() - &interior_ids;
+        polygon.get_polygon(hull_ids)
     }
 }
 
@@ -144,13 +94,13 @@ impl ExtremeEdges {
 }
 
 impl ConvexHullComputer for ExtremeEdges {
-    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
-        let mut hull = ConvexHull::default();
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
+        let mut hull_ids = HashSet::new();
         for (id1, id2) in self.extreme_edges(polygon).into_iter() {
-            hull.add_vertex(id1);
-            hull.add_vertex(id2);
+            hull_ids.insert(id1);
+            hull_ids.insert(id2);
         }
-        hull
+        polygon.get_polygon(hull_ids)
     }    
 }
 
@@ -159,7 +109,7 @@ impl ConvexHullComputer for ExtremeEdges {
 pub struct GiftWrapping;
 
 impl ConvexHullComputer for GiftWrapping {
-    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
         // Form a horizontal line terminating at lowest point to start
         let v0 = polygon.rightmost_lowest_vertex();
         let mut p = v0.coords.clone();
@@ -167,8 +117,8 @@ impl ConvexHullComputer for GiftWrapping {
         let mut e = LineSegment::new(&p, &v0.coords);
         let mut v_i = v0;
         
-        let mut hull = ConvexHull::default();
-        hull.add_vertex(v_i.id);
+        let mut hull_ids = HashSet::new();
+        hull_ids.insert(v_i.id);
 
         // Perform gift-wrapping, using the previous hull edge as a vector to 
         // find the point with the least CCW angle w.r.t. the vector. Connect 
@@ -187,10 +137,11 @@ impl ConvexHullComputer for GiftWrapping {
             if v_i.id == v0.id {
                 break;
             } else {
-                hull.add_vertex(v_i.id);
+                hull_ids.insert(v_i.id);
             }
         }
-        hull
+
+        polygon.get_polygon(hull_ids)
     }
 }
 
@@ -199,8 +150,8 @@ impl ConvexHullComputer for GiftWrapping {
 pub struct QuickHull;
 
 impl ConvexHullComputer for QuickHull {
-    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
-        let mut hull = ConvexHull::default();
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
+        let mut hull_ids = HashSet::new();
         let mut stack = Vec::new();
 
         let x = polygon.lowest_rightmost_vertex().id;
@@ -208,15 +159,12 @@ impl ConvexHullComputer for QuickHull {
         let xy = polygon.get_line_segment(&x, &y).unwrap();
         let s = polygon.vertices()
             .into_iter()
-            .filter(|v| v.id != x && v.id != y)
-            .collect_vec();
+            .filter(|v| ![x, y].contains(&v.id));
 
-        hull.add_vertex(x);
-        hull.add_vertex(y);
+        hull_ids.insert(x);
+        hull_ids.insert(y);
 
-        let (s1, s2): (Vec<_>, Vec<_>) = s
-            .into_iter()
-            .partition(|v| v.right(&xy));
+        let (s1, s2): (Vec<_>, Vec<_>) = s.partition(|v| v.right(&xy));
 
         if !s1.is_empty() { stack.push((x, y, s1)) };
         if !s2.is_empty() { stack.push((y, x, s2)) };
@@ -229,7 +177,7 @@ impl ConvexHullComputer for QuickHull {
                 .max_by_key(|v| OF(ab.distance_to_point(&v.coords)))
                 .unwrap()
                 .id;
-            hull.add_vertex(c);
+            hull_ids.insert(c);
 
             let ac = polygon.get_line_segment(&a, &c).unwrap();
             let cb = polygon.get_line_segment(&c, &b).unwrap();
@@ -248,7 +196,8 @@ impl ConvexHullComputer for QuickHull {
             if !s2.is_empty() { stack.push((c, b, s2)); }
             if stack.is_empty() { break; }
         }
-        hull
+        
+        polygon.get_polygon(hull_ids)
     }
 }
 
@@ -257,7 +206,7 @@ impl ConvexHullComputer for QuickHull {
 pub struct GrahamScan;
 
 impl ConvexHullComputer for GrahamScan {
-    fn convex_hull(&self, polygon: &Polygon) -> ConvexHull {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
         let mut stack = Vec::new();
         let mut vertices = polygon.min_angle_sorted_vertices();
 
@@ -286,7 +235,8 @@ impl ConvexHullComputer for GrahamScan {
             }
         }
         
-        ConvexHull::new(stack.iter().map(|v| v.id).collect())
+        // The stack at the end has all hull vertices
+        polygon.get_polygon(stack.iter().map(|v| v.id))
     }
 }
 
@@ -306,7 +256,6 @@ mod tests {
         computer: impl ConvexHullComputer
     ) {
         let hull = computer.convex_hull(&case.polygon);
-        let expected_hull = ConvexHull::new(case.metadata.extreme_points);
-        assert_eq!(hull, expected_hull);
+        assert_eq!(hull.get_vertex_ids(), case.metadata.extreme_points);
     }
 }
