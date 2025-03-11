@@ -169,7 +169,7 @@ impl ConvexHullComputer for QuickHull {
         if !s1.is_empty() { stack.push((x, y, s1)) };
         if !s2.is_empty() { stack.push((y, x, s2)) };
 
-        loop {
+        while !stack.is_empty() {
             let (a, b, s) = stack.pop().unwrap();
             let ab = polygon.get_line_segment(&a, &b).unwrap();
 
@@ -194,7 +194,6 @@ impl ConvexHullComputer for QuickHull {
 
             if !s1.is_empty() { stack.push((a, c, s1)); }
             if !s2.is_empty() { stack.push((c, b, s2)); }
-            if stack.is_empty() { break; }
         }
         
         polygon.get_polygon(hull_ids)
@@ -246,9 +245,34 @@ pub struct DivideConquer;
 
 impl ConvexHullComputer for DivideConquer {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon {
+        let mut stack = Vec::new();
+        let mut ids = polygon.get_vertex_ids().into_iter().collect_vec();
+        ids.sort();
+        stack.push(ids.as_slice());
 
+        while !stack.is_empty() {
+            let s = stack.pop().unwrap();
+            if s.len() <= 3 {
+                let a = s;
+                let b = stack.pop();
+
+                // TODO do the merging, how then do you work back up?
+                // Might need a second stack for the merging?
+                
+
+            } else {
+                // TODO need to be careful about the split here, want A to
+                // be ceiling and B the floor, because B gets pushed first
+                // so if e.g. have 7 vertices, it will split A=4 B=3, and
+                // that way any time A is ready to be merged you know the
+                // next thing on the stack is also ready to be merged i.e.
+                // it will also be <= 3.
+                let (a, b) = s.split_at(s.len() / 2);
+                stack.push(b);
+                stack.push(a);
+            }
+        }
         
-
         todo!()
     }
 }
