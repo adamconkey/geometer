@@ -5,7 +5,7 @@ use std::{cmp::Reverse, collections::HashSet};
 use crate::{
     line_segment::LineSegment, 
     polygon::Polygon, 
-    vertex::VertexId
+    vertex::{Vertex, VertexId}
 };
 
 
@@ -243,37 +243,108 @@ impl ConvexHullComputer for GrahamScan {
 #[derive(Default)]
 pub struct DivideConquer;
 
-impl ConvexHullComputer for DivideConquer {
-    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
-        let mut stack = Vec::new();
-        let mut ids = polygon.get_vertex_ids().into_iter().collect_vec();
-        ids.sort();
-        stack.push(ids.as_slice());
+impl DivideConquer {
+    fn lower_tangent_vertices<'a>(
+        &'a self, 
+        left: &'a Polygon, 
+        right: &'a Polygon, 
+        whole: &'a Polygon
+    ) -> (&'a Vertex, &'a Vertex) {
+        let mut a = left.lowest_rightmost_vertex();
+        let mut b = right.lowest_leftmost_vertex();
+        let lt = whole.get_line_segment(&a.id, &b.id).unwrap();
+        while !left.is_lower_tangent(a.id, &lt) && !right.is_lower_tangent(b.id, &lt) {
+            while !left.is_lower_tangent(a.id, &lt) {
+                // Move down clockwise
+                a = whole.get_vertex(&a.prev).unwrap(); 
+            }
 
-        while !stack.is_empty() {
-            let s = stack.pop().unwrap();
-            if s.len() <= 3 {
-                let a = s;
-                let b = stack.pop();
-
-                // TODO do the merging, how then do you work back up?
-                // Might need a second stack for the merging?
-                
-
-            } else {
-                // TODO need to be careful about the split here, want A to
-                // be ceiling and B the floor, because B gets pushed first
-                // so if e.g. have 7 vertices, it will split A=4 B=3, and
-                // that way any time A is ready to be merged you know the
-                // next thing on the stack is also ready to be merged i.e.
-                // it will also be <= 3.
-                let (a, b) = s.split_at(s.len() / 2);
-                stack.push(b);
-                stack.push(a);
+            while !right.is_lower_tangent(b.id, &lt) {
+                // Move down ccw
+                b = whole.get_vertex(&b.next).unwrap();
             }
         }
-        
-        todo!()
+        (a, b)
+    }
+
+    fn upper_tangent_vertices<'a>(
+        &'a self, 
+        left: &'a Polygon, 
+        right: &'a Polygon, 
+        whole: &'a Polygon
+    ) -> (&'a Vertex, &'a Vertex) {
+        let mut a = left.highest_rightmost_vertex();
+        let mut b = right.highest_leftmost_vertex();
+        let ut = whole.get_line_segment(&a.id, &b.id).unwrap();
+        while !left.is_upper_tangent(a.id, &ut) && !right.is_upper_tangent(b.id, &ut) {
+            while !left.is_upper_tangent(a.id, &ut) {
+                // Move up ccw
+                a = whole.get_vertex(&a.next).unwrap(); 
+            }
+
+            while !right.is_upper_tangent(b.id, &ut) {
+                // Move up clockwise
+                b = whole.get_vertex(&b.prev).unwrap();
+            }
+        }
+        (a, b)
+    }
+}
+
+impl ConvexHullComputer for DivideConquer {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
+        let mut split_stack: Vec<Polygon> = Vec::new();
+        let mut merge_stack: Vec<Polygon> = Vec::new();
+        split_stack.push(polygon.clone());
+
+        while !split_stack.is_empty() {
+            let s = split_stack.pop().unwrap();
+            let (left, right) = s.halve();
+            if left.num_vertices() <= 3 && right.num_vertices() <= 3 {
+                // Always maintain merge stack with leftmost
+                // components towards the bottom of the stack
+                merge_stack.push(left);
+                merge_stack.push(right);
+            } else if left.num_vertices() <= 3 {
+                merge_stack.push(left);
+                split_stack.push(right);
+            } else {
+                // Always maintain split stack with rightmost 
+                // components towards the bottom of the stack
+                split_stack.push(right);
+                split_stack.push(left);
+            }
+
+            while merge_stack.len() > 1 {
+                let right = merge_stack.pop().unwrap();
+                let left = merge_stack.pop().unwrap();                
+                let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, &polygon);
+                let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, &polygon);
+                
+                // Combine into one polygon by connecting the vertex chains
+                // of B -> ut -> A -> lt excluding vertices that do not
+                // exist along the outer boundary
+                let mut merged_ids = Vec::new();
+                // Extract vertices from chain on B
+                let mut v = lt_b;
+                while v.id != ut_b.id {
+                    merged_ids.push(v.id);
+                    v = right.get_vertex(&v.next).unwrap();
+                }
+                // Extract vertices from chain on A
+                v = ut_a;
+                while v.id != lt_a.id {
+                    merged_ids.push(v.id);
+                    v = left.get_vertex(&v.next).unwrap();
+                }
+
+                let merged = polygon.get_polygon(merged_ids);
+                merge_stack.push(merged);
+            }
+        }
+
+        assert!(merge_stack.len() == 1);
+        return merge_stack.pop().unwrap();
     }
 }
 
@@ -289,7 +360,7 @@ mod tests {
     fn test_convex_hull(
         #[case] 
         case: PolygonTestCase, 
-        #[values(ExtremeEdges, GiftWrapping, GrahamScan, InteriorPoints, QuickHull)]
+        #[values(DivideConquer, ExtremeEdges, GiftWrapping, GrahamScan, InteriorPoints, QuickHull)]
         computer: impl ConvexHullComputer
     ) {
         let hull = computer.convex_hull(&case.polygon);

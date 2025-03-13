@@ -91,6 +91,22 @@ impl Polygon {
         Ok(())
     }
 
+    pub fn halve(&self) -> (Polygon, Polygon) {
+        let ids = self.get_vertex_ids()
+            .iter()
+            .map(|id| self.get_vertex(id).unwrap())
+            .sorted_by_key(|v| OF(v.coords.x))
+            .map(|v| v.id)
+            .collect_vec();
+        let (left_ids, right_ids) = ids.split_at(ids.len() / 2);
+        if ids.len() % 2 != 0 {
+            assert!(left_ids.len() < right_ids.len());
+        }
+        let left = self.get_polygon(left_ids.to_vec());
+        let right = self.get_polygon(right_ids.to_vec());
+        (left, right)
+    }
+
     pub fn num_edges(&self) -> usize {
         self.edges().len()
     }
@@ -312,10 +328,34 @@ impl Polygon {
         vertices[0]
     }
 
+    pub fn highest_rightmost_vertex(&self) -> &Vertex {
+        let mut vertices = self.vertices();
+        vertices.sort_by_key(|v| (Reverse(OF(v.coords.x)), Reverse(OF(v.coords.y))));
+        vertices[0]
+    }
+
+    pub fn lowest_leftmost_vertex(&self) -> &Vertex {
+        let mut vertices = self.vertices();
+        vertices.sort_by_key(|v| (OF(v.coords.x), OF(v.coords.y)));
+        vertices[0]
+    }
+
     pub fn highest_leftmost_vertex(&self) -> &Vertex {
         let mut vertices = self.vertices();
         vertices.sort_by_key(|v| (OF(v.coords.x), Reverse(OF(v.coords.y))));
         vertices[0]
+    }
+
+    pub fn is_lower_tangent(&self, id: VertexId, ls: &LineSegment) -> bool {
+        // TODO don't unwrap, return result with error
+        let v = self.get_vertex(&id).unwrap();
+        let prev = self.get_vertex(&v.prev).unwrap();
+        let next = self.get_vertex(&v.next).unwrap();
+        prev.left_on(ls) && next.left_on(ls)
+    }
+
+    pub fn is_upper_tangent(&self, id: VertexId, ls: &LineSegment) -> bool {
+        self.is_lower_tangent(id, &ls.reverse())
     }
 
     pub fn translate(&mut self, x: f64, y: f64) {
