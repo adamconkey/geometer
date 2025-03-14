@@ -9,12 +9,11 @@ use std::path::Path;
 use crate::{
     bounding_box::BoundingBox,
     error::FileError,
-    line_segment::LineSegment, 
-    point::Point, 
+    line_segment::LineSegment,
+    point::Point,
     triangle::Triangle,
     vertex::{Vertex, VertexId},
 };
-
 
 #[derive(Deserialize)]
 pub struct PolygonMetadata {
@@ -26,12 +25,10 @@ pub struct PolygonMetadata {
     pub num_vertices: usize,
 }
 
-
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Polygon {
     vertex_map: HashMap<VertexId, Vertex>,
 }
-
 
 impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {
@@ -43,9 +40,7 @@ impl Polygon {
         // could be added. Tried using unique_id::SequenceGenerator
         // but it was global which was harder to test with
         let num_points = points.len();
-        let vertex_ids = (0..num_points)
-            .map(VertexId::from)
-            .collect::<Vec<_>>();
+        let vertex_ids = (0..num_points).map(VertexId::from).collect::<Vec<_>>();
 
         for (i, point) in points.into_iter().enumerate() {
             let prev_id = vertex_ids[(i + num_points - 1) % num_points];
@@ -76,7 +71,6 @@ impl Polygon {
         polygon.validate();
         polygon
     }
-    
 
     pub fn from_json<P: AsRef<Path>>(path: P) -> Result<Polygon, FileError> {
         let points_str: String = fs::read_to_string(path)?;
@@ -84,7 +78,7 @@ impl Polygon {
         Ok(Polygon::new(points))
     }
 
-    pub fn to_json<P: AsRef<Path>>(&self, path: P) -> Result<(), FileError>{
+    pub fn to_json<P: AsRef<Path>>(&self, path: P) -> Result<(), FileError> {
         let points = self.sorted_points();
         let points_str = serde_json::to_string_pretty(&points)?;
         fs::write(path, points_str)?;
@@ -92,7 +86,8 @@ impl Polygon {
     }
 
     pub fn halve(&self) -> (Polygon, Polygon) {
-        let ids = self.get_vertex_ids()
+        let ids = self
+            .get_vertex_ids()
             .iter()
             .map(|id| self.get_vertex(id).unwrap())
             .sorted_by_key(|v| OF(v.coords.x))
@@ -149,16 +144,22 @@ impl Polygon {
     pub fn min_angle_sorted_vertices(&self) -> Vec<&Vertex> {
         let v0 = self.rightmost_lowest_vertex();
         let mut p = v0.coords.clone();
-        p.x -= 1.0;  // Arbitrary distance
+        p.x -= 1.0; // Arbitrary distance
         let e0 = LineSegment::new(&p, &v0.coords);
-        
-        let vertices: Vec<_> = self.vertices()
+
+        let vertices: Vec<_> = self
+            .vertices()
             .into_iter()
             .filter(|v| v.id != v0.id)
             // Break ties by sorting farthest to closest so that the dedup
             // will keep the first instance (farthest) so it will favor
             // extreme points
-            .sorted_by_key(|v| (OF(e0.angle_to_point(&v.coords)), Reverse(OF(v0.distance_to(v)))))
+            .sorted_by_key(|v| {
+                (
+                    OF(e0.angle_to_point(&v.coords)),
+                    Reverse(OF(v0.distance_to(v))),
+                )
+            })
             .dedup_by(|a, b| e0.angle_to_point(&a.coords) == e0.angle_to_point(&b.coords))
             .collect();
         vertices
@@ -168,7 +169,7 @@ impl Polygon {
         let mut area = 0.0;
         let anchor = self.vertices()[0];
         for v1 in self.vertex_map.values() {
-            let v2 = self.get_vertex(&v1.next).unwrap(); 
+            let v2 = self.get_vertex(&v1.next).unwrap();
             area += Triangle::from_vertices(anchor, v1, v2).area();
         }
         area
@@ -178,7 +179,7 @@ impl Polygon {
         if let Some(v) = self.vertex_map.remove(id) {
             // TODO this would be an error condition if there was
             // a vertex for which prev/next weren't in the map,
-            // instead of unwrap could have this func return 
+            // instead of unwrap could have this func return
             // result with an error tailored to this case
             self.get_vertex_mut(&v.prev).unwrap().next = v.next;
             self.get_vertex_mut(&v.next).unwrap().prev = v.prev;
@@ -201,7 +202,7 @@ impl Polygon {
 
     pub fn get_point(&self, id: &VertexId) -> Option<Point> {
         if let Some(v) = self.get_vertex(id) {
-            return Some(v.coords.clone())
+            return Some(v.coords.clone());
         }
         None
     }
@@ -209,13 +210,18 @@ impl Polygon {
     pub fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> Option<LineSegment> {
         if let Some(v1) = self.get_vertex(id_1) {
             if let Some(v2) = self.get_vertex(id_2) {
-                return Some(LineSegment::from_vertices(v1, v2))
+                return Some(LineSegment::from_vertices(v1, v2));
             }
         }
         None
     }
 
-    pub fn get_triangle(&self, id_1: &VertexId, id_2: &VertexId, id_3: &VertexId) -> Option<Triangle> {
+    pub fn get_triangle(
+        &self,
+        id_1: &VertexId,
+        id_2: &VertexId,
+        id_3: &VertexId,
+    ) -> Option<Triangle> {
         if let Some(v1) = self.vertex_map.get(id_1) {
             if let Some(v2) = self.vertex_map.get(id_2) {
                 if let Some(v3) = self.vertex_map.get(id_3) {
@@ -230,7 +236,8 @@ impl Polygon {
         // Note this is currently sorting as its primary use is in convex hull,
         // if it proves useful for this sorting to be optional (i.e. assume the
         // order of input IDs is as desired) then can make this optional
-        let vertices = ids.into_iter()
+        let vertices = ids
+            .into_iter()
             .map(|id| self.get_vertex(&id).unwrap()) // TODO don't unwrap
             .cloned()
             .sorted_by_key(|v| v.id)
@@ -258,7 +265,7 @@ impl Polygon {
         }
         edges
     }
-    
+
     fn in_cone(&self, a: &Vertex, b: &Vertex) -> bool {
         let ab = LineSegment::from_vertices(a, b);
         let ba = &ab.reverse();
@@ -269,11 +276,11 @@ impl Polygon {
         if a0.left_on(&LineSegment::from_vertices(a, a1)) {
             return a0.left(&ab) && a1.left(ba);
         }
-        
+
         // Otherwise a is reflexive
         !(a1.left_on(&ab) && a0.left_on(ba))
     }
-    
+
     pub fn diagonal(&self, a: &Vertex, b: &Vertex) -> bool {
         self.in_cone(a, b) && self.in_cone(b, a) && self.diagonal_internal_external(a, b)
     }
@@ -286,7 +293,7 @@ impl Polygon {
             if !e.connected_to(ab) && e.intersects(ab) {
                 return false;
             }
-        } 
+        }
         true
     }
 
@@ -295,19 +302,27 @@ impl Polygon {
     }
 
     pub fn min_x(&self) -> f64 {
-        self.vertex_map.values().fold(f64::MAX, |acc, v| acc.min(v.coords.x))
+        self.vertex_map
+            .values()
+            .fold(f64::MAX, |acc, v| acc.min(v.coords.x))
     }
 
     pub fn max_x(&self) -> f64 {
-        self.vertex_map.values().fold(f64::MIN, |acc, v| acc.max(v.coords.x))
+        self.vertex_map
+            .values()
+            .fold(f64::MIN, |acc, v| acc.max(v.coords.x))
     }
 
     pub fn min_y(&self) -> f64 {
-        self.vertex_map.values().fold(f64::MAX, |acc, v| acc.min(v.coords.y))
+        self.vertex_map
+            .values()
+            .fold(f64::MAX, |acc, v| acc.min(v.coords.y))
     }
 
     pub fn max_y(&self) -> f64 {
-        self.vertex_map.values().fold(f64::MIN, |acc, v| acc.max(v.coords.y))
+        self.vertex_map
+            .values()
+            .fold(f64::MIN, |acc, v| acc.max(v.coords.y))
     }
 
     pub fn leftmost_lowest_vertex(&self) -> &Vertex {
@@ -346,18 +361,6 @@ impl Polygon {
         vertices[0]
     }
 
-    pub fn is_lower_tangent(&self, id: VertexId, ls: &LineSegment) -> bool {
-        // TODO don't unwrap, return result with error
-        let v = self.get_vertex(&id).unwrap();
-        let prev = self.get_vertex(&v.prev).unwrap();
-        let next = self.get_vertex(&v.next).unwrap();
-        prev.left_on(ls) && next.left_on(ls)
-    }
-
-    pub fn is_upper_tangent(&self, id: VertexId, ls: &LineSegment) -> bool {
-        self.is_lower_tangent(id, &ls.reverse())
-    }
-
     pub fn translate(&mut self, x: f64, y: f64) {
         for v in self.vertex_map.values_mut() {
             v.translate(x, y);
@@ -367,7 +370,7 @@ impl Polygon {
     pub fn rotate_about_origin(&mut self, radians: f64) {
         for v in self.vertex_map.values_mut() {
             v.rotate_about_origin(radians);
-        }    
+        }
     }
 
     pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
@@ -441,12 +444,12 @@ impl Polygon {
                 break;
             }
         }
-        
+
         for i in 0..(edges.len() - 1) {
             let e1 = &edges[i];
             // Adjacent edges should share a common vertex
-            assert!(e1.incident_to(edges[i+1].p1));
-            for e2 in edges.iter().take(edges.len() -1).skip(i+2) {
+            assert!(e1.incident_to(edges[i + 1].p1));
+            for e2 in edges.iter().take(edges.len() - 1).skip(i + 2) {
                 // Non-adjacent edges should have no intersection
                 assert!(!e1.intersects(e2));
                 assert!(!e1.incident_to(e2.p1));
@@ -459,11 +462,10 @@ impl Polygon {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use crate::F64_ASSERT_PRECISION;
     use crate::test_util::*;
+    use crate::F64_ASSERT_PRECISION;
 
     use super::*;
     use assert_approx_eq::assert_approx_eq;
@@ -471,7 +473,6 @@ mod tests {
     use rstest_reuse::{self, *};
     use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8, PI, SQRT_2};
     use tempfile::NamedTempFile;
-
 
     #[test]
     #[should_panic]
@@ -498,9 +499,7 @@ mod tests {
 
     #[apply(all_polygons)]
     fn test_json(case: PolygonTestCase) {
-        let filename = NamedTempFile::new()
-            .unwrap()
-            .into_temp_path();
+        let filename = NamedTempFile::new().unwrap().into_temp_path();
         let _ = case.polygon.to_json(&filename);
         let new_polygon = Polygon::from_json(&filename).unwrap();
         assert_eq!(case.polygon, new_polygon);
@@ -558,8 +557,8 @@ mod tests {
 
     #[apply(all_polygons)]
     fn test_rotation_about_origin(
-        case: PolygonTestCase, 
-        #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f64
+        case: PolygonTestCase,
+        #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f64,
     ) {
         let mut polygon = case.polygon;
         polygon.rotate_about_origin(radians);
@@ -573,7 +572,8 @@ mod tests {
     fn test_rotation_about_point(
         case: PolygonTestCase,
         #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f64,
-        #[values(Point::new(5.2, 10.0), Point::new(-43.0, PI), Point::new(SQRT_2, 1e8))] point: Point
+        #[values(Point::new(5.2, 10.0), Point::new(-43.0, PI), Point::new(SQRT_2, 1e8))]
+        point: Point,
     ) {
         let mut polygon = case.polygon;
         polygon.rotate_about_point(radians, &point);
@@ -592,15 +592,16 @@ mod tests {
         let num_interior_points = case.metadata.interior_points.len();
         if num_extreme_points > 0 || num_interior_points > 0 {
             assert_eq!(
-                num_extreme_points + num_interior_points, 
+                num_extreme_points + num_interior_points,
                 case.metadata.num_vertices,
             );
-            assert!(
-                case.metadata.extreme_points.is_disjoint(&case.metadata.interior_points)
-            );
+            assert!(case
+                .metadata
+                .extreme_points
+                .is_disjoint(&case.metadata.interior_points));
         }
-        // This meta-assert is only valid for polygons without holes, holes 
-        // are not yet supported. Will need a flag in the metadata to know 
+        // This meta-assert is only valid for polygons without holes, holes
+        // are not yet supported. Will need a flag in the metadata to know
         // if holes are present and then this assert would be conditional
         assert_eq!(case.metadata.num_edges, case.metadata.num_vertices);
     }
