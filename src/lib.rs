@@ -9,6 +9,7 @@ const F64_ASSERT_PRECISION: f64 = 1e-4f64;
 pub mod bounding_box;
 pub mod convex_hull;
 pub mod error;
+pub mod geometry;
 pub mod line_segment;
 pub mod point;
 pub mod polygon;

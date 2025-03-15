@@ -3,8 +3,8 @@ use std::{collections::HashMap, ffi::OsStr, path::PathBuf};
 use walkdir::WalkDir;
 
 use crate::error::FileError;
+use crate::geometry::Geometry;
 use crate::polygon::Polygon;
-
 
 pub fn load_polygon(name: &str, folder: &str) -> Result<Polygon, FileError> {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -14,8 +14,9 @@ pub fn load_polygon(name: &str, folder: &str) -> Result<Polygon, FileError> {
     Polygon::from_json(path)
 }
 
-
-pub fn polygon_map_by_num_vertices(vertex_limit: usize) -> Result<HashMap<usize, Polygon>, FileError> {
+pub fn polygon_map_by_num_vertices(
+    vertex_limit: usize,
+) -> Result<HashMap<usize, Polygon>, FileError> {
     let mut map = HashMap::new();
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     root.push("polygons");
