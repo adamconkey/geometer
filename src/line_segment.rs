@@ -1,10 +1,4 @@
-use crate::{
-    point::Point,
-    triangle::Triangle,
-    vector::Vector,
-    vertex::Vertex,
-};
-
+use crate::{point::Point, triangle::Triangle, vector::Vector, vertex::Vertex};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct LineSegment<'a> {
@@ -24,7 +18,7 @@ impl<'a> LineSegment<'a> {
     pub fn reverse(&self) -> LineSegment {
         LineSegment::new(self.p2, self.p1)
     }
-    
+
     pub fn is_vertical(&self) -> bool {
         self.p1.x == self.p2.x
     }
@@ -33,41 +27,40 @@ impl<'a> LineSegment<'a> {
         self.p1.y == self.p2.y
     }
 
-    pub fn proper_intersects(&self, cd: &LineSegment) -> bool {    
+    pub fn proper_intersects(&self, cd: &LineSegment) -> bool {
         let a = self.p1;
         let b = self.p2;
         let c = cd.p1;
         let d = cd.p2;
-    
+
         let abc = Triangle::new(a, b, c);
         let abd = Triangle::new(a, b, d);
         let cda = Triangle::new(c, d, a);
         let cdb = Triangle::new(c, d, b);
-    
-        let has_collinear_points =
-            abc.has_collinear_points() ||
-            abd.has_collinear_points() ||
-            cda.has_collinear_points() ||
-            cdb.has_collinear_points();
-    
+
+        let has_collinear_points = abc.has_collinear_points()
+            || abd.has_collinear_points()
+            || cda.has_collinear_points()
+            || cdb.has_collinear_points();
+
         if has_collinear_points {
             return false;
         }
-        
+
         let ab_splits_cd = c.left(self) ^ d.left(self);
         let cd_splits_ab = a.left(cd) ^ b.left(cd);
         ab_splits_cd && cd_splits_ab
     }
-        
+
     pub fn improper_intersects(&self, cd: &LineSegment) -> bool {
         let a = self.p1;
         let b = self.p2;
         let c = cd.p1;
         let d = cd.p2;
-    
+
         c.between(a, b) || d.between(a, b) || a.between(c, d) || b.between(c, d)
     }
-    
+
     pub fn intersects(&self, cd: &LineSegment) -> bool {
         self.proper_intersects(cd) || self.improper_intersects(cd)
     }
@@ -99,13 +92,11 @@ impl<'a> LineSegment<'a> {
     pub fn distance_to_point(&self, p: &Point) -> f64 {
         // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_two_points
         let p1_to_p2 = Vector::from(self);
-        let numerator = (
-            p1_to_p2.y * p.x - 
-            p1_to_p2.x * p.y + 
-            self.p2.x * self.p1.y - 
-            self.p2.y * self.p1.x
-        ).abs(); 
-        numerator / p1_to_p2.magnitude()
+        let t1 = p1_to_p2.y * p.x;
+        let t2 = p1_to_p2.x * p.y;
+        let t3 = self.p2.x * self.p1.y;
+        let t4 = self.p2.y * self.p1.x;
+        (t1 - t2 + t3 - t4).abs() / p1_to_p2.magnitude()
     }
 }
 
@@ -124,12 +115,12 @@ mod tests {
         let ab = LineSegment::new(&a, &b);
         let cd = LineSegment::new(&c, &d);
 
-        assert!( ab.proper_intersects(&cd));
-        assert!( cd.proper_intersects(&ab));
+        assert!(ab.proper_intersects(&cd));
+        assert!(cd.proper_intersects(&ab));
         assert!(!ab.improper_intersects(&cd));
         assert!(!cd.improper_intersects(&ab));
-        assert!( ab.intersects(&cd));
-        assert!( cd.intersects(&ab));
+        assert!(ab.intersects(&cd));
+        assert!(cd.intersects(&ab));
     }
 
     #[test]
@@ -144,10 +135,10 @@ mod tests {
 
         assert!(!ab.proper_intersects(&cd));
         assert!(!cd.proper_intersects(&ab));
-        assert!( ab.improper_intersects(&cd));
-        assert!( cd.improper_intersects(&ab));
-        assert!( ab.intersects(&cd));
-        assert!( cd.intersects(&ab));
+        assert!(ab.improper_intersects(&cd));
+        assert!(cd.improper_intersects(&ab));
+        assert!(ab.intersects(&cd));
+        assert!(cd.intersects(&ab));
     }
 
     #[test]
@@ -175,8 +166,8 @@ mod tests {
         let ab = LineSegment::new(&a, &b);
 
         assert!(!ab.proper_intersects(&ab));
-        assert!( ab.improper_intersects(&ab));
-        assert!( ab.intersects(&ab));
+        assert!(ab.improper_intersects(&ab));
+        assert!(ab.intersects(&ab));
     }
 
     #[test]
