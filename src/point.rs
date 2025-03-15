@@ -1,10 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    line_segment::LineSegment,
-    triangle::Triangle,
-};
-
+use crate::{line_segment::LineSegment, triangle::Triangle};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Point {
@@ -12,39 +8,42 @@ pub struct Point {
     pub y: f64,
 }
 
-
 impl Point {
     pub fn new(x: f64, y: f64) -> Self {
         Point { x, y }
     }
 
     pub fn between(&self, a: &Point, b: &Point) -> bool {
-        if !Triangle::new(a, b, self).has_collinear_points() {
+        if !Triangle::from_points(a.clone(), b.clone(), self.clone()).has_collinear_points() {
             return false;
         }
 
-        let (e1, e2, check) = match LineSegment::new(a, b).is_vertical() {
-            true  => (a.y, b.y, self.y),
+        let (e1, e2, check) = match LineSegment::from_points(a.clone(), b.clone()).is_vertical() {
+            true => (a.y, b.y, self.y),
             false => (a.x, b.x, self.x),
         };
-        
+
         (e1..e2).contains(&check) || (e2..e1).contains(&check)
     }
 
     pub fn left(&self, ab: &LineSegment) -> bool {
-        Triangle::new(ab.p1, ab.p2, self).area() > 0.0
+        let triangle =
+            Triangle::from_points(ab.v1.coords.clone(), ab.v2.coords.clone(), self.clone());
+        triangle.area() > 0.0
     }
 
     pub fn left_on(&self, ab: &LineSegment) -> bool {
-        Triangle::new(ab.p1, ab.p2, self).area() >= 0.0
+        let triangle =
+            Triangle::from_points(ab.v1.coords.clone(), ab.v2.coords.clone(), self.clone());
+        triangle.area() >= 0.0
     }
 
     pub fn right(&self, ab: &LineSegment) -> bool {
-        Triangle::new(ab.p1, ab.p2, self).area() < 0.0
+        !self.left_on(ab)
     }
 
     pub fn right_on(&self, ab: &LineSegment) -> bool {
-        Triangle::new(ab.p1, ab.p2, self).area() <= 0.0
+        !self.left(ab)
     }
 
     pub fn translate(&mut self, x: f64, y: f64) {
@@ -74,17 +73,16 @@ impl Point {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::F64_ASSERT_PRECISION;
 
     use super::*;
     use assert_approx_eq::assert_approx_eq;
-    use rstest_reuse::{self, *};
     use rstest::rstest;
+    use rstest_reuse::{self, *};
     use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8, PI, SQRT_2};
- 
+
     #[test]
     fn test_serialize_point() {
         let p = Point::new(1.0, 2.0);
@@ -109,8 +107,8 @@ mod tests {
         let p1 = Point::new(1.0, 1.0);
         let p2 = Point::new(2.0, 2.0);
 
-        assert!( p1.between(&p0, &p2));
-        assert!( p1.between(&p2, &p1));
+        assert!(p1.between(&p0, &p2));
+        assert!(p1.between(&p2, &p1));
         assert!(!p0.between(&p1, &p2));
         assert!(!p0.between(&p2, &p1));
         assert!(!p2.between(&p0, &p1));
@@ -123,8 +121,8 @@ mod tests {
         let p1 = Point::new(0.0, 1.0);
         let p2 = Point::new(0.0, 2.0);
 
-        assert!( p1.between(&p0, &p2));
-        assert!( p1.between(&p2, &p1));
+        assert!(p1.between(&p0, &p2));
+        assert!(p1.between(&p2, &p1));
         assert!(!p0.between(&p1, &p2));
         assert!(!p0.between(&p2, &p1));
         assert!(!p2.between(&p0, &p1));
@@ -158,8 +156,7 @@ mod tests {
     #[case(11.0 * FRAC_PI_6, 0.5 * 3.0f64.sqrt(), -0.5)]
     #[case(15.0 * FRAC_PI_8, 0.5 * (2.0 + SQRT_2).sqrt(), -0.5 * (2.0 - SQRT_2).sqrt())]
     #[case(2.0 * PI, 1.0, 0.0)]
-    fn unit_circle_rotations(#[case] radians: f64, #[case] x: f64, #[case] y: f64) {}   
-
+    fn unit_circle_rotations(#[case] radians: f64, #[case] x: f64, #[case] y: f64) {}
 
     #[apply(unit_circle_rotations)]
     fn test_rotate_about_origin(radians: f64, x: f64, y: f64) {

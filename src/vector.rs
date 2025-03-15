@@ -1,6 +1,6 @@
 use crate::line_segment::LineSegment;
 
-// TODO I am unlikely to keep this as a primitive, I will 
+// TODO I am unlikely to keep this as a primitive, I will
 // probably farm this out to an external linear algebra
 // library but am not convinced yet as to what that
 // dependency should be
@@ -8,7 +8,6 @@ pub struct Vector {
     pub x: f64,
     pub y: f64,
 }
-
 
 impl Vector {
     pub fn new(x: f64, y: f64) -> Self {
@@ -24,9 +23,11 @@ impl Vector {
     }
 }
 
-
-impl<'a> From<&'a LineSegment<'a>> for Vector {
-    fn from(ls: &'a LineSegment<'a>) -> Self {
-        Vector::new(ls.p2.x - ls.p1.x, ls.p2.y - ls.p1.y)
+impl From<&LineSegment> for Vector {
+    fn from(ls: &LineSegment) -> Self {
+        Vector::new(
+            ls.v2.coords.x - ls.v1.coords.x,
+            ls.v2.coords.y - ls.v1.coords.y,
+        )
     }
 }

@@ -106,7 +106,7 @@ impl ConvexHullComputer for GiftWrapping {
         let v0 = polygon.rightmost_lowest_vertex();
         let mut p = v0.coords.clone();
         p.x -= 1.0; // Arbitrary distance
-        let mut e = LineSegment::new(&p, &v0.coords);
+        let mut e = LineSegment::from_points(p, v0.coords.clone());
         let mut v_i = v0;
 
         let mut hull_ids = HashSet::new();

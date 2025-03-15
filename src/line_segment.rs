@@ -42,10 +42,10 @@ impl LineSegment {
         let c = &cd.v1;
         let d = &cd.v2;
 
-        let abc = Triangle::from_vertices(&a, &b, &c);
-        let abd = Triangle::from_vertices(&a, &b, &d);
-        let cda = Triangle::from_vertices(&c, &d, &a);
-        let cdb = Triangle::from_vertices(&c, &d, &b);
+        let abc = Triangle::from_vertices(a.clone(), b.clone(), c.clone());
+        let abd = Triangle::from_vertices(a.clone(), b.clone(), d.clone());
+        let cda = Triangle::from_vertices(c.clone(), d.clone(), a.clone());
+        let cdb = Triangle::from_vertices(c.clone(), d.clone(), b.clone());
 
         let has_collinear_points = abc.has_collinear_points()
             || abd.has_collinear_points()
