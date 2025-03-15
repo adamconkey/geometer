@@ -29,6 +29,8 @@ pub struct PolygonMetadata {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Polygon {
     vertex_map: HashMap<VertexId, Vertex>,
+    prev_map: HashMap<VertexId, VertexId>,
+    next_map: HashMap<VertexId, VertexId>,
 }
 
 impl Geometry for Polygon {
@@ -44,8 +46,9 @@ impl Geometry for Polygon {
         // return result with an associated error type
         let mut current = self.get_vertex(&anchor_id).unwrap();
         loop {
-            edges.insert((current.id, current.next));
-            current = self.get_vertex(&current.next).unwrap();
+            let next = self.get_next_vertex(&current.id).unwrap();
+            edges.insert((current.id, next.id));
+            current = next;
             if current.id == anchor_id {
                 break;
             }
@@ -57,6 +60,8 @@ impl Geometry for Polygon {
 impl Polygon {
     pub fn new(points: Vec<Point>) -> Polygon {
         let mut vertex_map = HashMap::new();
+        let mut prev_map = HashMap::new();
+        let mut next_map = HashMap::new();
 
         // TODO currently the IDs are simply generated starting
         // at 0 and incrementing. If you want to keep this route,
@@ -70,28 +75,42 @@ impl Polygon {
             let prev_id = vertex_ids[(i + num_points - 1) % num_points];
             let curr_id = vertex_ids[i];
             let next_id = vertex_ids[(i + num_points + 1) % num_points];
-            let v = Vertex::new(point, curr_id, prev_id, next_id);
+            let v = Vertex::new(point, curr_id);
             vertex_map.insert(curr_id, v);
+            prev_map.insert(curr_id, prev_id);
+            next_map.insert(curr_id, next_id);
         }
 
-        let polygon = Polygon { vertex_map };
+        let polygon = Polygon {
+            vertex_map,
+            prev_map,
+            next_map,
+        };
         polygon.validate();
         polygon
     }
 
     pub fn from_vertices(vertices: Vec<Vertex>) -> Polygon {
         let mut vertex_map = HashMap::new();
+        let mut prev_map = HashMap::new();
+        let mut next_map = HashMap::new();
 
         let num_vs = vertices.len();
         let vertex_ids = vertices.iter().map(|v| v.id).collect_vec();
 
-        for (i, mut v) in vertices.iter().cloned().enumerate() {
-            v.prev = vertex_ids[(i + num_vs - 1) % num_vs];
-            v.next = vertex_ids[(i + num_vs + 1) % num_vs];
+        for (i, v) in vertices.iter().cloned().enumerate() {
+            let prev_id = vertex_ids[(i + num_vs - 1) % num_vs];
+            let next_id = vertex_ids[(i + num_vs + 1) % num_vs];
+            prev_map.insert(v.id, prev_id);
+            next_map.insert(v.id, next_id);
             vertex_map.insert(v.id, v);
         }
 
-        let polygon = Polygon { vertex_map };
+        let polygon = Polygon {
+            vertex_map,
+            prev_map,
+            next_map,
+        };
         polygon.validate();
         polygon
     }
@@ -164,21 +183,28 @@ impl Polygon {
         let mut area = 0.0;
         let anchor = self.vertices()[0];
         for v1 in self.vertex_map.values() {
-            let v2 = self.get_vertex(&v1.next).unwrap();
+            let v2 = self.get_next_vertex(&v1.id).unwrap();
             let t = Triangle::from_vertices(anchor.clone(), v1.clone(), v2.clone());
             area += t.area();
         }
         area
     }
 
+    pub fn prev_vertex(&self, id: &VertexId) -> Option<VertexId> {
+        self.prev_map.get(id).cloned()
+    }
+
+    pub fn next_vertex(&self, id: &VertexId) -> Option<VertexId> {
+        self.next_map.get(id).cloned()
+    }
+
     pub fn remove_vertex(&mut self, id: &VertexId) -> Option<Vertex> {
         if let Some(v) = self.vertex_map.remove(id) {
-            // TODO this would be an error condition if there was
-            // a vertex for which prev/next weren't in the map,
-            // instead of unwrap could have this func return
-            // result with an error tailored to this case
-            self.get_vertex_mut(&v.prev).unwrap().next = v.next;
-            self.get_vertex_mut(&v.next).unwrap().prev = v.prev;
+            // TODO don't unwrap
+            let v_prev = self.prev_map.remove(&v.id).unwrap();
+            let v_next = self.next_map.remove(&v.id).unwrap();
+            self.next_map.insert(v_prev, v_next);
+            self.prev_map.insert(v_next, v_prev);
             return Some(v);
         }
         None
@@ -186,6 +212,16 @@ impl Polygon {
 
     pub fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
         self.vertex_map.get(id)
+    }
+
+    pub fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        let prev_id = self.prev_vertex(id).unwrap(); // TODO don't unwrap
+        self.vertex_map.get(&prev_id)
+    }
+
+    pub fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        let next_id = self.next_vertex(id).unwrap(); // TODO don't unwrap
+        self.vertex_map.get(&next_id)
     }
 
     pub fn get_vertex_mut(&mut self, id: &VertexId) -> Option<&mut Vertex> {
@@ -249,8 +285,8 @@ impl Polygon {
         let ab = LineSegment::from_vertices(a.clone(), b.clone());
         let ba = &ab.reverse();
         // TODO instead of unwrap, return result with error
-        let a0 = self.get_vertex(&a.prev).unwrap();
-        let a1 = self.get_vertex(&a.next).unwrap();
+        let a0 = self.get_prev_vertex(&a.id).unwrap();
+        let a1 = self.get_next_vertex(&a.id).unwrap();
 
         if a0.left_on(&LineSegment::from_vertices(a.clone(), a1.clone())) {
             return a0.left(&ab) && a1.left(ba);
@@ -331,7 +367,7 @@ impl Polygon {
         loop {
             visited.insert(current.id);
             // TODO don't unwrap
-            current = self.vertex_map.get(&current.next).unwrap();
+            current = self.get_next_vertex(&current.id).unwrap();
             if current.id == anchor.id || visited.contains(&current.id) {
                 break;
             }
@@ -355,7 +391,7 @@ impl Polygon {
         let anchor_id = self.vertices()[0].id;
         let mut current = self.get_vertex(&anchor_id).unwrap();
         loop {
-            let next = self.get_vertex(&current.next).unwrap();
+            let next = self.get_next_vertex(&current.id).unwrap();
             let ls = LineSegment::from_vertices(current.clone(), next.clone());
             edges.push(ls);
             current = next;

@@ -15,12 +15,9 @@ pub struct Triangle {
 
 impl Triangle {
     pub fn from_points(p1: Point, p2: Point, p3: Point) -> Triangle {
-        let id1 = VertexId::from(0u32);
-        let id2 = VertexId::from(1u32);
-        let id3 = VertexId::from(2u32);
-        let v1 = Vertex::new(p1, id1, id3, id2);
-        let v2 = Vertex::new(p2, id2, id1, id3);
-        let v3 = Vertex::new(p3, id3, id2, id1);
+        let v1 = Vertex::new(p1, VertexId::from(0u32));
+        let v2 = Vertex::new(p2, VertexId::from(1u32));
+        let v3 = Vertex::new(p3, VertexId::from(2u32));
         Triangle::from_vertices(v1, v2, v3)
     }
 
@@ -75,12 +72,9 @@ mod tests {
 
     #[test]
     fn test_from_vertices() {
-        let id1 = VertexId::from(1u32);
-        let id2 = VertexId::from(2u32);
-        let id3 = VertexId::from(3u32);
-        let v1 = Vertex::new(Point::new(0.0, 0.0), id1, id3, id2);
-        let v2 = Vertex::new(Point::new(3.0, 0.0), id2, id1, id3);
-        let v3 = Vertex::new(Point::new(0.0, 4.0), id3, id2, id1);
+        let v1 = Vertex::new(Point::new(0.0, 0.0), VertexId::from(1u32));
+        let v2 = Vertex::new(Point::new(3.0, 0.0), VertexId::from(2u32));
+        let v3 = Vertex::new(Point::new(0.0, 4.0), VertexId::from(3u32));
         let triangle = Triangle::from_vertices(v1, v2, v3);
         assert_eq!(Point::new(0.0, 0.0), triangle.v1.coords);
         assert_eq!(Point::new(3.0, 0.0), triangle.v2.coords);

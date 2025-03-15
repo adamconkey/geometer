@@ -15,16 +15,12 @@ impl LineSegment {
     pub fn from_points(p1: Point, p2: Point) -> Self {
         let id1 = VertexId::from(0u32);
         let id2 = VertexId::from(1u32);
-        let v1 = Vertex::new(p1, id1, id2, id2);
-        let v2 = Vertex::new(p2, id2, id1, id1);
+        let v1 = Vertex::new(p1, id1);
+        let v2 = Vertex::new(p2, id2);
         LineSegment { v1, v2 }
     }
 
-    pub fn from_vertices(mut v1: Vertex, mut v2: Vertex) -> Self {
-        v1.next = v2.id;
-        v1.prev = v2.id;
-        v2.next = v1.id;
-        v2.prev = v1.id;
+    pub fn from_vertices(v1: Vertex, v2: Vertex) -> Self {
         LineSegment { v1, v2 }
     }
 

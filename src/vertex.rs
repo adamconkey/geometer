@@ -2,12 +2,7 @@ use std::fmt;
 
 use serde::Deserialize;
 
-use crate::{
-    line_segment::LineSegment,
-    point::Point,
-    vector::Vector,
-};
-
+use crate::{line_segment::LineSegment, point::Point, vector::Vector};
 
 #[derive(Clone, Copy, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct VertexId(u32);
@@ -36,18 +31,15 @@ impl fmt::Debug for VertexId {
     }
 }
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Vertex {
     pub coords: Point,
     pub id: VertexId,
-    pub prev: VertexId,
-    pub next: VertexId,
 }
 
-impl Vertex {    
-    pub fn new(coords: Point, id: VertexId, prev: VertexId, next: VertexId) -> Vertex {
-       Vertex { coords, id, prev, next }
+impl Vertex {
+    pub fn new(coords: Point, id: VertexId) -> Vertex {
+        Vertex { coords, id }
     }
 
     pub fn between(&self, a: &Vertex, b: &Vertex) -> bool {

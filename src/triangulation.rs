@@ -47,8 +47,8 @@ pub struct EarClipping;
 impl EarClipping {
     fn find_ear(&self, polygon: &Polygon) -> Result<VertexId, EarNotFoundError> {
         for v in polygon.vertices() {
-            let prev = polygon.get_vertex(&v.prev).unwrap();
-            let next = polygon.get_vertex(&v.next).unwrap();
+            let prev = polygon.get_prev_vertex(&v.id).unwrap();
+            let next = polygon.get_next_vertex(&v.id).unwrap();
             if polygon.diagonal(prev, next) {
                 return Ok(v.id);
             }
@@ -66,15 +66,22 @@ impl TriangulationComputer for EarClipping {
             let id = self
                 .find_ear(&polygon)
                 .expect("valid polygons with 3 or more vertices should have an ear");
+            triangulation.push(TriangleVertexIds(
+                polygon.prev_vertex(&id).unwrap(),
+                id,
+                polygon.next_vertex(&id).unwrap(),
+            ));
             // TODO instead of unwrap, return result with error
-            let v = polygon.remove_vertex(&id).unwrap();
-            triangulation.push(TriangleVertexIds(v.prev, id, v.next));
+            polygon.remove_vertex(&id).unwrap();
         }
         // At this stage there should be exactly 3 vertices left,
         // which form the final triangle of the triangulation
         let v = polygon.vertices()[0];
-        triangulation.push(TriangleVertexIds(v.prev, v.id, v.next));
-
+        triangulation.push(TriangleVertexIds(
+            polygon.prev_vertex(&v.id).unwrap(),
+            v.id,
+            polygon.next_vertex(&v.id).unwrap(),
+        ));
         triangulation
     }
 }
