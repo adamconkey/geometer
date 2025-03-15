@@ -20,7 +20,11 @@ impl LineSegment {
         LineSegment { v1, v2 }
     }
 
-    pub fn from_vertices(v1: Vertex, v2: Vertex) -> Self {
+    pub fn from_vertices(mut v1: Vertex, mut v2: Vertex) -> Self {
+        v1.next = v2.id;
+        v1.prev = v2.id;
+        v2.next = v1.id;
+        v2.prev = v1.id;
         LineSegment { v1, v2 }
     }
 
@@ -79,7 +83,7 @@ impl LineSegment {
     }
 
     pub fn incident_to(&self, v: &Vertex) -> bool {
-        &self.v1 == v || &self.v2 == v
+        self.v1.coords == v.coords || self.v2.coords == v.coords
     }
 
     pub fn length(&self) -> f64 {
