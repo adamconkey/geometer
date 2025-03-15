@@ -1,42 +1,51 @@
-use crate::{point::Point, triangle::Triangle, vector::Vector, vertex::Vertex};
+use crate::{
+    point::Point,
+    triangle::Triangle,
+    vector::Vector,
+    vertex::{Vertex, VertexId},
+};
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct LineSegment<'a> {
-    pub p1: &'a Point,
-    pub p2: &'a Point,
+pub struct LineSegment {
+    pub v1: Vertex,
+    pub v2: Vertex,
 }
 
-impl<'a> LineSegment<'a> {
-    pub fn new(p1: &'a Point, p2: &'a Point) -> Self {
-        LineSegment { p1, p2 }
+impl LineSegment {
+    pub fn from_points(p1: Point, p2: Point) -> Self {
+        let id1 = VertexId::from(0u32);
+        let id2 = VertexId::from(1u32);
+        let v1 = Vertex::new(p1, id1, id2, id2);
+        let v2 = Vertex::new(p2, id2, id1, id1);
+        LineSegment { v1, v2 }
     }
 
-    pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex) -> Self {
-        LineSegment::new(&v1.coords, &v2.coords)
+    pub fn from_vertices(v1: Vertex, v2: Vertex) -> Self {
+        LineSegment { v1, v2 }
     }
 
     pub fn reverse(&self) -> LineSegment {
-        LineSegment::new(self.p2, self.p1)
+        LineSegment::from_vertices(self.v2.clone(), self.v1.clone())
     }
 
     pub fn is_vertical(&self) -> bool {
-        self.p1.x == self.p2.x
+        self.v1.coords.x == self.v2.coords.x
     }
 
     pub fn is_horizontal(&self) -> bool {
-        self.p1.y == self.p2.y
+        self.v1.coords.y == self.v2.coords.y
     }
 
     pub fn proper_intersects(&self, cd: &LineSegment) -> bool {
-        let a = self.p1;
-        let b = self.p2;
-        let c = cd.p1;
-        let d = cd.p2;
+        let a = &self.v1;
+        let b = &self.v2;
+        let c = &cd.v1;
+        let d = &cd.v2;
 
-        let abc = Triangle::new(a, b, c);
-        let abd = Triangle::new(a, b, d);
-        let cda = Triangle::new(c, d, a);
-        let cdb = Triangle::new(c, d, b);
+        let abc = Triangle::from_vertices(&a, &b, &c);
+        let abd = Triangle::from_vertices(&a, &b, &d);
+        let cda = Triangle::from_vertices(&c, &d, &a);
+        let cdb = Triangle::from_vertices(&c, &d, &b);
 
         let has_collinear_points = abc.has_collinear_points()
             || abd.has_collinear_points()
@@ -53,10 +62,10 @@ impl<'a> LineSegment<'a> {
     }
 
     pub fn improper_intersects(&self, cd: &LineSegment) -> bool {
-        let a = self.p1;
-        let b = self.p2;
-        let c = cd.p1;
-        let d = cd.p2;
+        let a = &self.v1;
+        let b = &self.v2;
+        let c = &cd.v1;
+        let d = &cd.v2;
 
         c.between(a, b) || d.between(a, b) || a.between(c, d) || b.between(c, d)
     }
@@ -66,11 +75,11 @@ impl<'a> LineSegment<'a> {
     }
 
     pub fn connected_to(&self, cd: &LineSegment) -> bool {
-        self.incident_to(cd.p1) || self.incident_to(cd.p2)
+        self.incident_to(&cd.v1) || self.incident_to(&cd.v2)
     }
 
-    pub fn incident_to(&self, p: &Point) -> bool {
-        self.p1 == p || self.p2 == p
+    pub fn incident_to(&self, v: &Vertex) -> bool {
+        &self.v1 == v || &self.v2 == v
     }
 
     pub fn length(&self) -> f64 {
@@ -84,7 +93,7 @@ impl<'a> LineSegment<'a> {
         // the function as it makes sorting vecs by the value very
         // compact. Can consider moving to another struct or renaming
         let p1_to_p2 = Vector::from(self);
-        let p2_to_p = Vector::from(&LineSegment::new(self.p2, p));
+        let p2_to_p = Vector::from(&LineSegment::from_points(self.v2.coords.clone(), p.clone()));
         let cos_theta = p1_to_p2.dot(&p2_to_p) / (p1_to_p2.magnitude() * p2_to_p.magnitude());
         cos_theta.acos()
     }
@@ -94,8 +103,8 @@ impl<'a> LineSegment<'a> {
         let p1_to_p2 = Vector::from(self);
         let t1 = p1_to_p2.y * p.x;
         let t2 = p1_to_p2.x * p.y;
-        let t3 = self.p2.x * self.p1.y;
-        let t4 = self.p2.y * self.p1.x;
+        let t3 = self.v2.coords.x * self.v1.coords.y;
+        let t4 = self.v2.coords.y * self.v1.coords.x;
         (t1 - t2 + t3 - t4).abs() / p1_to_p2.magnitude()
     }
 }
@@ -112,8 +121,8 @@ mod tests {
         let c = Point::new(1.0, 0.0);
         let d = Point::new(4.0, 6.0);
 
-        let ab = LineSegment::new(&a, &b);
-        let cd = LineSegment::new(&c, &d);
+        let ab = LineSegment::from_points(a, b);
+        let cd = LineSegment::from_points(c, d);
 
         assert!(ab.proper_intersects(&cd));
         assert!(cd.proper_intersects(&ab));
@@ -130,8 +139,8 @@ mod tests {
         let c = Point::new(1.0, 0.0);
         let d = Point::new(4.0, 6.0);
 
-        let ab = LineSegment::new(&a, &b);
-        let cd = LineSegment::new(&c, &d);
+        let ab = LineSegment::from_points(a, b);
+        let cd = LineSegment::from_points(c, d);
 
         assert!(!ab.proper_intersects(&cd));
         assert!(!cd.proper_intersects(&ab));
@@ -148,8 +157,8 @@ mod tests {
         let c = Point::new(1.0, 0.0);
         let d = Point::new(4.0, 6.0);
 
-        let ab = LineSegment::new(&a, &b);
-        let cd = LineSegment::new(&c, &d);
+        let ab = LineSegment::from_points(a, b);
+        let cd = LineSegment::from_points(c, d);
 
         assert!(!ab.proper_intersects(&cd));
         assert!(!cd.proper_intersects(&ab));
@@ -163,7 +172,7 @@ mod tests {
     fn test_intersect_with_self() {
         let a = Point::new(6.0, 4.0);
         let b = Point::new(4.0, 4.0);
-        let ab = LineSegment::new(&a, &b);
+        let ab = LineSegment::from_points(a, b);
 
         assert!(!ab.proper_intersects(&ab));
         assert!(ab.improper_intersects(&ab));
@@ -174,11 +183,11 @@ mod tests {
     fn test_reverse() {
         let a = Point::new(0.0, 0.0);
         let b = Point::new(1.0, 2.0);
-        let ab = LineSegment::new(&a, &b);
+        let ab = LineSegment::from_points(a.clone(), b.clone());
         let ba = ab.reverse();
-        assert_eq!(ab.p1, &a);
-        assert_eq!(ab.p2, &b);
-        assert_eq!(ba.p1, &b);
-        assert_eq!(ba.p2, &a);
+        assert_eq!(ab.v1.coords, a);
+        assert_eq!(ab.v2.coords, b);
+        assert_eq!(ba.v1.coords, b);
+        assert_eq!(ba.v2.coords, a);
     }
 }
