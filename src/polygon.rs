@@ -279,30 +279,6 @@ impl Polygon {
         BoundingBox::new(self.min_x(), self.max_x(), self.min_y(), self.max_y())
     }
 
-    pub fn min_x(&self) -> f64 {
-        self.vertex_map
-            .values()
-            .fold(f64::MAX, |acc, v| acc.min(v.coords.x))
-    }
-
-    pub fn max_x(&self) -> f64 {
-        self.vertex_map
-            .values()
-            .fold(f64::MIN, |acc, v| acc.max(v.coords.x))
-    }
-
-    pub fn min_y(&self) -> f64 {
-        self.vertex_map
-            .values()
-            .fold(f64::MAX, |acc, v| acc.min(v.coords.y))
-    }
-
-    pub fn max_y(&self) -> f64 {
-        self.vertex_map
-            .values()
-            .fold(f64::MIN, |acc, v| acc.max(v.coords.y))
-    }
-
     pub fn translate(&mut self, x: f64, y: f64) {
         for v in self.vertex_map.values_mut() {
             v.translate(x, y);
