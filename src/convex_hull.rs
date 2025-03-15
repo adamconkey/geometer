@@ -264,6 +264,10 @@ impl DivideConquer {
         right_ids: &'a Vec<VertexId>,
         polygon: &'a Polygon,
     ) -> (Vertex, Vertex) {
+        // TODO need to sort this out, not sure how I can get this
+        // to work for both polygons and line segments in a way that
+        // makes sense.
+
         let left = polygon.get_polygon(left_ids.clone());
         let right = polygon.get_polygon(right_ids.clone());
         let mut a = left.lowest_rightmost_vertex();
