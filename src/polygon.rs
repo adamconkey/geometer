@@ -67,7 +67,7 @@ impl Polygon {
         // could be added. Tried using unique_id::SequenceGenerator
         // but it was global which was harder to test with
         let num_points = coords.len();
-        let vertex_ids = (0..num_points).map(VertexId::from).collect::<Vec<_>>();
+        let vertex_ids = (0..num_points).map(VertexId::from).collect_vec();
 
         for (i, coord) in coords.into_iter().enumerate() {
             let prev_id = vertex_ids[(i + num_points - 1) % num_points];
@@ -351,7 +351,7 @@ impl Polygon {
 
     fn validate_edge_intersections(&self) {
         let mut edges = Vec::new();
-        let anchor_id = self.vertices()[0].id;
+        let anchor_id = self.vertex_ids().into_iter().sorted().collect_vec()[0];
         let mut current = self.get_vertex(&anchor_id).unwrap();
         loop {
             let next = self.get_next_vertex(&current.id).unwrap();
