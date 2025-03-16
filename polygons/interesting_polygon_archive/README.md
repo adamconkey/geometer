@@ -8,7 +8,7 @@ These are visualizations of triangulations generated for each polygon (see [Runn
 
 |     |     |     |
 |:---:|:---:|:---:|
-| **Eberly 10** | **Eberly 14** | **Elgindy 1** | 
+| **Eberly 10** | **Eberly 14** | **Elgindy 1** |
 | ![eberly-10](https://github.com/user-attachments/assets/fd3bdd32-f08d-441c-9583-164bec06e69a) | ![eberly-14](https://github.com/user-attachments/assets/612e09c4-dc5e-4c72-b516-bb4ea6a6dc07) | ![elgindy-1](https://github.com/user-attachments/assets/57cd1cb3-9a7a-4c75-994f-a0b01ec87daa) |
 | **Gray Embroidery** | **Held 1** | **Held 3** |
 | ![gray-embroidery](https://github.com/user-attachments/assets/3206f3a4-82a4-4013-a1ff-082484b28e29) | ![held-1](https://github.com/user-attachments/assets/a4d4f651-b5f2-47d2-811c-a31be9bff848) | ![held-3](https://github.com/user-attachments/assets/019d28b8-d5d5-4e19-976f-388e97df95bc) |
@@ -19,7 +19,7 @@ These are visualizations of triangulations generated for each polygon (see [Runn
 | **Mapbox Dude** | **Matisse Alga** | **Matisse Blue** |
 | ![mapbox-dude](https://github.com/user-attachments/assets/dbb19574-b05f-4904-b130-c9c532ed9698) | ![matisse-alga](https://github.com/user-attachments/assets/ca86a6bf-6a52-47a4-92b9-cf4eaf45c576) | ![matisse-blue](https://github.com/user-attachments/assets/23a47de5-c4e3-412e-a9ee-9ce0e52b99d7) |
 | **Matisse Icarus** | **Matisse Nuit** | **Mei 2** |
-| ![matisse-icarus](https://github.com/user-attachments/assets/b233f822-b4b6-4e63-a0da-de5b65674fb3) | ![matisse-nuit](https://github.com/user-attachments/assets/dcb1d0ab-5cdf-40c4-8acb-865cacbf6534) | ![mei-2](https://github.com/user-attachments/assets/a35ab0ea-3109-4346-9972-4bd735609508) | 
+| ![matisse-icarus](https://github.com/user-attachments/assets/b233f822-b4b6-4e63-a0da-de5b65674fb3) | ![matisse-nuit](https://github.com/user-attachments/assets/dcb1d0ab-5cdf-40c4-8acb-865cacbf6534) | ![mei-2](https://github.com/user-attachments/assets/a35ab0ea-3109-4346-9972-4bd735609508) |
 | **Mei 3** | **Mei 4** | **Mei 5** |
 | ![mei-3](https://github.com/user-attachments/assets/ffbef5ca-8e8a-4e3a-b23f-be184022ffd8) | ![mei-4](https://github.com/user-attachments/assets/9b3510c9-6426-4ade-a5ae-30008f87f9a8) | ![mei-5](https://github.com/user-attachments/assets/748d0428-e178-48a9-88d8-45cc6a3e88e1) |
 | **Mei 6** | **Meisters 3** | **Misc Discobolus** |
@@ -39,17 +39,4 @@ Polygons with holes are not yet supported by this repo, but the IPA dataset had 
 
 I discovered they were upside down because the IPA dataset assumed a the +Y axis was pointing down, while I assume it's pointing up in my visualizer. So, I rotated all of them 180 degrees about the origin and translated them back to the first quadrant of the plot. I realize this makes them face a different direction than the IPA dataset, but I'm okay with that.
 
-The original (ChatGPT-created) JSON files are in the `original` subdirectory. The binary [`generate_rotated_ipa_polgyons.rs`](https://github.com/adamconkey/computational_geometry/blob/19d5541c8bc7b508508bbf1a61b6dd4e76d755ad/computational_geometry/src/bin/generate_rotated_ipa_polygons.rs) was used to generate the files used for the unit tests and visualizations in this repo. You can run that script from within the `computational_geometry` package with:
-```shell
-cargo run --bin generate-rotated-ipa-polygons
-```
-
 ---
-
-## Running the Visualizer
-
-You may view these polygons locally running the visualizer, from the directory `$REPO_ROOT/visualizer` run
-```bash
-trunk serve
-```
-and if you open your browser to `localhost:8080` you'll be able to browse them. 

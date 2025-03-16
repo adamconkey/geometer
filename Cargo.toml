@@ -27,10 +27,6 @@ tempfile = "3.18.0"
 visualizer = ["random_color", "rerun"]
 
 [[bin]]
-name = "generate-rotated-ipa-polygons"
-path = "src/bin/generate_rotated_ipa_polygons.rs"
-
-[[bin]]
 name = "visualizer"
 path = "src/bin/run_visualizer.rs"
 required-features = ["visualizer"]
