@@ -37,7 +37,8 @@ impl ConvexHullComputer for InteriorPoints {
         // NOTE: This is slow O(n^4) since the interior point
         // computation being used has that runtime.
         let interior_ids = self.interior_points(polygon);
-        let hull_ids = &polygon.vertex_ids_set() - &interior_ids;
+        let all_ids = HashSet::from_iter(polygon.vertex_ids());
+        let hull_ids = &all_ids - &interior_ids;
         polygon.get_polygon(hull_ids)
     }
 }

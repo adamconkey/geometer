@@ -131,23 +131,13 @@ impl Polygon {
         Ok(())
     }
 
-    pub fn sorted_ids(&self) -> Vec<&VertexId> {
-        let mut ids: Vec<_> = self.vertex_map.keys().collect();
-        ids.sort();
-        ids
-    }
-
     pub fn vertex_ids(&self) -> Vec<VertexId> {
         self.vertex_map.keys().cloned().collect_vec()
     }
 
-    pub fn vertex_ids_set(&self) -> HashSet<VertexId> {
-        self.vertex_map.keys().cloned().collect()
-    }
-
     pub fn sorted_vertices(&self) -> Vec<&Vertex> {
         let mut vertices = self.vertices();
-        vertices.sort_by(|a, b| a.id.cmp(&b.id));
+        vertices.sort_by_key(|v| v.id);
         vertices
     }
 
