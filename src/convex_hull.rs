@@ -107,7 +107,7 @@ impl ConvexHullComputer for GiftWrapping {
         let v0 = polygon.rightmost_lowest_vertex();
         let mut v = v0.clone();
         v.x -= 1.0; // Arbitrary distance
-        let mut e = LineSegment::from_vertices(&v, &v0);
+        let mut e = LineSegment::from_vertices(&v, v0);
         let mut v_i = v0;
 
         let mut hull_ids = HashSet::new();
@@ -122,8 +122,8 @@ impl ConvexHullComputer for GiftWrapping {
                 .vertices()
                 .into_iter()
                 .filter(|v| v.id != v_i.id)
-                .sorted_by_key(|v| (OF(e.angle_to_vertex(&v)), Reverse(OF(v_i.distance_to(v)))))
-                .dedup_by(|a, b| e.angle_to_vertex(&a) == e.angle_to_vertex(&b))
+                .sorted_by_key(|v| (OF(e.angle_to_vertex(v)), Reverse(OF(v_i.distance_to(v)))))
+                .dedup_by(|a, b| e.angle_to_vertex(a) == e.angle_to_vertex(b))
                 .collect::<Vec<_>>()[0];
 
             e = polygon.get_line_segment(&v_i.id, &v_min_angle.id).unwrap();
@@ -173,7 +173,7 @@ impl ConvexHullComputer for QuickHull {
 
             let c = s
                 .iter()
-                .max_by_key(|v| OF(ab.distance_to_vertex(&v)))
+                .max_by_key(|v| OF(ab.distance_to_vertex(v)))
                 .unwrap()
                 .id;
             hull_ids.insert(c);

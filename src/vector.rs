@@ -23,7 +23,7 @@ impl Vector {
     }
 }
 
-impl<'a> From<&LineSegment<'a>> for Vector {
+impl From<&LineSegment<'_>> for Vector {
     fn from(ls: &LineSegment) -> Self {
         Vector::new(ls.v2.x - ls.v1.x, ls.v2.y - ls.v1.y)
     }

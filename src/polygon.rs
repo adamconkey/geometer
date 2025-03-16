@@ -137,7 +137,7 @@ impl Polygon {
         let v0 = self.rightmost_lowest_vertex();
         let mut v = v0.clone();
         v.x -= 1.0; // Arbitrary distance
-        let e0 = LineSegment::from_vertices(&v, &v0);
+        let e0 = LineSegment::from_vertices(&v, v0);
 
         let vertices: Vec<_> = self
             .vertices()
@@ -146,8 +146,8 @@ impl Polygon {
             // Break ties by sorting farthest to closest so that the dedup
             // will keep the first instance (farthest) so it will favor
             // extreme points
-            .sorted_by_key(|v| (OF(e0.angle_to_vertex(&v)), Reverse(OF(v0.distance_to(v)))))
-            .dedup_by(|a, b| e0.angle_to_vertex(&a) == e0.angle_to_vertex(&b))
+            .sorted_by_key(|v| (OF(e0.angle_to_vertex(v)), Reverse(OF(v0.distance_to(v)))))
+            .dedup_by(|a, b| e0.angle_to_vertex(a) == e0.angle_to_vertex(b))
             .collect();
         vertices
     }
@@ -338,7 +338,7 @@ impl Polygon {
         let not_visited = self
             .vertex_ids()
             .into_iter()
-            .filter(|id| !visited.contains(&id))
+            .filter(|id| !visited.contains(id))
             .collect_vec();
         assert!(
             not_visited.is_empty(),
@@ -364,15 +364,15 @@ impl Polygon {
         for i in 0..(edges.len() - 1) {
             let e1 = &edges[i];
             // Adjacent edges should share a common vertex
-            assert!(e1.incident_to(&edges[i + 1].v1));
+            assert!(e1.incident_to(edges[i + 1].v1));
             for e2 in edges.iter().take(edges.len() - 1).skip(i + 2) {
                 // Non-adjacent edges should have no intersection
                 assert!(!e1.intersects(e2));
-                assert!(!e1.incident_to(&e2.v1));
-                assert!(!e1.incident_to(&e2.v2));
+                assert!(!e1.incident_to(e2.v1));
+                assert!(!e1.incident_to(e2.v2));
                 assert!(!e2.intersects(e1));
-                assert!(!e2.incident_to(&e1.v1));
-                assert!(!e2.incident_to(&e1.v2));
+                assert!(!e2.incident_to(e1.v1));
+                assert!(!e2.incident_to(e1.v2));
             }
         }
     }

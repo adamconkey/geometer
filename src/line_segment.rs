@@ -13,7 +13,7 @@ pub struct LineSegment<'a> {
     pub v2: &'a Vertex,
 }
 
-impl<'a> Geometry for LineSegment<'a> {
+impl Geometry for LineSegment<'_> {
     fn vertices(&self) -> Vec<&Vertex> {
         vec![&self.v1, &self.v2]
     }
@@ -81,7 +81,7 @@ impl<'a> LineSegment<'a> {
     }
 
     pub fn connected_to(&self, cd: &LineSegment) -> bool {
-        self.incident_to(&cd.v1) || self.incident_to(&cd.v2)
+        self.incident_to(cd.v1) || self.incident_to(cd.v2)
     }
 
     pub fn incident_to(&self, v: &Vertex) -> bool {
