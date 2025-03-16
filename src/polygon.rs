@@ -6,10 +6,10 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
-use crate::geometry::Geometry;
 use crate::{
     bounding_box::BoundingBox,
     error::FileError,
+    geometry::Geometry,
     line_segment::LineSegment,
     triangle::Triangle,
     vertex::{Vertex, VertexId},

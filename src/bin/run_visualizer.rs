@@ -2,12 +2,14 @@ use clap::{Parser, ValueEnum};
 use itertools::Itertools;
 use random_color::RandomColor;
 
-use geometer::convex_hull::{ConvexHullComputer, QuickHull};
-use geometer::error::FileError;
-use geometer::geometry::Geometry;
-use geometer::polygon::Polygon;
-use geometer::triangulation::{EarClipping, Triangulation, TriangulationComputer};
-use geometer::util::load_polygon;
+use geometer::{
+    convex_hull::{ConvexHullComputer, QuickHull},
+    error::FileError,
+    geometry::Geometry,
+    polygon::Polygon,
+    triangulation::{EarClipping, Triangulation, TriangulationComputer},
+    util::load_polygon,
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Visualization {

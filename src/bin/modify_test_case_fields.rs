@@ -1,11 +1,9 @@
 use clap::{Parser, ValueEnum};
-use std::fs;
-use std::{ffi::OsStr, path::PathBuf};
 use serde_json::{json, Map, Value};
+use std::{ffi::OsStr, fs, path::PathBuf};
 use walkdir::WalkDir;
 
 use geometer::error::FileError;
-
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Action {
@@ -13,13 +11,11 @@ enum Action {
     Remove,
 }
 
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum FieldType {
-    Number, 
+    Number,
     Array,
 }
-
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -37,7 +33,6 @@ struct Args {
     dry_run: bool,
 }
 
-
 fn add_field(metadata: &mut Map<String, Value>, field: &str, field_type: &FieldType) {
     let value = match field_type {
         FieldType::Array => json!([]),
@@ -51,10 +46,9 @@ fn remove_field(metadata: &mut Map<String, Value>, field: &str) {
     metadata.remove(field);
 }
 
-
 fn main() -> Result<(), FileError> {
     let args = Args::parse();
-    
+
     let mut root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     root.push("polygons");
     let paths = WalkDir::new(root)
@@ -64,7 +58,7 @@ fn main() -> Result<(), FileError> {
         .filter(|p| p.is_file())
         .filter(|p| p.extension() == Some(OsStr::new("json")))
         .filter(|p| p.with_extension("").extension() == Some(OsStr::new("meta")));
-    
+
     for path in paths {
         let metadata_str: String = fs::read_to_string(&path)?;
         let mut metadata: Map<String, Value> = serde_json::from_str(&metadata_str)?;
@@ -81,6 +75,6 @@ fn main() -> Result<(), FileError> {
             fs::write(path, metadata_str)?;
         }
     }
-    
+
     Ok(())
 }

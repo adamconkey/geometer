@@ -1,6 +1,5 @@
-use std::fmt;
-
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use crate::{line_segment::LineSegment, triangle::Triangle, vector::Vector};
 

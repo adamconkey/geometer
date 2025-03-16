@@ -1,6 +1,10 @@
-use std::cell::OnceCell;
+use std::{cell::OnceCell, collections::HashSet};
 
-use crate::{line_segment::LineSegment, vertex::Vertex};
+use crate::{
+    geometry::Geometry,
+    line_segment::LineSegment,
+    vertex::{Vertex, VertexId},
+};
 
 pub struct Triangle<'a> {
     pub v1: &'a Vertex,
@@ -9,14 +13,24 @@ pub struct Triangle<'a> {
     area: OnceCell<f64>,
 }
 
+impl Geometry for Triangle<'_> {
+    fn vertices(&self) -> Vec<&Vertex> {
+        vec![self.v1, self.v2, self.v3]
+    }
+
+    fn edges(&self) -> HashSet<(VertexId, VertexId)> {
+        let mut edges = HashSet::new();
+        edges.insert((self.v1.id, self.v2.id));
+        edges.insert((self.v2.id, self.v3.id));
+        edges.insert((self.v3.id, self.v1.id));
+        edges
+    }
+}
+
 impl<'a> Triangle<'a> {
-    pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex, v3: &'a Vertex) -> Triangle<'a> {
-        Triangle {
-            v1,
-            v2,
-            v3,
-            area: OnceCell::new(),
-        }
+    pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex, v3: &'a Vertex) -> Self {
+        let area = OnceCell::new();
+        Self { v1, v2, v3, area }
     }
 
     pub fn to_line_segments(&self) -> Vec<LineSegment> {
