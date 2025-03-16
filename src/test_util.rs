@@ -1,13 +1,12 @@
 use rstest::fixture;
-use rstest_reuse::{self, *};    
+use rstest_reuse::{self, *};
 use std::{fs, path::PathBuf};
 
 use crate::{
-    error::FileError, 
+    error::FileError,
     polygon::{Polygon, PolygonMetadata},
-    util::load_polygon, 
+    util::load_polygon,
 };
-
 
 pub struct PolygonTestCase {
     pub polygon: Polygon,

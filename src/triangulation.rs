@@ -1,7 +1,6 @@
 use std::{fmt, slice::Iter};
 
-use crate::{polygon::Polygon, vertex::VertexId};
-
+use crate::{geometry::Geometry, polygon::Polygon, vertex::VertexId};
 
 #[derive(Debug, Clone)]
 pub struct EarNotFoundError;
@@ -12,10 +11,8 @@ impl fmt::Display for EarNotFoundError {
     }
 }
 
-
 #[derive(Eq, Hash, PartialEq)]
 pub struct TriangleVertexIds(pub VertexId, pub VertexId, pub VertexId);
-
 
 #[derive(Default)]
 pub struct Triangulation {
@@ -27,7 +24,7 @@ impl Triangulation {
         self.triangles.push(value)
     }
 
-    pub fn iter(&self) -> Iter<'_, TriangleVertexIds> { 
+    pub fn iter(&self) -> Iter<'_, TriangleVertexIds> {
         self.triangles.iter()
     }
 
@@ -40,11 +37,9 @@ impl Triangulation {
     }
 }
 
-
 pub trait TriangulationComputer {
     fn triangulation(&self, polygon: &Polygon) -> Triangulation;
 }
-
 
 #[derive(Default)]
 pub struct EarClipping;
@@ -52,8 +47,8 @@ pub struct EarClipping;
 impl EarClipping {
     fn find_ear(&self, polygon: &Polygon) -> Result<VertexId, EarNotFoundError> {
         for v in polygon.vertices() {
-            let prev = polygon.get_vertex(&v.prev).unwrap();
-            let next = polygon.get_vertex(&v.next).unwrap();
+            let prev = polygon.get_prev_vertex(&v.id).unwrap();
+            let next = polygon.get_next_vertex(&v.id).unwrap();
             if polygon.diagonal(prev, next) {
                 return Ok(v.id);
             }
@@ -68,40 +63,45 @@ impl TriangulationComputer for EarClipping {
         let mut polygon = polygon.clone();
 
         while polygon.num_vertices() > 3 {
-            let id = self.find_ear(&polygon)
+            let id = self
+                .find_ear(&polygon)
                 .expect("valid polygons with 3 or more vertices should have an ear");
+            triangulation.push(TriangleVertexIds(
+                polygon.prev_vertex_id(&id).unwrap(),
+                id,
+                polygon.next_vertex_id(&id).unwrap(),
+            ));
             // TODO instead of unwrap, return result with error
-            let v = polygon.remove_vertex(&id).unwrap();
-            triangulation.push(TriangleVertexIds(v.prev, id, v.next));
+            polygon.remove_vertex(&id).unwrap();
         }
         // At this stage there should be exactly 3 vertices left,
         // which form the final triangle of the triangulation
         let v = polygon.vertices()[0];
-        triangulation.push(TriangleVertexIds(v.prev, v.id, v.next));
-
+        triangulation.push(TriangleVertexIds(
+            polygon.prev_vertex_id(&v.id).unwrap(),
+            v.id,
+            polygon.next_vertex_id(&v.id).unwrap(),
+        ));
         triangulation
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_util::*;
     use rstest::rstest;
     use rstest_reuse::{self, *};
-    use crate::test_util::*;
 
     #[apply(all_polygons)]
     fn test_triangulation(
-        #[case] 
-        case: PolygonTestCase, 
-        #[values(EarClipping)]
-        computer: impl TriangulationComputer
+        #[case] case: PolygonTestCase,
+        #[values(EarClipping)] computer: impl TriangulationComputer,
     ) {
         let triangulation = computer.triangulation(&case.polygon);
         assert_eq!(triangulation.len(), case.metadata.num_triangles);
-        // This meta-assert is only valid for polygons without holes, holes 
-        // are not yet supported. Will need a flag in the metadata to know 
+        // This meta-assert is only valid for polygons without holes, holes
+        // are not yet supported. Will need a flag in the metadata to know
         // if holes are present and then this assert would be conditional
         assert_eq!(case.metadata.num_triangles, case.metadata.num_edges - 2);
 
