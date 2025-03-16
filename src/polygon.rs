@@ -121,8 +121,9 @@ impl Polygon {
 
     pub fn to_json<P: AsRef<Path>>(&self, path: P) -> Result<(), FileError> {
         let coords = self
-            .sorted_vertices()
+            .vertices()
             .iter()
+            .sorted_by_key(|v| v.id)
             .map(|v| v.coords())
             .collect_vec();
         let points_str = serde_json::to_string_pretty(&coords)?;
@@ -132,12 +133,6 @@ impl Polygon {
 
     pub fn vertex_ids(&self) -> Vec<VertexId> {
         self.vertex_map.keys().cloned().collect_vec()
-    }
-
-    pub fn sorted_vertices(&self) -> Vec<&Vertex> {
-        let mut vertices = self.vertices();
-        vertices.sort_by_key(|v| v.id);
-        vertices
     }
 
     pub fn min_angle_sorted_vertices(&self) -> Vec<&Vertex> {
@@ -342,12 +337,11 @@ impl Polygon {
             }
         }
 
-        let mut not_visited = HashSet::<VertexId>::new();
-        for v in self.sorted_vertices() {
-            if !visited.contains(&v.id) {
-                not_visited.insert(v.id);
-            }
-        }
+        let not_visited = self
+            .vertex_ids()
+            .into_iter()
+            .filter(|id| !visited.contains(&id))
+            .collect_vec();
         assert!(
             not_visited.is_empty(),
             "Expected vertex chain to form a cycle but these \
