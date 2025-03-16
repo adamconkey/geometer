@@ -1,8 +1,10 @@
 use clap::{Parser, ValueEnum};
-use geometer::convex_hull::{ConvexHullComputer, QuickHull};
-use geometer::error::FileError;
+use itertools::Itertools;
 use random_color::RandomColor;
 
+use geometer::convex_hull::{ConvexHullComputer, QuickHull};
+use geometer::error::FileError;
+use geometer::geometry::Geometry;
 use geometer::polygon::Polygon;
 use geometer::triangulation::{EarClipping, Triangulation, TriangulationComputer};
 use geometer::util::load_polygon;
@@ -118,16 +120,18 @@ impl RerunVisualizer {
     fn polygon_to_rerun_points(&self, polygon: &Polygon) -> rerun::Points3D {
         rerun::Points3D::new(
             polygon
-                .sorted_vertices()
+                .vertices()
                 .into_iter()
+                .sorted_by_key(|v| v.id)
                 .map(|v| (v.x as f32, v.y as f32, 0.0)),
         )
     }
 
     fn polygon_to_rerun_edges(&self, polygon: &Polygon) -> rerun::LineStrips3D {
         let mut edge_points: Vec<_> = polygon
-            .sorted_vertices()
+            .vertices()
             .into_iter()
+            .sorted_by_key(|v| v.id)
             .map(|v| (v.x as f32, v.y as f32, 0.0))
             .collect();
         edge_points.push(edge_points[0]);
