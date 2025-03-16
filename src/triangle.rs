@@ -2,15 +2,15 @@ use std::cell::OnceCell;
 
 use crate::{line_segment::LineSegment, vertex::Vertex};
 
-pub struct Triangle {
-    pub v1: Vertex,
-    pub v2: Vertex,
-    pub v3: Vertex,
+pub struct Triangle<'a> {
+    pub v1: &'a Vertex,
+    pub v2: &'a Vertex,
+    pub v3: &'a Vertex,
     area: OnceCell<f64>,
 }
 
-impl Triangle {
-    pub fn from_vertices(v1: Vertex, v2: Vertex, v3: Vertex) -> Triangle {
+impl<'a> Triangle<'a> {
+    pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex, v3: &'a Vertex) -> Triangle<'a> {
         Triangle {
             v1,
             v2,
@@ -20,9 +20,9 @@ impl Triangle {
     }
 
     pub fn to_line_segments(&self) -> Vec<LineSegment> {
-        let ls1 = LineSegment::from_vertices(self.v1.clone(), self.v2.clone());
-        let ls2 = LineSegment::from_vertices(self.v2.clone(), self.v3.clone());
-        let ls3 = LineSegment::from_vertices(self.v3.clone(), self.v1.clone());
+        let ls1 = LineSegment::from_vertices(self.v1, self.v2);
+        let ls2 = LineSegment::from_vertices(self.v2, self.v3);
+        let ls3 = LineSegment::from_vertices(self.v3, self.v1);
         vec![ls1, ls2, ls3]
     }
 
@@ -64,7 +64,7 @@ mod tests {
         let a = Vertex::new(VertexId::from(0u32), 0.0, 0.0);
         let b = Vertex::new(VertexId::from(1u32), 3.0, 0.0);
         let c = Vertex::new(VertexId::from(2u32), 0.0, 4.0);
-        let triangle = Triangle::from_vertices(a, b, c);
+        let triangle = Triangle::from_vertices(&a, &b, &c);
         let area = triangle.area();
         assert_eq!(area, 6.0);
     }
@@ -78,9 +78,9 @@ mod tests {
         let c = Vertex::new(VertexId::from(2u32), 1.0, 3.0);
 
         let cw = vec![
-            Triangle::from_vertices(a.clone(), c.clone(), b.clone()),
-            Triangle::from_vertices(c.clone(), b.clone(), a.clone()),
-            Triangle::from_vertices(b, a, c),
+            Triangle::from_vertices(&a, &c, &b),
+            Triangle::from_vertices(&c, &b, &a),
+            Triangle::from_vertices(&b, &a, &c),
         ];
         for triangle in cw {
             assert!(triangle.area() < 0.0);
@@ -94,9 +94,9 @@ mod tests {
         let c = Vertex::new(VertexId::from(2u32), 1.0, 3.0);
 
         let ccw = vec![
-            Triangle::from_vertices(a.clone(), b.clone(), c.clone()),
-            Triangle::from_vertices(b.clone(), c.clone(), a.clone()),
-            Triangle::from_vertices(c, a, b),
+            Triangle::from_vertices(&a, &b, &c),
+            Triangle::from_vertices(&b, &c, &a),
+            Triangle::from_vertices(&c, &a, &b),
         ];
         for triangle in ccw {
             assert!(triangle.area() > 0.0);
@@ -119,7 +119,7 @@ mod tests {
             let v0 = vertices[0];
             let v1 = vertices[1];
             let v2 = vertices[2];
-            let triangle = Triangle::from_vertices(v0.clone(), v1.clone(), v2.clone());
+            let triangle = Triangle::from_vertices(v0, v1, v2);
 
             if v0 == v1 || v0 == v2 || v1 == v2 {
                 // If there's duplicate vertices, they should be detected

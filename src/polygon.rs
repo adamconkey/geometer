@@ -137,7 +137,7 @@ impl Polygon {
         let v0 = self.rightmost_lowest_vertex();
         let mut v = v0.clone();
         v.x -= 1.0; // Arbitrary distance
-        let e0 = LineSegment::from_vertices(v, v0.clone());
+        let e0 = LineSegment::from_vertices(&v, &v0);
 
         let vertices: Vec<_> = self
             .vertices()
@@ -157,7 +157,7 @@ impl Polygon {
         let anchor = self.vertices()[0];
         for v1 in self.vertex_map.values() {
             let v2 = self.get_next_vertex(&v1.id).unwrap();
-            let t = Triangle::from_vertices(anchor.clone(), v1.clone(), v2.clone());
+            let t = Triangle::from_vertices(anchor, v1, v2);
             area += t.area();
         }
         area
@@ -204,7 +204,7 @@ impl Polygon {
     pub fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> Option<LineSegment> {
         if let Some(v1) = self.get_vertex(id_1) {
             if let Some(v2) = self.get_vertex(id_2) {
-                return Some(LineSegment::from_vertices(v1.clone(), v2.clone()));
+                return Some(LineSegment::from_vertices(v1, v2));
             }
         }
         None
@@ -219,7 +219,7 @@ impl Polygon {
         if let Some(v1) = self.vertex_map.get(id_1) {
             if let Some(v2) = self.vertex_map.get(id_2) {
                 if let Some(v3) = self.vertex_map.get(id_3) {
-                    return Some(Triangle::from_vertices(v1.clone(), v2.clone(), v3.clone()));
+                    return Some(Triangle::from_vertices(v1, v2, v3));
                 }
             }
         }
@@ -244,13 +244,13 @@ impl Polygon {
     }
 
     fn in_cone(&self, a: &Vertex, b: &Vertex) -> bool {
-        let ab = LineSegment::from_vertices(a.clone(), b.clone());
+        let ab = LineSegment::from_vertices(a, b);
         let ba = &ab.reverse();
         // TODO instead of unwrap, return result with error
         let a0 = self.get_prev_vertex(&a.id).unwrap();
         let a1 = self.get_next_vertex(&a.id).unwrap();
 
-        if a0.left_on(&LineSegment::from_vertices(a.clone(), a1.clone())) {
+        if a0.left_on(&LineSegment::from_vertices(a, a1)) {
             return a0.left(&ab) && a1.left(ba);
         }
 
@@ -263,7 +263,7 @@ impl Polygon {
     }
 
     fn diagonal_internal_external(&self, a: &Vertex, b: &Vertex) -> bool {
-        let ab = &LineSegment::from_vertices(a.clone(), b.clone());
+        let ab = &LineSegment::from_vertices(a, b);
         for (id1, id2) in self.edges() {
             // TODO instead of unwrap, return result with error
             let e = self.get_line_segment(&id1, &id2).unwrap();
@@ -353,7 +353,7 @@ impl Polygon {
         let mut current = self.get_vertex(&anchor_id).unwrap();
         loop {
             let next = self.get_next_vertex(&current.id).unwrap();
-            let ls = LineSegment::from_vertices(current.clone(), next.clone());
+            let ls = LineSegment::from_vertices(current, next);
             edges.push(ls);
             current = next;
             if current.id == anchor_id {

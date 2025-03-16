@@ -8,12 +8,12 @@ use crate::{
 };
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct LineSegment {
-    pub v1: Vertex,
-    pub v2: Vertex,
+pub struct LineSegment<'a> {
+    pub v1: &'a Vertex,
+    pub v2: &'a Vertex,
 }
 
-impl Geometry for LineSegment {
+impl<'a> Geometry for LineSegment<'a> {
     fn vertices(&self) -> Vec<&Vertex> {
         vec![&self.v1, &self.v2]
     }
@@ -25,13 +25,13 @@ impl Geometry for LineSegment {
     }
 }
 
-impl LineSegment {
-    pub fn from_vertices(v1: Vertex, v2: Vertex) -> Self {
+impl<'a> LineSegment<'a> {
+    pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex) -> Self {
         LineSegment { v1, v2 }
     }
 
     pub fn reverse(&self) -> LineSegment {
-        LineSegment::from_vertices(self.v2.clone(), self.v1.clone())
+        LineSegment::from_vertices(self.v2, self.v1)
     }
 
     pub fn is_vertical(&self) -> bool {
@@ -48,10 +48,10 @@ impl LineSegment {
         let c = &cd.v1;
         let d = &cd.v2;
 
-        let abc = Triangle::from_vertices(a.clone(), b.clone(), c.clone());
-        let abd = Triangle::from_vertices(a.clone(), b.clone(), d.clone());
-        let cda = Triangle::from_vertices(c.clone(), d.clone(), a.clone());
-        let cdb = Triangle::from_vertices(c.clone(), d.clone(), b.clone());
+        let abc = Triangle::from_vertices(a, b, c);
+        let abd = Triangle::from_vertices(a, b, d);
+        let cda = Triangle::from_vertices(c, d, a);
+        let cdb = Triangle::from_vertices(c, d, b);
 
         let has_collinear_points = abc.has_collinear_points()
             || abd.has_collinear_points()
@@ -99,7 +99,7 @@ impl LineSegment {
         // the function as it makes sorting vecs by the value very
         // compact. Can consider moving to another struct or renaming
         let p1_to_p2 = Vector::from(self);
-        let p2_to_p = Vector::from(&LineSegment::from_vertices(self.v2.clone(), v.clone()));
+        let p2_to_p = Vector::from(&LineSegment::from_vertices(self.v2, v));
         let cos_theta = p1_to_p2.dot(&p2_to_p) / (p1_to_p2.magnitude() * p2_to_p.magnitude());
         cos_theta.acos()
     }
@@ -126,8 +126,8 @@ mod tests {
         let c = Vertex::new(VertexId::from(2u32), 1.0, 0.0);
         let d = Vertex::new(VertexId::from(3u32), 4.0, 6.0);
 
-        let ab = LineSegment::from_vertices(a, b);
-        let cd = LineSegment::from_vertices(c, d);
+        let ab = LineSegment::from_vertices(&a, &b);
+        let cd = LineSegment::from_vertices(&c, &d);
 
         assert!(ab.proper_intersects(&cd));
         assert!(cd.proper_intersects(&ab));
@@ -144,8 +144,8 @@ mod tests {
         let c = Vertex::new(VertexId::from(2u32), 1.0, 0.0);
         let d = Vertex::new(VertexId::from(3u32), 4.0, 6.0);
 
-        let ab = LineSegment::from_vertices(a, b);
-        let cd = LineSegment::from_vertices(c, d);
+        let ab = LineSegment::from_vertices(&a, &b);
+        let cd = LineSegment::from_vertices(&c, &d);
 
         assert!(!ab.proper_intersects(&cd));
         assert!(!cd.proper_intersects(&ab));
@@ -162,8 +162,8 @@ mod tests {
         let c = Vertex::new(VertexId::from(2u32), 1.0, 0.0);
         let d = Vertex::new(VertexId::from(3u32), 4.0, 6.0);
 
-        let ab = LineSegment::from_vertices(a, b);
-        let cd = LineSegment::from_vertices(c, d);
+        let ab = LineSegment::from_vertices(&a, &b);
+        let cd = LineSegment::from_vertices(&c, &d);
 
         assert!(!ab.proper_intersects(&cd));
         assert!(!cd.proper_intersects(&ab));
@@ -177,7 +177,7 @@ mod tests {
     fn test_intersect_with_self() {
         let a = Vertex::new(VertexId::from(0u32), 6.0, 4.0);
         let b = Vertex::new(VertexId::from(1u32), 4.0, 4.0);
-        let ab = LineSegment::from_vertices(a, b);
+        let ab = LineSegment::from_vertices(&a, &b);
 
         assert!(!ab.proper_intersects(&ab));
         assert!(ab.improper_intersects(&ab));
@@ -188,7 +188,7 @@ mod tests {
     fn test_reverse() {
         let a = Vertex::new(VertexId::from(0u32), 0.0, 0.0);
         let b = Vertex::new(VertexId::from(1u32), 1.0, 2.0);
-        let ab = LineSegment::from_vertices(a.clone(), b.clone());
+        let ab = LineSegment::from_vertices(&a, &b);
         let ba = ab.reverse();
         assert_eq!(ab.v1.coords(), a.coords());
         assert_eq!(ab.v2.coords(), b.coords());

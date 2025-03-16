@@ -48,11 +48,11 @@ impl Vertex {
     }
 
     pub fn between(&self, a: &Vertex, b: &Vertex) -> bool {
-        if !Triangle::from_vertices(a.clone(), b.clone(), self.clone()).has_collinear_points() {
+        if !Triangle::from_vertices(a, b, self).has_collinear_points() {
             return false;
         }
 
-        let (e1, e2, check) = match LineSegment::from_vertices(a.clone(), b.clone()).is_vertical() {
+        let (e1, e2, check) = match LineSegment::from_vertices(a, b).is_vertical() {
             true => (a.y, b.y, self.y),
             false => (a.x, b.x, self.x),
         };
@@ -61,11 +61,11 @@ impl Vertex {
     }
 
     pub fn left(&self, ab: &LineSegment) -> bool {
-        Triangle::from_vertices(ab.v1.clone(), ab.v2.clone(), self.clone()).area() > 0.0
+        Triangle::from_vertices(ab.v1, ab.v2, self).area() > 0.0
     }
 
     pub fn left_on(&self, ab: &LineSegment) -> bool {
-        Triangle::from_vertices(ab.v1.clone(), ab.v2.clone(), self.clone()).area() >= 0.0
+        Triangle::from_vertices(ab.v1, ab.v2, self).area() >= 0.0
     }
 
     pub fn right(&self, ab: &LineSegment) -> bool {
