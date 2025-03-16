@@ -40,14 +40,12 @@ impl Geometry for Polygon {
         // TODO could cache this and clear on modification
         let mut edges = HashSet::new();
         let anchor_id = self.vertices()[0].id;
-        // TODO instead of unwrapping these, this function could
-        // return result with an associated error type
-        let mut current = self.get_vertex(&anchor_id).unwrap();
+        let mut current = anchor_id;
         loop {
-            let next = self.get_next_vertex(&current.id).unwrap();
-            edges.insert((current.id, next.id));
+            let next = self.next_vertex_id(&current).unwrap();
+            edges.insert((current, next));
             current = next;
-            if current.id == anchor_id {
+            if current == anchor_id {
                 break;
             }
         }
@@ -165,11 +163,11 @@ impl Polygon {
         area
     }
 
-    pub fn prev_vertex(&self, id: &VertexId) -> Option<VertexId> {
+    pub fn prev_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
         self.prev_map.get(id).cloned()
     }
 
-    pub fn next_vertex(&self, id: &VertexId) -> Option<VertexId> {
+    pub fn next_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
         self.next_map.get(id).cloned()
     }
 
@@ -190,12 +188,12 @@ impl Polygon {
     }
 
     pub fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        let prev_id = self.prev_vertex(id).unwrap(); // TODO don't unwrap
+        let prev_id = self.prev_vertex_id(id).unwrap(); // TODO don't unwrap
         self.vertex_map.get(&prev_id)
     }
 
     pub fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        let next_id = self.next_vertex(id).unwrap(); // TODO don't unwrap
+        let next_id = self.next_vertex_id(id).unwrap(); // TODO don't unwrap
         self.vertex_map.get(&next_id)
     }
 

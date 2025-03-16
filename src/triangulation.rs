@@ -67,9 +67,9 @@ impl TriangulationComputer for EarClipping {
                 .find_ear(&polygon)
                 .expect("valid polygons with 3 or more vertices should have an ear");
             triangulation.push(TriangleVertexIds(
-                polygon.prev_vertex(&id).unwrap(),
+                polygon.prev_vertex_id(&id).unwrap(),
                 id,
-                polygon.next_vertex(&id).unwrap(),
+                polygon.next_vertex_id(&id).unwrap(),
             ));
             // TODO instead of unwrap, return result with error
             polygon.remove_vertex(&id).unwrap();
@@ -78,9 +78,9 @@ impl TriangulationComputer for EarClipping {
         // which form the final triangle of the triangulation
         let v = polygon.vertices()[0];
         triangulation.push(TriangleVertexIds(
-            polygon.prev_vertex(&v.id).unwrap(),
+            polygon.prev_vertex_id(&v.id).unwrap(),
             v.id,
-            polygon.next_vertex(&v.id).unwrap(),
+            polygon.next_vertex_id(&v.id).unwrap(),
         ));
         triangulation
     }
