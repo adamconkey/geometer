@@ -22,9 +22,9 @@ impl InteriorPoints {
         // for-loops.
         for perm in ids.into_iter().permutations(4) {
             // TODO instead of unwrap, return result with error
-            let p = polygon.get_point(&perm[0]).unwrap();
+            let v = polygon.get_vertex(&perm[0]).unwrap();
             let triangle = polygon.get_triangle(&perm[1], &perm[2], &perm[3]).unwrap();
-            if triangle.contains(p) {
+            if triangle.contains(v) {
                 interior_points.insert(perm[0]);
             }
         }
@@ -57,8 +57,8 @@ impl ExtremeEdges {
             let mut is_extreme = true;
             for id3 in ids.iter().filter(|id| !perm.contains(id)) {
                 // TODO instead of unwrap, return result with error
-                let p = polygon.get_point(id3).unwrap();
-                if !p.left_on(&ls) {
+                let v = polygon.get_vertex(id3).unwrap();
+                if !v.left_on(&ls) {
                     is_extreme = false;
                     break;
                 }
@@ -104,9 +104,9 @@ impl ConvexHullComputer for GiftWrapping {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon {
         // Form a horizontal line terminating at lowest point to start
         let v0 = polygon.rightmost_lowest_vertex();
-        let mut p = v0.coords.clone();
-        p.x -= 1.0; // Arbitrary distance
-        let mut e = LineSegment::from_points(p, v0.coords.clone());
+        let mut v = v0.clone();
+        v.x -= 1.0; // Arbitrary distance
+        let mut e = LineSegment::from_vertices(v, v0.clone());
         let mut v_i = v0;
 
         let mut hull_ids = HashSet::new();
@@ -121,13 +121,8 @@ impl ConvexHullComputer for GiftWrapping {
                 .vertices()
                 .into_iter()
                 .filter(|v| v.id != v_i.id)
-                .sorted_by_key(|v| {
-                    (
-                        OF(e.angle_to_point(&v.coords)),
-                        Reverse(OF(v_i.distance_to(v))),
-                    )
-                })
-                .dedup_by(|a, b| e.angle_to_point(&a.coords) == e.angle_to_point(&b.coords))
+                .sorted_by_key(|v| (OF(e.angle_to_vertex(&v)), Reverse(OF(v_i.distance_to(v)))))
+                .dedup_by(|a, b| e.angle_to_vertex(&a) == e.angle_to_vertex(&b))
                 .collect::<Vec<_>>()[0];
 
             e = polygon.get_line_segment(&v_i.id, &v_min_angle.id).unwrap();
@@ -177,7 +172,7 @@ impl ConvexHullComputer for QuickHull {
 
             let c = s
                 .iter()
-                .max_by_key(|v| OF(ab.distance_to_point(&v.coords)))
+                .max_by_key(|v| OF(ab.distance_to_vertex(&v)))
                 .unwrap()
                 .id;
             hull_ids.insert(c);
@@ -186,7 +181,6 @@ impl ConvexHullComputer for QuickHull {
             let cb = polygon.get_line_segment(&c, &b).unwrap();
 
             let s1 = s.iter().copied().filter(|v| v.right(&ac)).collect_vec();
-
             let s2 = s.iter().copied().filter(|v| v.right(&cb)).collect_vec();
 
             if !s1.is_empty() {

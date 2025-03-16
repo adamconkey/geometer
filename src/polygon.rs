@@ -11,7 +11,6 @@ use crate::{
     bounding_box::BoundingBox,
     error::FileError,
     line_segment::LineSegment,
-    point::Point,
     triangle::Triangle,
     vertex::{Vertex, VertexId},
 };
@@ -58,7 +57,7 @@ impl Geometry for Polygon {
 }
 
 impl Polygon {
-    pub fn new(points: Vec<Point>) -> Polygon {
+    pub fn from_coords(coords: Vec<(f64, f64)>) -> Polygon {
         let mut vertex_map = HashMap::new();
         let mut prev_map = HashMap::new();
         let mut next_map = HashMap::new();
@@ -68,14 +67,14 @@ impl Polygon {
         // will need to track index on self so that new vertices
         // could be added. Tried using unique_id::SequenceGenerator
         // but it was global which was harder to test with
-        let num_points = points.len();
+        let num_points = coords.len();
         let vertex_ids = (0..num_points).map(VertexId::from).collect::<Vec<_>>();
 
-        for (i, point) in points.into_iter().enumerate() {
+        for (i, coord) in coords.into_iter().enumerate() {
             let prev_id = vertex_ids[(i + num_points - 1) % num_points];
             let curr_id = vertex_ids[i];
             let next_id = vertex_ids[(i + num_points + 1) % num_points];
-            let v = Vertex::new(point, curr_id);
+            let v = Vertex::new(curr_id, coord.0, coord.1);
             vertex_map.insert(curr_id, v);
             prev_map.insert(curr_id, prev_id);
             next_map.insert(curr_id, next_id);
@@ -117,13 +116,17 @@ impl Polygon {
 
     pub fn from_json<P: AsRef<Path>>(path: P) -> Result<Polygon, FileError> {
         let points_str: String = fs::read_to_string(path)?;
-        let points: Vec<Point> = serde_json::from_str(&points_str)?;
-        Ok(Polygon::new(points))
+        let coords: Vec<(f64, f64)> = serde_json::from_str(&points_str)?;
+        Ok(Polygon::from_coords(coords))
     }
 
     pub fn to_json<P: AsRef<Path>>(&self, path: P) -> Result<(), FileError> {
-        let points = self.sorted_points();
-        let points_str = serde_json::to_string_pretty(&points)?;
+        let coords = self
+            .sorted_vertices()
+            .iter()
+            .map(|v| v.coords())
+            .collect_vec();
+        let points_str = serde_json::to_string_pretty(&coords)?;
         fs::write(path, points_str)?;
         Ok(())
     }
@@ -132,13 +135,6 @@ impl Polygon {
         let mut ids: Vec<_> = self.vertex_map.keys().collect();
         ids.sort();
         ids
-    }
-
-    pub fn sorted_points(&self) -> Vec<Point> {
-        self.sorted_vertices()
-            .iter()
-            .map(|v| v.coords.clone())
-            .collect::<Vec<Point>>()
     }
 
     pub fn vertex_ids(&self) -> Vec<VertexId> {
@@ -157,9 +153,9 @@ impl Polygon {
 
     pub fn min_angle_sorted_vertices(&self) -> Vec<&Vertex> {
         let v0 = self.rightmost_lowest_vertex();
-        let mut p = v0.coords.clone();
-        p.x -= 1.0; // Arbitrary distance
-        let e0 = LineSegment::from_points(p, v0.coords.clone());
+        let mut v = v0.clone();
+        v.x -= 1.0; // Arbitrary distance
+        let e0 = LineSegment::from_vertices(v, v0.clone());
 
         let vertices: Vec<_> = self
             .vertices()
@@ -168,13 +164,8 @@ impl Polygon {
             // Break ties by sorting farthest to closest so that the dedup
             // will keep the first instance (farthest) so it will favor
             // extreme points
-            .sorted_by_key(|v| {
-                (
-                    OF(e0.angle_to_point(&v.coords)),
-                    Reverse(OF(v0.distance_to(v))),
-                )
-            })
-            .dedup_by(|a, b| e0.angle_to_point(&a.coords) == e0.angle_to_point(&b.coords))
+            .sorted_by_key(|v| (OF(e0.angle_to_vertex(&v)), Reverse(OF(v0.distance_to(v)))))
+            .dedup_by(|a, b| e0.angle_to_vertex(&a) == e0.angle_to_vertex(&b))
             .collect();
         vertices
     }
@@ -230,13 +221,6 @@ impl Polygon {
 
     pub fn get_vertex_ids(&self) -> HashSet<VertexId> {
         self.vertex_map.keys().cloned().collect()
-    }
-
-    pub fn get_point(&self, id: &VertexId) -> Option<Point> {
-        if let Some(v) = self.get_vertex(id) {
-            return Some(v.coords.clone());
-        }
-        None
     }
 
     pub fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> Option<LineSegment> {
@@ -328,9 +312,9 @@ impl Polygon {
         }
     }
 
-    pub fn rotate_about_point(&mut self, radians: f64, point: &Point) {
+    pub fn rotate_about_vertex(&mut self, radians: f64, vertex: &Vertex) {
         for v in self.vertex_map.values_mut() {
-            v.rotate_about_point(radians, point);
+            v.rotate_about_vertex(radians, vertex);
         }
     }
 
@@ -432,24 +416,15 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_invalid_polygon_not_enough_vertices() {
-        let p1 = Point::new(1.0, 2.0);
-        let p2 = Point::new(3.0, 4.0);
-        let points = vec![p1, p2];
-        let polygon = Polygon::new(points);
-        assert_eq!(2, polygon.num_vertices());
+        let coords = vec![(1.0, 2.0), (3.0, 4.0)];
+        let _ = Polygon::from_coords(coords);
     }
 
     #[test]
     #[should_panic]
     fn test_invalid_polygon_not_simple() {
-        let p1 = Point::new(0.0, 0.0);
-        let p2 = Point::new(2.0, 0.0);
-        let p3 = Point::new(2.0, 2.0);
-        let p4 = Point::new(0.0, 2.0);
-        let p5 = Point::new(4.0, 1.0); // This one should break it
-        let points = vec![p1, p2, p3, p4, p5];
-        let polygon = Polygon::new(points);
-        assert_eq!(3, polygon.num_vertices())
+        let coords = vec![(0.0, 0.0), (2.0, 0.0), (2.0, 2.0), (0.0, 2.0), (4.0, 1.0)];
+        let _ = Polygon::from_coords(coords);
     }
 
     #[apply(all_polygons)]
@@ -463,13 +438,14 @@ mod tests {
     #[test]
     // TODO could expand this test to polygon cases
     fn test_min_max() {
-        let p1 = Point::new(0.0, 0.0);
-        let p2 = Point::new(5.0, -1.0);
-        let p3 = Point::new(7.0, 6.0);
-        let p4 = Point::new(-4.0, 8.0);
-        let p5 = Point::new(-2.0, -3.0);
-        let points = vec![p1, p2, p3, p4, p5];
-        let polygon = Polygon::new(points);
+        let coords = vec![
+            (0.0, 0.0),
+            (5.0, -1.0),
+            (7.0, 6.0),
+            (-4.0, 8.0),
+            (-2.0, -3.0),
+        ];
+        let polygon = Polygon::from_coords(coords);
         assert_eq!(polygon.min_x(), -4.0);
         assert_eq!(polygon.max_x(), 7.0);
         assert_eq!(polygon.min_y(), -3.0);
@@ -479,16 +455,17 @@ mod tests {
     #[test]
     // TODO could expand this test to polygon cases
     fn test_lowest_vertex() {
-        let p1 = Point::new(0.0, 0.0);
-        let p2 = Point::new(5.0, -1.0);
-        let p3 = Point::new(7.0, 6.0);
-        let p4 = Point::new(-4.0, 8.0);
-        let p5 = Point::new(-2.0, -3.0);
-        let points = vec![p1, p2, p3, p4, p5];
-        let polygon = Polygon::new(points);
+        let coords = vec![
+            (0.0, 0.0),
+            (5.0, -1.0),
+            (7.0, 6.0),
+            (-4.0, 8.0),
+            (-2.0, -3.0),
+        ];
+        let polygon = Polygon::from_coords(coords);
         let lowest = polygon.leftmost_lowest_vertex();
-        assert_eq!(lowest.coords.x, -2.0);
-        assert_eq!(lowest.coords.y, -3.0);
+        assert_eq!(lowest.x, -2.0);
+        assert_eq!(lowest.y, -3.0);
     }
 
     #[apply(all_polygons)]
@@ -524,14 +501,14 @@ mod tests {
     }
 
     #[apply(all_polygons)]
-    fn test_rotation_about_point(
+    fn test_rotation_about_vertex(
         case: PolygonTestCase,
         #[values(PI, FRAC_PI_2, FRAC_PI_3, FRAC_PI_4, FRAC_PI_6, FRAC_PI_8)] radians: f64,
-        #[values(Point::new(5.2, 10.0), Point::new(-43.0, PI), Point::new(SQRT_2, 1e8))]
-        point: Point,
+        #[values((5.2, 10.0), (-43.0, PI), (SQRT_2, 1e8))] coord: (f64, f64),
     ) {
         let mut polygon = case.polygon;
-        polygon.rotate_about_point(radians, &point);
+        let v = Vertex::new(VertexId::default(), coord.0, coord.1);
+        polygon.rotate_about_vertex(radians, &v);
         assert_eq!(polygon.num_edges(), case.metadata.num_edges);
         assert_eq!(polygon.num_vertices(), case.metadata.num_vertices);
         assert_approx_eq!(polygon.area(), case.metadata.area, F64_ASSERT_PRECISION);
