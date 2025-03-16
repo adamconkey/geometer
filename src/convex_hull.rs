@@ -251,6 +251,7 @@ mod tests {
         computer: impl ConvexHullComputer,
     ) {
         let hull = computer.convex_hull(&case.polygon);
-        assert_eq!(hull.get_vertex_ids(), case.metadata.extreme_points);
+        let hull_ids = hull.vertex_ids().into_iter().sorted().collect_vec();
+        assert_eq!(hull_ids, case.metadata.extreme_points);
     }
 }

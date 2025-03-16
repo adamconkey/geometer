@@ -18,8 +18,7 @@ use crate::{
 #[derive(Deserialize)]
 pub struct PolygonMetadata {
     pub area: f64,
-    pub extreme_points: HashSet<VertexId>,
-    pub interior_points: HashSet<VertexId>,
+    pub extreme_points: Vec<VertexId>,
     pub num_edges: usize,
     pub num_triangles: usize,
     pub num_vertices: usize,
@@ -207,10 +206,6 @@ impl Polygon {
 
     pub fn get_vertex_mut(&mut self, id: &VertexId) -> Option<&mut Vertex> {
         self.vertex_map.get_mut(id)
-    }
-
-    pub fn get_vertex_ids(&self) -> HashSet<VertexId> {
-        self.vertex_map.keys().cloned().collect()
     }
 
     pub fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> Option<LineSegment> {
@@ -508,20 +503,6 @@ mod tests {
     fn test_attributes(case: PolygonTestCase) {
         assert_eq!(case.polygon.num_edges(), case.metadata.num_edges);
         assert_eq!(case.polygon.num_vertices(), case.metadata.num_vertices);
-
-        // Not all test cases have these defined so only assert on ones that do
-        let num_extreme_points = case.metadata.extreme_points.len();
-        let num_interior_points = case.metadata.interior_points.len();
-        if num_extreme_points > 0 || num_interior_points > 0 {
-            assert_eq!(
-                num_extreme_points + num_interior_points,
-                case.metadata.num_vertices,
-            );
-            assert!(case
-                .metadata
-                .extreme_points
-                .is_disjoint(&case.metadata.interior_points));
-        }
         // This meta-assert is only valid for polygons without holes, holes
         // are not yet supported. Will need a flag in the metadata to know
         // if holes are present and then this assert would be conditional
