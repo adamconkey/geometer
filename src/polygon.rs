@@ -51,6 +51,20 @@ impl Geometry for Polygon {
         }
         edges
     }
+
+    fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        self.vertex_map.get(id)
+    }
+
+    fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        let prev_id = self.prev_vertex_id(id).unwrap(); // TODO don't unwrap
+        self.vertex_map.get(&prev_id)
+    }
+
+    fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        let next_id = self.next_vertex_id(id).unwrap(); // TODO don't unwrap
+        self.vertex_map.get(&next_id)
+    }
 }
 
 impl Polygon {
@@ -181,20 +195,6 @@ impl Polygon {
             return Some(v);
         }
         None
-    }
-
-    pub fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        self.vertex_map.get(id)
-    }
-
-    pub fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        let prev_id = self.prev_vertex_id(id).unwrap(); // TODO don't unwrap
-        self.vertex_map.get(&prev_id)
-    }
-
-    pub fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        let next_id = self.next_vertex_id(id).unwrap(); // TODO don't unwrap
-        self.vertex_map.get(&next_id)
     }
 
     pub fn get_vertex_mut(&mut self, id: &VertexId) -> Option<&mut Vertex> {

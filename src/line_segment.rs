@@ -23,6 +23,29 @@ impl Geometry for LineSegment<'_> {
         edges.insert((self.v1.id, self.v2.id));
         edges
     }
+
+    fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        if id == &self.v1.id {
+            return Some(self.v1);
+        } else if id == &self.v2.id {
+            return Some(self.v2);
+        }
+        None
+    }
+
+    fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        if id == &self.v1.id {
+            return Some(self.v2);
+        } else if id == &self.v2.id {
+            return Some(self.v1);
+        }
+        None
+    }
+
+    fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        // Treating these as cyclical
+        self.get_prev_vertex(id)
+    }
 }
 
 impl<'a> LineSegment<'a> {
@@ -112,6 +135,17 @@ impl<'a> LineSegment<'a> {
         let t3 = self.v2.x * self.v1.y;
         let t4 = self.v2.y * self.v1.x;
         (t1 - t2 + t3 - t4).abs() / p1_to_p2.magnitude()
+    }
+
+    pub fn is_lower_tangent<T: Geometry>(&self, id: &VertexId, geom: &T) -> bool {
+        let v = geom.get_vertex(&id).unwrap();
+        let prev = geom.get_prev_vertex(&v.id).unwrap();
+        let next = geom.get_next_vertex(&v.id).unwrap();
+        prev.left_on(self) && next.left_on(self)
+    }
+
+    pub fn is_upper_tangent<T: Geometry>(&self, id: &VertexId, geom: &T) -> bool {
+        self.reverse().is_lower_tangent(id, geom)
     }
 }
 

@@ -25,6 +25,18 @@ impl Geometry for Triangle<'_> {
         edges.insert((self.v3.id, self.v1.id));
         edges
     }
+
+    fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        todo!()
+    }
+
+    fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        todo!()
+    }
+
+    fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        todo!()
+    }
 }
 
 impl<'a> Triangle<'a> {
