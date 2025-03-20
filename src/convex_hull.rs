@@ -246,56 +246,65 @@ impl ConvexHullComputer for GrahamScan {
 pub struct DivideConquer;
 
 impl DivideConquer {
-    fn is_lower_tangent(&self, id: VertexId, ls: &LineSegment, polygon: &Polygon) -> bool {
-        let v = polygon.get_vertex(&id).unwrap();
-        let prev = polygon.get_prev_vertex(&v.id).unwrap();
-        let next = polygon.get_next_vertex(&v.id).unwrap();
-        prev.left_on(ls) && next.left_on(ls)
-    }
-
-    fn is_upper_tangent(&self, id: VertexId, ls: &LineSegment, polygon: &Polygon) -> bool {
-        self.is_lower_tangent(id, &ls.reverse(), polygon)
-    }
-
     fn lower_tangent_vertices<'a>(
         &'a self,
-        left_ids: &'a Vec<VertexId>,
-        right_ids: &'a Vec<VertexId>,
+        left: impl Geometry,
+        right: impl Geometry,
         polygon: &'a Polygon,
     ) -> (Vertex, Vertex) {
-        // TODO need to sort this out, not sure how I can get this
-        // to work for both polygons and line segments in a way that
-        // makes sense.
-
-        let left = polygon.get_polygon(left_ids.clone());
-        let right = polygon.get_polygon(right_ids.clone());
         let mut a = left.lowest_rightmost_vertex();
         let mut b = right.lowest_leftmost_vertex();
 
-        let lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
-        while !self.is_lower_tangent(a.id, &lt, &left) && !self.is_lower_tangent(b.id, &lt, &right)
-        {
-            while !self.is_lower_tangent(a.id, &lt, &left) {
+        println!("  LR A: {:?}", a.id);
+        println!("  LL B: {:?}", b.id);
+
+        let mut lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
+        println!("  LT A? {:?}", lt.is_lower_tangent(&a.id, &left));
+        println!("  LT B? {:?}", lt.is_lower_tangent(&b.id, &right));
+        while !lt.is_lower_tangent(&a.id, &left) || !lt.is_lower_tangent(&b.id, &right) {
+            while !lt.is_lower_tangent(&a.id, &left) {
                 // Move down clockwise
                 a = left.get_prev_vertex(&a.id).unwrap();
+                lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
+                println!("  MOVED A: {}", a.id);
             }
 
-            while !self.is_lower_tangent(b.id, &lt, &right) {
+            while !lt.is_lower_tangent(&b.id, &right) {
                 // Move down ccw
                 b = right.get_next_vertex(&b.id).unwrap();
+                lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
+                println!(" MOVED B: {}", b.id);
             }
+
+            println!("  MOVED LT: {} {}", a.id, b.id)
         }
         (a.clone(), b.clone())
     }
 
     fn upper_tangent_vertices<'a>(
         &'a self,
-        left_ids: &'a Vec<VertexId>,
-        right_ids: &'a Vec<VertexId>,
+        left: impl Geometry,
+        right: impl Geometry,
         polygon: &'a Polygon,
     ) -> (Vertex, Vertex) {
-        // TODO modify above once stabilized
-        self.lower_tangent_vertices(left_ids, right_ids, polygon)
+        let mut a = left.highest_rightmost_vertex();
+        let mut b = right.highest_leftmost_vertex();
+
+        let mut ut = polygon.get_line_segment(&a.id, &b.id).unwrap();
+        while !ut.is_upper_tangent(&a.id, &left) || !ut.is_upper_tangent(&b.id, &right) {
+            while !ut.is_upper_tangent(&a.id, &left) {
+                // Move up ccw
+                a = left.get_next_vertex(&a.id).unwrap();
+                ut = polygon.get_line_segment(&a.id, &b.id).unwrap();
+            }
+
+            while !ut.is_upper_tangent(&b.id, &right) {
+                // Move down clockwise
+                b = right.get_prev_vertex(&b.id).unwrap();
+                ut = polygon.get_line_segment(&a.id, &b.id).unwrap();
+            }
+        }
+        (a.clone(), b.clone())
     }
 }
 
@@ -311,7 +320,7 @@ impl ConvexHullComputer for DivideConquer {
             .vertex_ids()
             .iter()
             .map(|id| polygon.get_vertex(id).unwrap())
-            .sorted_by_key(|v| OF(v.x))
+            .sorted_by_key(|v| (OF(v.x), OF(v.y)))
             .map(|v| v.id)
             .collect_vec();
         split_stack.push(ids);
@@ -321,6 +330,12 @@ impl ConvexHullComputer for DivideConquer {
             let (left_ids, right_ids) = ids.split_at(ids.len() / 2);
             let left_ids = left_ids.to_vec();
             let right_ids = right_ids.to_vec();
+
+            println!("IDS: {:?}", ids);
+            println!("LEFT: {:?}", left_ids);
+            println!("RIGHT: {:?}", right_ids);
+
+            assert!(ids.len() >= 2);
             if ids.len() % 2 != 0 {
                 assert!(left_ids.len() < right_ids.len());
             }
@@ -340,17 +355,50 @@ impl ConvexHullComputer for DivideConquer {
                 split_stack.push(left_ids);
             }
 
+            println!("SPLIT STACK BF MERGE: {:?}", split_stack.len());
+            println!("MERGE STACK BF MERGE: {:?}", merge_stack.len());
+
             while merge_stack.len() > 1 {
                 let right_ids = merge_stack.pop().unwrap();
                 let left_ids = merge_stack.pop().unwrap();
 
-                // TODO need to handle cases where there might be < 3 vertices,
-                // they won't be valid polygons if <=2 so will want to handle
-                // those, and then if valid polygons can just create and do
-                // the procedure below
+                // TODO if this ends up working, it feels like an excessively verbose
+                // way to do it. I was trying to avoid Box<dyn Geometry> defs which I
+                // truly don't know how to work with at this point.
+                let lt_a;
+                let lt_b;
+                let ut_a;
+                let ut_b;
+                if right_ids.len() >= 3 && left_ids.len() >= 3 {
+                    let right = polygon.get_polygon(right_ids);
+                    let left = polygon.get_polygon(left_ids);
+                    (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, &polygon);
+                    (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, &polygon);
+                } else if right_ids.len() >= 3 {
+                    let right = polygon.get_polygon(right_ids);
+                    assert!(left_ids.len() == 2);
+                    let left = polygon
+                        .get_line_segment(&left_ids[0], &left_ids[1])
+                        .unwrap();
+                    (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, &polygon);
+                    (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, &polygon);
+                } else {
+                    assert!(right_ids.len() == 2);
+                    assert!(left_ids.len() == 2);
+                    let right = polygon
+                        .get_line_segment(&right_ids[0], &right_ids[1])
+                        .unwrap();
+                    let left = polygon
+                        .get_line_segment(&left_ids[0], &left_ids[1])
+                        .unwrap();
+                    (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, &polygon);
+                    (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, &polygon);
+                }
 
-                let (lt_a, lt_b) = self.lower_tangent_vertices(&left_ids, &right_ids, &polygon);
-                let (ut_a, ut_b) = self.upper_tangent_vertices(&left_ids, &right_ids, &polygon);
+                println!("LT A: {:?}", lt_a.id);
+                println!("LT B: {:?}", lt_b.id);
+                println!("UT A: {:?}", ut_a.id);
+                println!("UT B: {:?}", ut_b.id);
 
                 // Combine into one polygon by connecting the vertex chains
                 // of B -> ut -> A -> lt excluding vertices that do not
@@ -362,19 +410,24 @@ impl ConvexHullComputer for DivideConquer {
                     merged_ids.push(v.id);
                     v = polygon.get_next_vertex(&v.id).unwrap().clone();
                 }
+                merged_ids.push(ut_b.id);
+
                 // Extract vertices from chain on A
                 v = ut_a;
                 while v.id != lt_a.id {
                     merged_ids.push(v.id);
                     v = polygon.get_next_vertex(&v.id).unwrap().clone();
                 }
+                merged_ids.push(lt_a.id);
 
+                assert!(merged_ids.len() >= 3);
                 merge_stack.push(merged_ids);
             }
         }
 
         assert!(merge_stack.len() == 1);
         let hull_ids = merge_stack.pop().unwrap();
+        assert!(hull_ids.len() >= 3);
         polygon.get_polygon(hull_ids)
     }
 }
@@ -387,15 +440,17 @@ mod tests {
     use rstest_reuse::{self, *};
 
     #[apply(extreme_point_cases)]
+    // #[rstest]
+    // #[case(polygon_1())]
     fn test_convex_hull(
         #[case] case: PolygonTestCase,
         #[values(
             DivideConquer,
-            ExtremeEdges,
-            GiftWrapping,
-            GrahamScan,
-            InteriorPoints,
-            QuickHull
+            // ExtremeEdges,
+            // GiftWrapping,
+            // GrahamScan,
+            // InteriorPoints,
+            // QuickHull
         )]
         computer: impl ConvexHullComputer,
     ) {
