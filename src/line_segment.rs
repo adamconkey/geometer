@@ -138,7 +138,7 @@ impl<'a> LineSegment<'a> {
     }
 
     pub fn is_lower_tangent<T: Geometry>(&self, id: &VertexId, geom: &T) -> bool {
-        let v = geom.get_vertex(&id).unwrap();
+        let v = geom.get_vertex(id).unwrap();
         let prev = geom.get_prev_vertex(&v.id).unwrap();
         let next = geom.get_next_vertex(&v.id).unwrap();
         prev.left_on(self) && next.left_on(self)

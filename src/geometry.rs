@@ -87,22 +87,22 @@ pub trait Geometry {
 
 impl<T: Geometry> Geometry for &T {
     fn vertices(&self) -> Vec<&Vertex> {
-        return (**self).vertices();
+        (**self).vertices()
     }
 
     fn edges(&self) -> HashSet<(VertexId, VertexId)> {
-        return (**self).edges();
+        (**self).edges()
     }
 
     fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        return (**self).get_vertex(id);
+        (**self).get_vertex(id)
     }
 
     fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        return (**self).get_prev_vertex(id);
+        (**self).get_prev_vertex(id)
     }
 
     fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        return (**self).get_next_vertex(id);
+        (**self).get_next_vertex(id)
     }
 }
