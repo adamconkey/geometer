@@ -1,6 +1,6 @@
 {
   "area": 87090,
-  "extreme_points": [],
+  "extreme_points": [0, 15, 16, 17, 28, 29],
   "num_edges": 30,
   "num_triangles": 28,
   "num_vertices": 30

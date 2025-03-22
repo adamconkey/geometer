@@ -1,6 +1,6 @@
 {
   "area": 15357.5,
-  "extreme_points": [],
+  "extreme_points": [1, 22, 43, 44, 48, 49, 50, 51, 62, 72, 73, 87, 88],
   "num_edges": 94,
   "num_triangles": 92,
   "num_vertices": 94
