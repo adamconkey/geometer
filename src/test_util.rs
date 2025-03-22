@@ -135,5 +135,6 @@ pub fn all_custom_polygons(#[case] case: PolygonTestCase) {}
 #[case::held_7b(held_7b())]
 #[case::held_7c(held_7c())]
 #[case::held_7d(held_7d())]
+#[case::mapbox_building(mapbox_building())]
 #[case::o_rourke_3_8(o_rourke_3_8())]
 pub fn convex_hull_cases(#[case] case: PolygonTestCase) {}
