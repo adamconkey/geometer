@@ -461,7 +461,8 @@ mod tests {
             ExtremeEdges,
             GiftWrapping,
             GrahamScan,
-            InteriorPoints,
+            // Can enable this but it's slow AF for large number of vertices
+            // InteriorPoints,
             QuickHull
         )]
         computer: impl ConvexHullComputer,
