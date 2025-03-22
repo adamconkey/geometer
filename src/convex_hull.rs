@@ -255,28 +255,19 @@ impl DivideConquer {
         let mut a = left.lowest_rightmost_vertex();
         let mut b = right.lowest_leftmost_vertex();
 
-        println!("  LR A: {:?}", a.id);
-        println!("  LL B: {:?}", b.id);
-
         let mut lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
-        println!("  LT A? {:?}", lt.is_lower_tangent(&a.id, &left));
-        println!("  LT B? {:?}", lt.is_lower_tangent(&b.id, &right));
         while !lt.is_lower_tangent(&a.id, &left) || !lt.is_lower_tangent(&b.id, &right) {
             while !lt.is_lower_tangent(&a.id, &left) {
                 // Move down clockwise
                 a = left.get_prev_vertex(&a.id).unwrap();
                 lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
-                println!("  MOVED A: {}", a.id);
             }
 
             while !lt.is_lower_tangent(&b.id, &right) {
                 // Move down ccw
                 b = right.get_next_vertex(&b.id).unwrap();
                 lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
-                println!(" MOVED B: {}", b.id);
             }
-
-            println!("  MOVED LT: {} {}", a.id, b.id)
         }
         (a.clone(), b.clone())
     }
@@ -362,12 +353,22 @@ impl ConvexHullComputer for DivideConquer {
         while !split_stack.is_empty() {
             let ids = split_stack.pop().unwrap();
             let (left_ids, right_ids) = ids.split_at(ids.len() / 2);
-            let left_ids = left_ids.to_vec();
-            let right_ids = right_ids.to_vec();
+            let mut left_ids = left_ids.to_vec();
+            let mut right_ids = right_ids.to_vec();
 
-            println!("IDS: {:?}", ids);
-            println!("LEFT: {:?}", left_ids);
-            println!("RIGHT: {:?}", right_ids);
+            // TODO There's likely a cooler way to not have to do this,
+            // but need to think about it a bit more. This was a problem
+            // once you go to make a triangle it can happen that vertices
+            // sorted by x form a CW triangle. I think generally may want
+            // to ensure polygons satisfy CCW ordering when you go to
+            // retrieve them but naively sorting all vertices I don't
+            // think works for all the sub-polygons
+            if left_ids.len() == 3 {
+                left_ids.sort();
+            }
+            if right_ids.len() == 3 {
+                right_ids.sort();
+            }
 
             assert!(ids.len() >= 2);
             if ids.len() % 2 != 0 {
@@ -389,23 +390,9 @@ impl ConvexHullComputer for DivideConquer {
                 split_stack.push(left_ids);
             }
 
-            println!("SPLIT STACK BF MERGE: {:?}", split_stack.len());
-            println!("MERGE STACK BF MERGE: {:?}", merge_stack.len());
-
             while merge_stack.len() > 1 {
                 let right_ids = merge_stack.pop().unwrap();
                 let left_ids = merge_stack.pop().unwrap();
-
-                // TODO temp
-                let rs: HashSet<VertexId> = HashSet::from_iter(right_ids.clone());
-                let ls: HashSet<VertexId> = HashSet::from_iter(left_ids.clone());
-                assert!(
-                    rs.is_disjoint(&ls),
-                    "Not disjoint: left={ls:?}, right={rs:?}"
-                );
-
-                println!("LEFT VS: {:?}", left_ids);
-                println!("RIGHT VS: {:?}", right_ids);
 
                 // TODO if this ends up working, it feels like an excessively verbose
                 // way to do it. I was trying to avoid Box<dyn Geometry> defs which I
@@ -447,22 +434,14 @@ impl ConvexHullComputer for DivideConquer {
                         self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
                 }
 
-                println!("MERGED: {merged_ids:?}");
-
                 assert!(merged_ids.len() >= 3);
                 merge_stack.push(merged_ids);
             }
         }
 
-        // TODO the problem is currently it allows for possibility that
-        // sub-polygons get ordered clockwise which breaks some assumptions
-        // about polygon. How to enforce this? Should just do ordering CCW
-        // when you get the set of IDs?
-
         assert!(merge_stack.len() == 1);
         let hull_ids = merge_stack.pop().unwrap();
         assert!(hull_ids.len() >= 3);
-        println!("HULL: {hull_ids:?}");
         let mut hull = polygon.get_polygon(hull_ids, true);
         hull.clean_collinear();
         hull
@@ -476,11 +455,11 @@ mod tests {
     use rstest::rstest;
     use rstest_reuse::{self, *};
 
-    // #[apply(convex_hull_cases)]
+    #[apply(convex_hull_cases)]
     // #[apply(all_custom_polygons)]
-    #[rstest]
+    // #[rstest]
     // #[case(polygon_2())]
-    #[case(o_rourke_3_8())]
+    // #[case(o_rourke_3_8())]
     fn test_convex_hull(
         #[case] case: PolygonTestCase,
         #[values(
