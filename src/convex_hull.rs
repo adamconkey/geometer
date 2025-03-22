@@ -44,7 +44,7 @@ impl ConvexHullComputer for InteriorPoints {
         let interior_ids = self.interior_points(polygon);
         let all_ids = HashSet::from_iter(polygon.vertex_ids());
         let hull_ids = &all_ids - &interior_ids;
-        polygon.get_polygon(hull_ids)
+        polygon.get_polygon(hull_ids, true)
     }
 }
 
@@ -99,7 +99,7 @@ impl ConvexHullComputer for ExtremeEdges {
             hull_ids.insert(id1);
             hull_ids.insert(id2);
         }
-        polygon.get_polygon(hull_ids)
+        polygon.get_polygon(hull_ids, true)
     }
 }
 
@@ -140,7 +140,7 @@ impl ConvexHullComputer for GiftWrapping {
             }
         }
 
-        polygon.get_polygon(hull_ids)
+        polygon.get_polygon(hull_ids, true)
     }
 }
 
@@ -200,7 +200,7 @@ impl ConvexHullComputer for QuickHull {
             }
         }
 
-        polygon.get_polygon(hull_ids)
+        polygon.get_polygon(hull_ids, true)
     }
 }
 
@@ -238,7 +238,7 @@ impl ConvexHullComputer for GrahamScan {
         }
 
         // The stack at the end has all hull vertices
-        polygon.get_polygon(stack.iter().map(|v| v.id))
+        polygon.get_polygon(stack.iter().map(|v| v.id), true)
     }
 }
 
@@ -306,6 +306,37 @@ impl DivideConquer {
         }
         (a.clone(), b.clone())
     }
+
+    fn extract_boundary(
+        &self,
+        left: impl Geometry,
+        right: impl Geometry,
+        lt_a: VertexId,
+        lt_b: VertexId,
+        ut_a: VertexId,
+        ut_b: VertexId,
+    ) -> Vec<VertexId> {
+        // Combine into one polygon by connecting the vertex chains
+        // of B -> ut -> A -> lt excluding vertices that do not
+        // exist along the outer boundary
+        let mut merged_ids = Vec::new();
+        // Extract vertices from chain on B
+        let mut v = lt_b;
+        while v != ut_b {
+            merged_ids.push(v);
+            v = right.get_next_vertex(&v).unwrap().id;
+        }
+        merged_ids.push(ut_b);
+
+        // Extract vertices from chain on A
+        v = ut_a;
+        while v != lt_a {
+            merged_ids.push(v);
+            v = left.get_next_vertex(&v).unwrap().id;
+        }
+        merged_ids.push(lt_a);
+        merged_ids
+    }
 }
 
 impl ConvexHullComputer for DivideConquer {
@@ -316,11 +347,14 @@ impl ConvexHullComputer for DivideConquer {
         let mut split_stack = Vec::new();
         let mut merge_stack = Vec::new();
 
+        // Sorted by increasing X, but decreasing Y to break
+        // ties to ensure that polygons take on a CCW ordering
+        // in the event of equal X
         let ids = polygon
             .vertex_ids()
             .iter()
             .map(|id| polygon.get_vertex(id).unwrap())
-            .sorted_by_key(|v| (OF(v.x), OF(v.y)))
+            .sorted_by_key(|v| (OF(v.x), Reverse(OF(v.y))))
             .map(|v| v.id)
             .collect_vec();
         split_stack.push(ids);
@@ -362,6 +396,17 @@ impl ConvexHullComputer for DivideConquer {
                 let right_ids = merge_stack.pop().unwrap();
                 let left_ids = merge_stack.pop().unwrap();
 
+                // TODO temp
+                let rs: HashSet<VertexId> = HashSet::from_iter(right_ids.clone());
+                let ls: HashSet<VertexId> = HashSet::from_iter(left_ids.clone());
+                assert!(
+                    rs.is_disjoint(&ls),
+                    "Not disjoint: left={ls:?}, right={rs:?}"
+                );
+
+                println!("LEFT VS: {:?}", left_ids);
+                println!("RIGHT VS: {:?}", right_ids);
+
                 // TODO if this ends up working, it feels like an excessively verbose
                 // way to do it. I was trying to avoid Box<dyn Geometry> defs which I
                 // truly don't know how to work with at this point.
@@ -369,19 +414,24 @@ impl ConvexHullComputer for DivideConquer {
                 let lt_b;
                 let ut_a;
                 let ut_b;
+                let merged_ids;
                 if right_ids.len() >= 3 && left_ids.len() >= 3 {
-                    let right = polygon.get_polygon(right_ids);
-                    let left = polygon.get_polygon(left_ids);
+                    let right = polygon.get_polygon(right_ids, false);
+                    let left = polygon.get_polygon(left_ids, false);
                     (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, &polygon);
                     (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, &polygon);
+                    merged_ids =
+                        self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
                 } else if right_ids.len() >= 3 {
-                    let right = polygon.get_polygon(right_ids);
+                    let right = polygon.get_polygon(right_ids, false);
                     assert!(left_ids.len() == 2);
                     let left = polygon
                         .get_line_segment(&left_ids[0], &left_ids[1])
                         .unwrap();
                     (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, &polygon);
                     (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, &polygon);
+                    merged_ids =
+                        self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
                 } else {
                     assert!(right_ids.len() == 2);
                     assert!(left_ids.len() == 2);
@@ -393,42 +443,29 @@ impl ConvexHullComputer for DivideConquer {
                         .unwrap();
                     (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, &polygon);
                     (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, &polygon);
+                    merged_ids =
+                        self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
                 }
 
-                println!("LT A: {:?}", lt_a.id);
-                println!("LT B: {:?}", lt_b.id);
-                println!("UT A: {:?}", ut_a.id);
-                println!("UT B: {:?}", ut_b.id);
-
-                // Combine into one polygon by connecting the vertex chains
-                // of B -> ut -> A -> lt excluding vertices that do not
-                // exist along the outer boundary
-                let mut merged_ids = Vec::new();
-                // Extract vertices from chain on B
-                let mut v = lt_b;
-                while v.id != ut_b.id {
-                    merged_ids.push(v.id);
-                    v = polygon.get_next_vertex(&v.id).unwrap().clone();
-                }
-                merged_ids.push(ut_b.id);
-
-                // Extract vertices from chain on A
-                v = ut_a;
-                while v.id != lt_a.id {
-                    merged_ids.push(v.id);
-                    v = polygon.get_next_vertex(&v.id).unwrap().clone();
-                }
-                merged_ids.push(lt_a.id);
+                println!("MERGED: {merged_ids:?}");
 
                 assert!(merged_ids.len() >= 3);
                 merge_stack.push(merged_ids);
             }
         }
 
+        // TODO the problem is currently it allows for possibility that
+        // sub-polygons get ordered clockwise which breaks some assumptions
+        // about polygon. How to enforce this? Should just do ordering CCW
+        // when you get the set of IDs?
+
         assert!(merge_stack.len() == 1);
         let hull_ids = merge_stack.pop().unwrap();
         assert!(hull_ids.len() >= 3);
-        polygon.get_polygon(hull_ids)
+        println!("HULL: {hull_ids:?}");
+        let mut hull = polygon.get_polygon(hull_ids, true);
+        hull.clean_collinear();
+        hull
     }
 }
 
@@ -439,9 +476,11 @@ mod tests {
     use rstest::rstest;
     use rstest_reuse::{self, *};
 
-    #[apply(extreme_point_cases)]
-    // #[rstest]
-    // #[case(polygon_1())]
+    // #[apply(convex_hull_cases)]
+    // #[apply(all_custom_polygons)]
+    #[rstest]
+    // #[case(polygon_2())]
+    #[case(o_rourke_3_8())]
     fn test_convex_hull(
         #[case] case: PolygonTestCase,
         #[values(

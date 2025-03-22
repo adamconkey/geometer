@@ -197,6 +197,26 @@ impl Polygon {
         None
     }
 
+    pub fn get_collinear(&self) -> Vec<VertexId> {
+        let mut collinear = Vec::new();
+        for id in self.vertex_ids() {
+            let prev = self.prev_vertex_id(&id).unwrap();
+            let next = self.next_vertex_id(&id).unwrap();
+            let t = self.get_triangle(&prev, &id, &next).unwrap();
+            if t.has_collinear_points() {
+                collinear.push(id);
+            }
+        }
+        collinear
+    }
+
+    pub fn clean_collinear(&mut self) {
+        let collinear = self.get_collinear();
+        for id in collinear.iter() {
+            self.remove_vertex(id);
+        }
+    }
+
     pub fn get_vertex_mut(&mut self, id: &VertexId) -> Option<&mut Vertex> {
         self.vertex_map.get_mut(id)
     }
@@ -226,16 +246,19 @@ impl Polygon {
         None
     }
 
-    pub fn get_polygon(&self, ids: impl IntoIterator<Item = VertexId>) -> Polygon {
-        // Note this is currently sorting as its primary use is in convex hull,
-        // if it proves useful for this sorting to be optional (i.e. assume the
-        // order of input IDs is as desired) then can make this optional
-        let vertices = ids
+    pub fn get_polygon(
+        &self,
+        ids: impl IntoIterator<Item = VertexId>,
+        sort_by_id: bool,
+    ) -> Polygon {
+        let mut vertices = ids
             .into_iter()
             .map(|id| self.get_vertex(&id).unwrap()) // TODO don't unwrap
             .cloned()
-            .sorted_by_key(|v| v.id)
             .collect_vec();
+        if sort_by_id {
+            vertices.sort_by_key(|v| v.id);
+        }
         Polygon::from_vertices(vertices)
     }
 
@@ -367,7 +390,7 @@ impl Polygon {
             assert!(e1.incident_to(edges[i + 1].v1));
             for e2 in edges.iter().take(edges.len() - 1).skip(i + 2) {
                 // Non-adjacent edges should have no intersection
-                assert!(!e1.intersects(e2));
+                assert!(!e1.intersects(e2), "e1={e1:?}, e2={e2:?}");
                 assert!(!e1.incident_to(e2.v1));
                 assert!(!e1.incident_to(e2.v2));
                 assert!(!e2.intersects(e1));
