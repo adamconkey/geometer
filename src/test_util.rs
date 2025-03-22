@@ -132,5 +132,6 @@ pub fn all_custom_polygons(#[case] case: PolygonTestCase) {}
 #[case::held_12(held_12())]
 #[case::held_3(held_3())]
 #[case::held_7a(held_7a())]
+#[case::held_7b(held_7b())]
 #[case::o_rourke_3_8(o_rourke_3_8())]
 pub fn convex_hull_cases(#[case] case: PolygonTestCase) {}
