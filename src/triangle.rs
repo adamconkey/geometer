@@ -27,15 +27,39 @@ impl Geometry for Triangle<'_> {
     }
 
     fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        todo!()
+        if id == &self.v1.id {
+            return Some(self.v1);
+        } else if id == &self.v2.id {
+            return Some(self.v2);
+        } else if id == &self.v3.id {
+            return Some(self.v3);
+        } else {
+            return None;
+        }
     }
 
     fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        todo!()
+        if id == &self.v1.id {
+            return Some(self.v2);
+        } else if id == &self.v2.id {
+            return Some(self.v3);
+        } else if id == &self.v3.id {
+            return Some(self.v1);
+        } else {
+            return None;
+        }
     }
 
     fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        todo!()
+        if id == &self.v1.id {
+            return Some(self.v3);
+        } else if id == &self.v2.id {
+            return Some(self.v1);
+        } else if id == &self.v3.id {
+            return Some(self.v2);
+        } else {
+            return None;
+        }
     }
 }
 
