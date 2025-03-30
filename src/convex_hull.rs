@@ -259,7 +259,6 @@ impl DivideConquer {
                 a = left.get_prev_vertex(&a.id).unwrap();
                 lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
             }
-
             while !lt.is_lower_tangent(&b.id, &right) {
                 // Move down ccw
                 b = right.get_next_vertex(&b.id).unwrap();
@@ -285,7 +284,6 @@ impl DivideConquer {
                 a = left.get_next_vertex(&a.id).unwrap();
                 ut = polygon.get_line_segment(&a.id, &b.id).unwrap();
             }
-
             while !ut.is_upper_tangent(&b.id, &right) {
                 // Move down clockwise
                 b = right.get_prev_vertex(&b.id).unwrap();
@@ -315,7 +313,6 @@ impl DivideConquer {
             v = b.get_next_vertex(&v).unwrap().id;
         }
         boundary.push(ut_b);
-
         // Extract vertices from chain on A
         v = ut_a;
         while v != lt_a {
@@ -439,36 +436,26 @@ impl ConvexHullComputer for DivideConquer {
             .collect_vec();
         split_stack.push(ids);
 
-        while let Some(ids) = split_stack.pop() {
-            let (left_ids, right_ids) = ids.split_at(ids.len() / 2);
-            let left_ids = left_ids.to_vec();
-            let right_ids = right_ids.to_vec();
-            let num_left = left_ids.len();
-            let num_right = right_ids.len();
+        while let Some(mut left_ids) = split_stack.pop() {
+            assert!(left_ids.len() >= 4);
+            let mut right_ids = left_ids.split_off(left_ids.len() / 2);
 
-            assert!(ids.len() >= 2);
-            if ids.len() % 2 != 0 {
-                assert!(num_left < num_right);
-            }
-
-            if num_left <= 3 && num_right <= 3 {
-                // Always maintain merge stack with leftmost
-                // components towards the bottom of the stack
+            if left_ids.len() <= 3 && right_ids.len() <= 3 {
+                // Keep leftmost towards bottom of merge stack
                 merge_stack.push(left_ids);
                 merge_stack.push(right_ids);
-            } else if num_left <= 3 {
+            } else if left_ids.len() <= 3 {
                 merge_stack.push(left_ids);
                 split_stack.push(right_ids);
             } else {
-                // Always maintain split stack with rightmost
-                // components towards the bottom of the stack
+                // Keep rightmost towards bottom of split stack
                 split_stack.push(right_ids);
                 split_stack.push(left_ids);
             }
 
             while merge_stack.len() > 1 {
-                let right_ids = merge_stack.pop().unwrap();
-                let left_ids = merge_stack.pop().unwrap();
+                right_ids = merge_stack.pop().unwrap();
+                left_ids = merge_stack.pop().unwrap();
                 let merged_ids = self.merge(left_ids, right_ids, polygon);
                 merge_stack.push(merged_ids);
             }
