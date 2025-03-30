@@ -111,6 +111,16 @@ impl<'a> LineSegment<'a> {
         self.v1.coords() == v.coords() || self.v2.coords() == v.coords()
     }
 
+    pub fn collinear_with(&self, cd: &LineSegment) -> bool {
+        let a = &self.v1;
+        let b = &self.v2;
+        let c = &cd.v1;
+        let d = &cd.v2;
+        let abc = Triangle::from_vertices(a, b, c);
+        let abd = Triangle::from_vertices(a, b, d);
+        abc.has_collinear_points() && abd.has_collinear_points()
+    }
+
     pub fn length(&self) -> f64 {
         Vector::from(self).magnitude()
     }

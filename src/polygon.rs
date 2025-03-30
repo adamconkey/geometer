@@ -211,9 +211,16 @@ impl Polygon {
     }
 
     pub fn clean_collinear(&mut self) {
-        let collinear = self.get_collinear();
-        for id in collinear.iter() {
-            self.remove_vertex(id);
+        // TODO I thought maybe you needed multiple
+        // passes to account for updates but that may
+        // not be true, just need to think a bit more
+        // about this
+        let mut collinear = self.get_collinear();
+        while collinear.len() > 0 {
+            for id in collinear.iter() {
+                self.remove_vertex(id);
+            }
+            collinear = self.get_collinear();
         }
     }
 
@@ -329,6 +336,7 @@ impl Polygon {
         self.validate_num_vertices();
         self.validate_cycle();
         self.validate_edge_intersections();
+        self.validate_area();
     }
 
     fn validate_num_vertices(&self) {
@@ -398,6 +406,14 @@ impl Polygon {
                 assert!(!e2.incident_to(e1.v2));
             }
         }
+    }
+
+    fn validate_area(&self) {
+        let area = self.area();
+        assert!(
+            area > 0.0,
+            "Polygon area must be positive, area={area}, polygon={self:?}"
+        );
     }
 }
 

@@ -69,6 +69,10 @@ impl<'a> Triangle<'a> {
         Self { v1, v2, v3, area }
     }
 
+    pub fn reverse(&self) -> Self {
+        Triangle::from_vertices(self.v1, self.v3, self.v2)
+    }
+
     pub fn to_line_segments(&self) -> Vec<LineSegment> {
         let ls1 = LineSegment::from_vertices(self.v1, self.v2);
         let ls2 = LineSegment::from_vertices(self.v2, self.v3);

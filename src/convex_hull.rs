@@ -328,16 +328,59 @@ impl DivideConquer {
 
     fn merge(
         &self,
-        left_ids: Vec<VertexId>,
-        right_ids: Vec<VertexId>,
+        mut left_ids: Vec<VertexId>,
+        mut right_ids: Vec<VertexId>,
         polygon: &Polygon,
     ) -> Vec<VertexId> {
         let merged_ids;
         let num_left = left_ids.len();
         let num_right = right_ids.len();
+
+        // TODO hacking this to test a theory
+        if num_right == 3 {
+            let right = polygon
+                .get_triangle(&right_ids[0], &right_ids[1], &right_ids[2])
+                .unwrap();
+            if right.area() < 0.0 {
+                right_ids.reverse();
+            } else if right.area() == 0.0 {
+                // Collinear, remove middle vertex
+                right_ids = vec![
+                    right.lowest_leftmost_vertex().id,
+                    right.highest_rightmost_vertex().id,
+                ];
+            }
+        }
+        if num_left == 3 {
+            let left = polygon
+                .get_triangle(&left_ids[0], &left_ids[1], &left_ids[2])
+                .unwrap();
+            if left.area() < 0.0 {
+                left_ids.reverse();
+            } else if left.area() == 0.0 {
+                // Collinear, remove middle vertex
+                left_ids = vec![
+                    left.lowest_leftmost_vertex().id,
+                    left.highest_rightmost_vertex().id,
+                ];
+            }
+        }
+
+        let num_right = right_ids.len();
+        let num_left = left_ids.len();
+
         if num_right >= 3 && num_left >= 3 {
             let right = polygon.get_polygon(right_ids, false);
             let left = polygon.get_polygon(left_ids, false);
+            let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
+            let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
+            merged_ids = self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
+        } else if num_left >= 3 {
+            let left = polygon.get_polygon(left_ids, false);
+            assert!(num_right == 2);
+            let right = polygon
+                .get_line_segment(&right_ids[0], &right_ids[1])
+                .unwrap();
             let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
             let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
             merged_ids = self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
@@ -359,11 +402,21 @@ impl DivideConquer {
             let left = polygon
                 .get_line_segment(&left_ids[0], &left_ids[1])
                 .unwrap();
-            let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
-            let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
-            merged_ids = self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
+
+            if left.collinear_with(&right) {
+                merged_ids = vec![
+                    left.lowest_leftmost_vertex().id,
+                    right.highest_rightmost_vertex().id,
+                ];
+            } else {
+                let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
+                let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
+                merged_ids =
+                    self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
+            }
         }
-        assert!(merged_ids.len() >= 3);
+        // Could be 2 if we tried to merge 2 collinear linear segments
+        assert!(merged_ids.len() >= 2);
         merged_ids
     }
 }
@@ -376,38 +429,22 @@ impl ConvexHullComputer for DivideConquer {
         let mut split_stack = Vec::new();
         let mut merge_stack = Vec::new();
 
-        // Sorted by increasing X, but decreasing Y to break
-        // ties to ensure that polygons take on a CCW ordering
-        // in the event of equal X
+        // Sorted by increasing X and break ties by increasing Y
         let ids = polygon
             .vertex_ids()
             .iter()
             .map(|id| polygon.get_vertex(id).unwrap())
-            .sorted_by_key(|v| (OF(v.x), Reverse(OF(v.y))))
+            .sorted_by_key(|v| (OF(v.x), OF(v.y)))
             .map(|v| v.id)
             .collect_vec();
         split_stack.push(ids);
 
         while let Some(ids) = split_stack.pop() {
             let (left_ids, right_ids) = ids.split_at(ids.len() / 2);
-            let mut left_ids = left_ids.to_vec();
-            let mut right_ids = right_ids.to_vec();
+            let left_ids = left_ids.to_vec();
+            let right_ids = right_ids.to_vec();
             let num_left = left_ids.len();
             let num_right = right_ids.len();
-
-            // TODO There's likely a cooler way to not have to do this,
-            // but need to think about it a bit more. This was a problem
-            // once you go to make a triangle it can happen that vertices
-            // sorted by x form a CW triangle. I think generally may want
-            // to ensure polygons satisfy CCW ordering when you go to
-            // retrieve them but naively sorting all vertices I don't
-            // think works for all the sub-polygons
-            if num_left == 3 {
-                left_ids.sort();
-            }
-            if num_right == 3 {
-                right_ids.sort();
-            }
 
             assert!(ids.len() >= 2);
             if ids.len() % 2 != 0 {
