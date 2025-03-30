@@ -2,12 +2,7 @@ use itertools::Itertools;
 use ordered_float::OrderedFloat as OF;
 use std::{cmp::Reverse, collections::HashSet};
 
-use crate::{
-    geometry::Geometry,
-    line_segment::LineSegment,
-    polygon::Polygon,
-    vertex::{Vertex, VertexId},
-};
+use crate::{geometry::Geometry, line_segment::LineSegment, polygon::Polygon, vertex::VertexId};
 
 pub trait ConvexHullComputer {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon;
@@ -329,6 +324,19 @@ impl DivideConquer {
         merged_ids
     }
 
+    fn clean_triangle_ids(&self, ids: &mut Vec<VertexId>, polygon: &Polygon) {
+        let t = polygon.get_triangle(&ids[0], &ids[1], &ids[2]).unwrap();
+        if t.area() < 0.0 {
+            ids.reverse();
+        } else if t.area() == 0.0 {
+            // Collinear, remove middle vertex
+            *ids = vec![
+                t.lowest_leftmost_vertex().id,
+                t.highest_rightmost_vertex().id,
+            ];
+        }
+    }
+
     fn merge(
         &self,
         mut left_ids: Vec<VertexId>,
@@ -337,34 +345,11 @@ impl DivideConquer {
     ) -> Vec<VertexId> {
         let merged_ids;
 
-        // TODO I think I can implement this into triangle
         if right_ids.len() == 3 {
-            let right = polygon
-                .get_triangle(&right_ids[0], &right_ids[1], &right_ids[2])
-                .unwrap();
-            if right.area() < 0.0 {
-                right_ids.reverse();
-            } else if right.area() == 0.0 {
-                // Collinear, remove middle vertex
-                right_ids = vec![
-                    right.lowest_leftmost_vertex().id,
-                    right.highest_rightmost_vertex().id,
-                ];
-            }
+            self.clean_triangle_ids(&mut right_ids, polygon);
         }
         if left_ids.len() == 3 {
-            let left = polygon
-                .get_triangle(&left_ids[0], &left_ids[1], &left_ids[2])
-                .unwrap();
-            if left.area() < 0.0 {
-                left_ids.reverse();
-            } else if left.area() == 0.0 {
-                // Collinear, remove middle vertex
-                left_ids = vec![
-                    left.lowest_leftmost_vertex().id,
-                    left.highest_rightmost_vertex().id,
-                ];
-            }
+            self.clean_triangle_ids(&mut left_ids, polygon);
         }
 
         if right_ids.len() >= 3 && left_ids.len() >= 3 {
@@ -452,9 +437,9 @@ impl ConvexHullComputer for DivideConquer {
             }
         }
 
-        assert!(merge_stack.len() == 1);
-        let hull_ids = merge_stack.pop().unwrap();
-        assert!(hull_ids.len() >= 3);
+        let hull_ids = merge_stack
+            .pop()
+            .expect("Merge stack should have exactly 1 element");
         let mut hull = polygon.get_polygon(hull_ids, true);
         hull.clean_collinear();
         hull
