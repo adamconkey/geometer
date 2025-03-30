@@ -13,19 +13,11 @@ pub trait Geometry {
     fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex>;
 
     fn prev_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
-        if let Some(v) = self.get_prev_vertex(id) {
-            return Some(v.id);
-        } else {
-            return None;
-        }
+        self.get_prev_vertex(id).map(|v| v.id)
     }
 
     fn next_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
-        if let Some(v) = self.get_next_vertex(id) {
-            return Some(v.id);
-        } else {
-            return None;
-        }
+        self.get_next_vertex(id).map(|v| v.id)
     }
 
     fn num_edges(&self) -> usize {

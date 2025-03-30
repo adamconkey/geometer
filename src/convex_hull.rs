@@ -320,8 +320,7 @@ impl DivideConquer {
     ) -> Vec<VertexId> {
         let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
         let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
-        let merged_ids = self.extract_boundary(&left, &right, lt_a, lt_b, ut_a, ut_b);
-        merged_ids
+        self.extract_boundary(&left, &right, lt_a, lt_b, ut_a, ut_b)
     }
 
     fn clean_triangle_ids(&self, ids: &mut Vec<VertexId>, polygon: &Polygon) {

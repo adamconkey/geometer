@@ -216,7 +216,7 @@ impl Polygon {
         // not be true, just need to think a bit more
         // about this
         let mut collinear = self.get_collinear();
-        while collinear.len() > 0 {
+        while !collinear.is_empty() {
             for id in collinear.iter() {
                 self.remove_vertex(id);
             }
