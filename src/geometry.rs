@@ -12,6 +12,22 @@ pub trait Geometry {
     fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex>;
     fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex>;
 
+    fn prev_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
+        if let Some(v) = self.get_prev_vertex(id) {
+            return Some(v.id);
+        } else {
+            return None;
+        }
+    }
+
+    fn next_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
+        if let Some(v) = self.get_next_vertex(id) {
+            return Some(v.id);
+        } else {
+            return None;
+        }
+    }
+
     fn num_edges(&self) -> usize {
         self.edges().len()
     }

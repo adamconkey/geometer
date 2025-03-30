@@ -248,24 +248,21 @@ impl DivideConquer {
         left: impl Geometry,
         right: impl Geometry,
         polygon: &'a Polygon,
-    ) -> (Vertex, Vertex) {
-        let mut a = left.lowest_rightmost_vertex();
-        let mut b = right.lowest_leftmost_vertex();
-
-        let mut lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
-        while !lt.is_lower_tangent(&a.id, &left) || !lt.is_lower_tangent(&b.id, &right) {
-            while !lt.is_lower_tangent(&a.id, &left) {
-                // Move down clockwise
-                a = left.get_prev_vertex(&a.id).unwrap();
-                lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
+    ) -> (VertexId, VertexId) {
+        let mut a = left.lowest_rightmost_vertex().id;
+        let mut b = right.lowest_leftmost_vertex().id;
+        let mut lt = polygon.get_line_segment(&a, &b).unwrap();
+        while !lt.is_lower_tangent(&a, &left) || !lt.is_lower_tangent(&b, &right) {
+            while !lt.is_lower_tangent(&a, &left) {
+                a = left.prev_vertex_id(&a).unwrap(); // Move down cw
+                lt = polygon.get_line_segment(&a, &b).unwrap();
             }
-            while !lt.is_lower_tangent(&b.id, &right) {
-                // Move down ccw
-                b = right.get_next_vertex(&b.id).unwrap();
-                lt = polygon.get_line_segment(&a.id, &b.id).unwrap();
+            while !lt.is_lower_tangent(&b, &right) {
+                b = right.next_vertex_id(&b).unwrap(); // Move down ccw
+                lt = polygon.get_line_segment(&a, &b).unwrap();
             }
         }
-        (a.clone(), b.clone())
+        (a, b)
     }
 
     fn upper_tangent_vertices<'a>(
@@ -273,24 +270,21 @@ impl DivideConquer {
         left: impl Geometry,
         right: impl Geometry,
         polygon: &'a Polygon,
-    ) -> (Vertex, Vertex) {
-        let mut a = left.highest_rightmost_vertex();
-        let mut b = right.highest_leftmost_vertex();
-
-        let mut ut = polygon.get_line_segment(&a.id, &b.id).unwrap();
-        while !ut.is_upper_tangent(&a.id, &left) || !ut.is_upper_tangent(&b.id, &right) {
-            while !ut.is_upper_tangent(&a.id, &left) {
-                // Move up ccw
-                a = left.get_next_vertex(&a.id).unwrap();
-                ut = polygon.get_line_segment(&a.id, &b.id).unwrap();
+    ) -> (VertexId, VertexId) {
+        let mut a = left.highest_rightmost_vertex().id;
+        let mut b = right.highest_leftmost_vertex().id;
+        let mut ut = polygon.get_line_segment(&a, &b).unwrap();
+        while !ut.is_upper_tangent(&a, &left) || !ut.is_upper_tangent(&b, &right) {
+            while !ut.is_upper_tangent(&a, &left) {
+                a = left.next_vertex_id(&a).unwrap(); // Move up ccw
+                ut = polygon.get_line_segment(&a, &b).unwrap();
             }
-            while !ut.is_upper_tangent(&b.id, &right) {
-                // Move down clockwise
-                b = right.get_prev_vertex(&b.id).unwrap();
-                ut = polygon.get_line_segment(&a.id, &b.id).unwrap();
+            while !ut.is_upper_tangent(&b, &right) {
+                b = right.prev_vertex_id(&b).unwrap(); // Move down cw
+                ut = polygon.get_line_segment(&a, &b).unwrap();
             }
         }
-        (a.clone(), b.clone())
+        (a, b)
     }
 
     fn extract_boundary(
@@ -323,6 +317,18 @@ impl DivideConquer {
         boundary
     }
 
+    fn merge_from_tangents<'a>(
+        &'a self,
+        left: impl Geometry,
+        right: impl Geometry,
+        polygon: &'a Polygon,
+    ) -> Vec<VertexId> {
+        let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
+        let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
+        let merged_ids = self.extract_boundary(&left, &right, lt_a, lt_b, ut_a, ut_b);
+        merged_ids
+    }
+
     fn merge(
         &self,
         mut left_ids: Vec<VertexId>,
@@ -330,11 +336,9 @@ impl DivideConquer {
         polygon: &Polygon,
     ) -> Vec<VertexId> {
         let merged_ids;
-        let num_left = left_ids.len();
-        let num_right = right_ids.len();
 
-        // TODO hacking this to test a theory
-        if num_right == 3 {
+        // TODO I think I can implement this into triangle
+        if right_ids.len() == 3 {
             let right = polygon
                 .get_triangle(&right_ids[0], &right_ids[1], &right_ids[2])
                 .unwrap();
@@ -348,7 +352,7 @@ impl DivideConquer {
                 ];
             }
         }
-        if num_left == 3 {
+        if left_ids.len() == 3 {
             let left = polygon
                 .get_triangle(&left_ids[0], &left_ids[1], &left_ids[2])
                 .unwrap();
@@ -363,53 +367,40 @@ impl DivideConquer {
             }
         }
 
-        let num_right = right_ids.len();
-        let num_left = left_ids.len();
-
-        if num_right >= 3 && num_left >= 3 {
+        if right_ids.len() >= 3 && left_ids.len() >= 3 {
             let right = polygon.get_polygon(right_ids, false);
             let left = polygon.get_polygon(left_ids, false);
-            let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
-            let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
-            merged_ids = self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
-        } else if num_left >= 3 {
+            merged_ids = self.merge_from_tangents(left, right, polygon);
+        } else if left_ids.len() >= 3 {
+            assert!(right_ids.len() == 2);
             let left = polygon.get_polygon(left_ids, false);
-            assert!(num_right == 2);
             let right = polygon
                 .get_line_segment(&right_ids[0], &right_ids[1])
                 .unwrap();
-            let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
-            let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
-            merged_ids = self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
-        } else if num_right >= 3 {
+            merged_ids = self.merge_from_tangents(left, right, polygon);
+        } else if right_ids.len() >= 3 {
+            assert!(left_ids.len() == 2);
             let right = polygon.get_polygon(right_ids, false);
-            assert!(num_left == 2);
             let left = polygon
                 .get_line_segment(&left_ids[0], &left_ids[1])
                 .unwrap();
-            let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
-            let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
-            merged_ids = self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
+            merged_ids = self.merge_from_tangents(left, right, polygon);
         } else {
-            assert!(num_left == 2);
-            assert!(num_right == 2);
+            assert!(left_ids.len() == 2);
+            assert!(right_ids.len() == 2);
             let right = polygon
                 .get_line_segment(&right_ids[0], &right_ids[1])
                 .unwrap();
             let left = polygon
                 .get_line_segment(&left_ids[0], &left_ids[1])
                 .unwrap();
-
             if left.collinear_with(&right) {
                 merged_ids = vec![
                     left.lowest_leftmost_vertex().id,
                     right.highest_rightmost_vertex().id,
                 ];
             } else {
-                let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
-                let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
-                merged_ids =
-                    self.extract_boundary(&left, &right, lt_a.id, lt_b.id, ut_a.id, ut_b.id);
+                merged_ids = self.merge_from_tangents(left, right, polygon);
             }
         }
         // Could be 2 if we tried to merge 2 collinear linear segments

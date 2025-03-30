@@ -52,6 +52,14 @@ impl Geometry for Polygon {
         edges
     }
 
+    fn prev_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
+        self.prev_map.get(id).cloned()
+    }
+
+    fn next_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
+        self.next_map.get(id).cloned()
+    }
+
     fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
         self.vertex_map.get(id)
     }
@@ -175,14 +183,6 @@ impl Polygon {
             area += t.area();
         }
         area
-    }
-
-    pub fn prev_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
-        self.prev_map.get(id).cloned()
-    }
-
-    pub fn next_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
-        self.next_map.get(id).cloned()
     }
 
     pub fn remove_vertex(&mut self, id: &VertexId) -> Option<Vertex> {
