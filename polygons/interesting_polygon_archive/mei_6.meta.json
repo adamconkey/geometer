@@ -1,8 +1,7 @@
 {
-    "area": 317640,
-    "extreme_points": [],
-    "interior_points": [],
-    "num_edges": 173,
-    "num_triangles": 171,
-    "num_vertices": 173
+  "area": 317640,
+  "extreme_points": [0, 2, 5, 19, 20, 37, 40, 41, 71, 77, 82, 83, 166, 172],
+  "num_edges": 173,
+  "num_triangles": 171,
+  "num_vertices": 173
 }

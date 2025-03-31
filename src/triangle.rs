@@ -1,38 +1,92 @@
-use std::cell::OnceCell;
+use std::{cell::OnceCell, collections::HashSet};
 
 use crate::{
-    line_segment::LineSegment, point::Point, vertex::Vertex
+    geometry::Geometry,
+    line_segment::LineSegment,
+    vertex::{Vertex, VertexId},
 };
 
-
 pub struct Triangle<'a> {
-    pub p1: &'a Point,
-    pub p2: &'a Point,
-    pub p3: &'a Point,
+    pub v1: &'a Vertex,
+    pub v2: &'a Vertex,
+    pub v3: &'a Vertex,
     area: OnceCell<f64>,
 }
 
-impl<'a> Triangle<'a> {
-    pub fn new(p1: &'a Point, p2: &'a Point, p3: &'a Point) -> Triangle<'a> {
-        Triangle { p1, p2, p3, area: OnceCell::new() }
+impl Geometry for Triangle<'_> {
+    fn vertices(&self) -> Vec<&Vertex> {
+        vec![self.v1, self.v2, self.v3]
     }
 
-    pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex, v3: &'a Vertex) -> Triangle<'a> {
-        Triangle::new(&v1.coords, &v2.coords, &v3.coords)
+    fn edges(&self) -> HashSet<(VertexId, VertexId)> {
+        let mut edges = HashSet::new();
+        edges.insert((self.v1.id, self.v2.id));
+        edges.insert((self.v2.id, self.v3.id));
+        edges.insert((self.v3.id, self.v1.id));
+        edges
+    }
+
+    fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        if id == &self.v1.id {
+            Some(self.v1)
+        } else if id == &self.v2.id {
+            Some(self.v2)
+        } else if id == &self.v3.id {
+            Some(self.v3)
+        } else {
+            None
+        }
+    }
+
+    fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        if id == &self.v1.id {
+            Some(self.v2)
+        } else if id == &self.v2.id {
+            Some(self.v3)
+        } else if id == &self.v3.id {
+            Some(self.v1)
+        } else {
+            None
+        }
+    }
+
+    fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        if id == &self.v1.id {
+            Some(self.v3)
+        } else if id == &self.v2.id {
+            Some(self.v1)
+        } else if id == &self.v3.id {
+            Some(self.v2)
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a> Triangle<'a> {
+    pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex, v3: &'a Vertex) -> Self {
+        let area = OnceCell::new();
+        Self { v1, v2, v3, area }
+    }
+
+    pub fn reverse(&self) -> Self {
+        Triangle::from_vertices(self.v1, self.v3, self.v2)
     }
 
     pub fn to_line_segments(&self) -> Vec<LineSegment> {
-        let ls1 = LineSegment::new(self.p1, self.p2);
-        let ls2 = LineSegment::new(self.p2, self.p3);
-        let ls3 = LineSegment::new(self.p3, self.p1);
+        let ls1 = LineSegment::from_vertices(self.v1, self.v2);
+        let ls2 = LineSegment::from_vertices(self.v2, self.v3);
+        let ls3 = LineSegment::from_vertices(self.v3, self.v1);
         vec![ls1, ls2, ls3]
     }
 
     pub fn area(&self) -> f64 {
         *self.area.get_or_init(|| {
-            let t1 = (self.p2.x - self.p1.x) * (self.p3.y - self.p1.y);
-            let t2 = (self.p3.x - self.p1.x) * (self.p2.y - self.p1.y);
-            0.5 * (t1 - t2)
+            let t1 = self.v2.x - self.v1.x;
+            let t2 = self.v3.y - self.v1.y;
+            let t3 = self.v3.x - self.v1.x;
+            let t4 = self.v2.y - self.v1.y;
+            0.5 * ((t1 * t2) - (t3 * t4))
         })
     }
 
@@ -40,12 +94,12 @@ impl<'a> Triangle<'a> {
         self.area() == 0.0
     }
 
-    pub fn contains(&self, p: Point) -> bool {
+    pub fn contains(&self, v: &Vertex) -> bool {
         if self.has_collinear_points() {
             return false;
         }
         for ls in self.to_line_segments() {
-            if !p.left_on(&ls) {
+            if !v.left_on(&ls) {
                 return false;
             }
         }
@@ -53,33 +107,18 @@ impl<'a> Triangle<'a> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use itertools::Itertools;
     use crate::vertex::VertexId;
-
-    #[test]
-    fn test_from_vertices() {
-        let id1 = VertexId::from(1u32);
-        let id2 = VertexId::from(2u32);
-        let id3 = VertexId::from(3u32);
-        let v1 = Vertex::new(Point::new(0.0, 0.0), id1, id3, id2);
-        let v2 = Vertex::new(Point::new(3.0, 0.0), id2, id1, id3);
-        let v3 = Vertex::new(Point::new(0.0, 4.0), id3, id2, id1);
-        let triangle = Triangle::from_vertices(&v1, &v2, &v3);
-        assert_eq!(Point::new(0.0, 0.0), *triangle.p1);   
-        assert_eq!(Point::new(3.0, 0.0), *triangle.p2);   
-        assert_eq!(Point::new(0.0, 4.0), *triangle.p3);   
-    }
+    use itertools::Itertools;
 
     #[test]
     fn test_area_right_triangle() {
-        let a = Point::new(0.0, 0.0);
-        let b = Point::new(3.0, 0.0);
-        let c = Point::new(0.0, 4.0);
-        let triangle = Triangle::new(&a, &b, &c);
+        let a = Vertex::new(VertexId::from(0u32), 0.0, 0.0);
+        let b = Vertex::new(VertexId::from(1u32), 3.0, 0.0);
+        let c = Vertex::new(VertexId::from(2u32), 0.0, 4.0);
+        let triangle = Triangle::from_vertices(&a, &b, &c);
         let area = triangle.area();
         assert_eq!(area, 6.0);
     }
@@ -88,14 +127,14 @@ mod tests {
 
     #[test]
     fn test_area_clockwise() {
-        let a = Point::new(0.0, 0.0);
-        let b = Point::new(4.0, 3.0);
-        let c = Point::new(1.0, 3.0);
-        
+        let a = Vertex::new(VertexId::from(0u32), 0.0, 0.0);
+        let b = Vertex::new(VertexId::from(1u32), 4.0, 3.0);
+        let c = Vertex::new(VertexId::from(2u32), 1.0, 3.0);
+
         let cw = vec![
-            Triangle::new(&a, &c, &b),
-            Triangle::new(&c, &b, &a),
-            Triangle::new(&b, &a, &c),
+            Triangle::from_vertices(&a, &c, &b),
+            Triangle::from_vertices(&c, &b, &a),
+            Triangle::from_vertices(&b, &a, &c),
         ];
         for triangle in cw {
             assert!(triangle.area() < 0.0);
@@ -104,14 +143,14 @@ mod tests {
 
     #[test]
     fn test_area_counter_clockwise() {
-        let a = Point::new(0.0, 0.0);
-        let b = Point::new(4.0, 3.0);
-        let c = Point::new(1.0, 3.0);
+        let a = Vertex::new(VertexId::from(0u32), 0.0, 0.0);
+        let b = Vertex::new(VertexId::from(1u32), 4.0, 3.0);
+        let c = Vertex::new(VertexId::from(2u32), 1.0, 3.0);
 
         let ccw = vec![
-            Triangle::new(&a, &b, &c),
-            Triangle::new(&b, &c, &a),
-            Triangle::new(&c, &a, &b),
+            Triangle::from_vertices(&a, &b, &c),
+            Triangle::from_vertices(&b, &c, &a),
+            Triangle::from_vertices(&c, &a, &b),
         ];
         for triangle in ccw {
             assert!(triangle.area() > 0.0);
@@ -120,23 +159,23 @@ mod tests {
 
     #[test]
     fn test_area_collinear() {
-        let a = Point::new(0.0, 0.0);
-        let b = Point::new(4.0, 3.0);
-        let c = Point::new(1.0, 3.0);
+        let a = Vertex::new(VertexId::from(0u32), 0.0, 0.0);
+        let b = Vertex::new(VertexId::from(1u32), 4.0, 3.0);
+        let c = Vertex::new(VertexId::from(2u32), 1.0, 3.0);
 
         // This is choice with replacement over a 3-tuple, so there are
         // 3 * 3 * 3 = 27 total options and this generates all of them.
         let all_combos = std::iter::repeat(vec![&a, &b, &c].into_iter())
             .take(3)
             .multi_cartesian_product();
-        
-        for points in all_combos {
-            let p0 = points[0];
-            let p1 = points[1];
-            let p2 = points[2];
-            let triangle = Triangle::new(p0, p1, p2);
-            
-            if p0 == p1 || p0 == p2 || p1 == p2 {
+
+        for vertices in all_combos {
+            let v0 = vertices[0];
+            let v1 = vertices[1];
+            let v2 = vertices[2];
+            let triangle = Triangle::from_vertices(v0, v1, v2);
+
+            if v0 == v1 || v0 == v2 || v1 == v2 {
                 // If there's duplicate vertices, they should be detected
                 // as collinear (zero area)
                 assert!(triangle.has_collinear_points());

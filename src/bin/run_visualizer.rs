@@ -1,19 +1,21 @@
 use clap::{Parser, ValueEnum};
-use geometer::convex_hull::{ConvexHullComputer, QuickHull};
-use geometer::error::FileError;
+use itertools::Itertools;
 use random_color::RandomColor;
 
-use geometer::polygon::Polygon;
-use geometer::triangulation::{EarClipping, Triangulation, TriangulationComputer};
-use geometer::util::load_polygon;
-
+use geometer::{
+    convex_hull::{ConvexHullComputer, QuickHull},
+    error::FileError,
+    geometry::Geometry,
+    polygon::Polygon,
+    triangulation::{EarClipping, Triangulation, TriangulationComputer},
+    util::load_polygon,
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Visualization {
     ConvexHull,
     Triangulation,
 }
-
 
 /// Visualize polygons and algorithms using Rerun.io``
 #[derive(Parser, Debug)]
@@ -31,7 +33,6 @@ struct Args {
     #[arg(short, long, value_enum)]
     visualization: Visualization,
 }
-
 
 #[derive(Debug)]
 pub enum VisualizationError {
@@ -51,11 +52,9 @@ impl From<rerun::RecordingStreamError> for VisualizationError {
     }
 }
 
-
 pub struct RerunVisualizer {
     rec: rerun::RecordingStream,
 }
-
 
 impl RerunVisualizer {
     pub fn new(name: String) -> Result<Self, VisualizationError> {
@@ -64,49 +63,56 @@ impl RerunVisualizer {
     }
 
     pub fn visualize_polygon(
-        &self, 
-        polygon: &Polygon, 
-        name: &String, 
-        vertex_radius: f32
+        &self,
+        polygon: &Polygon,
+        name: &String,
+        vertex_radius: f32,
     ) -> Result<(), VisualizationError> {
         let vertex_color = RandomColor::new().to_rgb_array();
         self.rec.log(
             format!("{}/vertices", name),
-            &self.polygon_to_rerun_points(polygon)
+            &self
+                .polygon_to_rerun_points(polygon)
                 .with_radii([vertex_radius])
-                .with_colors([vertex_color])
+                .with_colors([vertex_color]),
         )?;
 
         let edge_color = RandomColor::new().to_rgb_array();
         self.rec.log(
             format!("{}/edges", name),
-            &self.polygon_to_rerun_edges(polygon)
-                .with_colors([edge_color])
+            &self
+                .polygon_to_rerun_edges(polygon)
+                .with_colors([edge_color]),
         )?;
-        
+
         Ok(())
     }
 
-    pub fn visualize_triangulation(&self, polygon: &Polygon, name: &String) -> Result<(), VisualizationError> {
+    pub fn visualize_triangulation(
+        &self,
+        polygon: &Polygon,
+        name: &String,
+    ) -> Result<(), VisualizationError> {
         let name = format!("{name}/triangulation");
         let triangulation = EarClipping.triangulation(polygon);
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation, polygon);
 
         let _ = self.visualize_polygon(polygon, &name, 5.0);
-        
+
         for (i, mesh) in rerun_meshes.iter().enumerate() {
-            self.rec.log(
-                format!("{}/triangle_{}", &name, i),
-                mesh
-            )?;
+            self.rec.log(format!("{}/triangle_{}", &name, i), mesh)?;
         }
 
         Ok(())
     }
 
-    pub fn visualize_convex_hull(&self, polygon: &Polygon, name: &String) -> Result<(), VisualizationError> {    
+    pub fn visualize_convex_hull(
+        &self,
+        polygon: &Polygon,
+        name: &String,
+    ) -> Result<(), VisualizationError> {
         let _ = self.visualize_polygon(polygon, &format!("{name}/polygon"), 5.0);
-        
+
         let hull = QuickHull.convex_hull(polygon);
         let _ = self.visualize_polygon(&hull, &format!("{name}/convex_hull"), 10.0);
 
@@ -115,39 +121,45 @@ impl RerunVisualizer {
 
     fn polygon_to_rerun_points(&self, polygon: &Polygon) -> rerun::Points3D {
         rerun::Points3D::new(
-            polygon.sorted_points()
+            polygon
+                .vertices()
                 .into_iter()
-                .map(|p| (p.x as f32, p.y as f32, 0.0))
+                .sorted_by_key(|v| v.id)
+                .map(|v| (v.x as f32, v.y as f32, 0.0)),
         )
     }
-    
+
     fn polygon_to_rerun_edges(&self, polygon: &Polygon) -> rerun::LineStrips3D {
-        let mut edge_points: Vec<_> = polygon.sorted_points()
+        let mut edge_points: Vec<_> = polygon
+            .vertices()
             .into_iter()
-            .map(|p| (p.x as f32, p.y as f32, 0.0))
+            .sorted_by_key(|v| v.id)
+            .map(|v| (v.x as f32, v.y as f32, 0.0))
             .collect();
         edge_points.push(edge_points[0]);
         rerun::LineStrips3D::new([edge_points])
     }
-    
-    fn triangulation_to_rerun_meshes(&self, triangulation: &Triangulation, polygon: &Polygon) -> Vec<rerun::Mesh3D> {
+
+    fn triangulation_to_rerun_meshes(
+        &self,
+        triangulation: &Triangulation,
+        polygon: &Polygon,
+    ) -> Vec<rerun::Mesh3D> {
         let mut meshes = Vec::new();
         for ids in triangulation.iter() {
             let color = RandomColor::new().to_rgb_array();
             let t = polygon.get_triangle(&ids.0, &ids.1, &ids.2).unwrap();
             let points = [
-                [t.p1.x as f32, t.p1.y as f32, 0.0], 
-                [t.p2.x as f32, t.p2.y as f32, 0.0], 
-                [t.p3.x as f32, t.p3.y as f32, 0.0]
-            ]; 
-            let mesh = rerun::Mesh3D::new(points)
-                .with_vertex_colors([color, color, color]);
+                [t.v1.x as f32, t.v1.y as f32, 0.0],
+                [t.v2.x as f32, t.v2.y as f32, 0.0],
+                [t.v3.x as f32, t.v3.y as f32, 0.0],
+            ];
+            let mesh = rerun::Mesh3D::new(points).with_vertex_colors([color, color, color]);
             meshes.push(mesh);
         }
         meshes
     }
 }
-
 
 fn main() -> Result<(), VisualizationError> {
     let args = Args::parse();
@@ -160,6 +172,6 @@ fn main() -> Result<(), VisualizationError> {
         Visualization::ConvexHull => visualizer?.visualize_convex_hull(&polygon, &name)?,
         Visualization::Triangulation => visualizer?.visualize_triangulation(&polygon, &name)?,
     };
-    
+
     Ok(())
 }
