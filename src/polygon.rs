@@ -51,6 +51,28 @@ impl Geometry for Polygon {
         }
         edges
     }
+
+    fn prev_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
+        self.prev_map.get(id).cloned()
+    }
+
+    fn next_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
+        self.next_map.get(id).cloned()
+    }
+
+    fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        self.vertex_map.get(id)
+    }
+
+    fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        let prev_id = self.prev_vertex_id(id).unwrap(); // TODO don't unwrap
+        self.vertex_map.get(&prev_id)
+    }
+
+    fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        let next_id = self.next_vertex_id(id).unwrap(); // TODO don't unwrap
+        self.vertex_map.get(&next_id)
+    }
 }
 
 impl Polygon {
@@ -163,14 +185,6 @@ impl Polygon {
         area
     }
 
-    pub fn prev_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
-        self.prev_map.get(id).cloned()
-    }
-
-    pub fn next_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
-        self.next_map.get(id).cloned()
-    }
-
     pub fn remove_vertex(&mut self, id: &VertexId) -> Option<Vertex> {
         if let Some(v) = self.vertex_map.remove(id) {
             // TODO don't unwrap
@@ -183,18 +197,31 @@ impl Polygon {
         None
     }
 
-    pub fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        self.vertex_map.get(id)
+    pub fn get_collinear(&self) -> Vec<VertexId> {
+        let mut collinear = Vec::new();
+        for id in self.vertex_ids() {
+            let prev = self.prev_vertex_id(&id).unwrap();
+            let next = self.next_vertex_id(&id).unwrap();
+            let t = self.get_triangle(&prev, &id, &next).unwrap();
+            if t.has_collinear_points() {
+                collinear.push(id);
+            }
+        }
+        collinear
     }
 
-    pub fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        let prev_id = self.prev_vertex_id(id).unwrap(); // TODO don't unwrap
-        self.vertex_map.get(&prev_id)
-    }
-
-    pub fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
-        let next_id = self.next_vertex_id(id).unwrap(); // TODO don't unwrap
-        self.vertex_map.get(&next_id)
+    pub fn clean_collinear(&mut self) {
+        // TODO I thought maybe you needed multiple
+        // passes to account for updates but that may
+        // not be true, just need to think a bit more
+        // about this
+        let mut collinear = self.get_collinear();
+        while !collinear.is_empty() {
+            for id in collinear.iter() {
+                self.remove_vertex(id);
+            }
+            collinear = self.get_collinear();
+        }
     }
 
     pub fn get_vertex_mut(&mut self, id: &VertexId) -> Option<&mut Vertex> {
@@ -226,16 +253,19 @@ impl Polygon {
         None
     }
 
-    pub fn get_polygon(&self, ids: impl IntoIterator<Item = VertexId>) -> Polygon {
-        // Note this is currently sorting as its primary use is in convex hull,
-        // if it proves useful for this sorting to be optional (i.e. assume the
-        // order of input IDs is as desired) then can make this optional
-        let vertices = ids
+    pub fn get_polygon(
+        &self,
+        ids: impl IntoIterator<Item = VertexId>,
+        sort_by_id: bool,
+    ) -> Polygon {
+        let mut vertices = ids
             .into_iter()
             .map(|id| self.get_vertex(&id).unwrap()) // TODO don't unwrap
             .cloned()
-            .sorted_by_key(|v| v.id)
             .collect_vec();
+        if sort_by_id {
+            vertices.sort_by_key(|v| v.id);
+        }
         Polygon::from_vertices(vertices)
     }
 
@@ -306,6 +336,7 @@ impl Polygon {
         self.validate_num_vertices();
         self.validate_cycle();
         self.validate_edge_intersections();
+        self.validate_area();
     }
 
     fn validate_num_vertices(&self) {
@@ -367,7 +398,7 @@ impl Polygon {
             assert!(e1.incident_to(edges[i + 1].v1));
             for e2 in edges.iter().take(edges.len() - 1).skip(i + 2) {
                 // Non-adjacent edges should have no intersection
-                assert!(!e1.intersects(e2));
+                assert!(!e1.intersects(e2), "e1={e1:?}, e2={e2:?}");
                 assert!(!e1.incident_to(e2.v1));
                 assert!(!e1.incident_to(e2.v2));
                 assert!(!e2.intersects(e1));
@@ -375,6 +406,14 @@ impl Polygon {
                 assert!(!e2.incident_to(e1.v2));
             }
         }
+    }
+
+    fn validate_area(&self) {
+        let area = self.area();
+        assert!(
+            area > 0.0,
+            "Polygon area must be positive, area={area}, polygon={self:?}"
+        );
     }
 }
 

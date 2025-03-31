@@ -112,6 +112,7 @@ polygon_fixture!(o_rourke_3_8, o_rourke);
 #[case::seidel_3(seidel_3())]
 #[case::skimage_horse(skimage_horse())]
 #[case::toussaint_1a(toussaint_1a())]
+// #[case::o_rourke_3_8(o_rourke_3_8())] Some are failing
 pub fn all_polygons(#[case] case: PolygonTestCase) {}
 
 #[template]
@@ -131,5 +132,26 @@ pub fn all_custom_polygons(#[case] case: PolygonTestCase) {}
 #[case::held_1(held_1())]
 #[case::held_12(held_12())]
 #[case::held_3(held_3())]
+#[case::held_7a(held_7a())]
+#[case::held_7b(held_7b())]
+#[case::held_7c(held_7c())]
+#[case::held_7d(held_7d())]
+#[case::mapbox_building(mapbox_building())]
+#[case::mapbox_dude(mapbox_dude())] // D&C disagrees
+#[case::matisse_alga(matisse_alga())] // D&C disagrees
+#[case::matisse_blue(matisse_blue())]
+#[case::matisse_icarus(matisse_icarus())]
+#[case::matisse_nuit(matisse_nuit())] // D&C disagrees
+#[case::mei_2(mei_2())]
+#[case::mei_3(mei_3())]
+#[case::mei_4(mei_4())]
+#[case::mei_5(mei_5())] // D&C disagrees
+#[case::mei_6(mei_6())] // D&C disagrees
+#[case::meisters_3(meisters_3())]
+#[case::misc_discobolus(misc_discobolus())]
+#[case::misc_fu(misc_fu())]
+#[case::seidel_3(seidel_3())]
+#[case::skimage_horse(skimage_horse())] // D&C disagrees
+#[case::toussaint_1a(toussaint_1a())]
 #[case::o_rourke_3_8(o_rourke_3_8())]
-pub fn extreme_point_cases(#[case] case: PolygonTestCase) {}
+pub fn convex_hull_cases(#[case] case: PolygonTestCase) {}

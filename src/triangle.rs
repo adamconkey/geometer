@@ -25,12 +25,52 @@ impl Geometry for Triangle<'_> {
         edges.insert((self.v3.id, self.v1.id));
         edges
     }
+
+    fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        if id == &self.v1.id {
+            Some(self.v1)
+        } else if id == &self.v2.id {
+            Some(self.v2)
+        } else if id == &self.v3.id {
+            Some(self.v3)
+        } else {
+            None
+        }
+    }
+
+    fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        if id == &self.v1.id {
+            Some(self.v2)
+        } else if id == &self.v2.id {
+            Some(self.v3)
+        } else if id == &self.v3.id {
+            Some(self.v1)
+        } else {
+            None
+        }
+    }
+
+    fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        if id == &self.v1.id {
+            Some(self.v3)
+        } else if id == &self.v2.id {
+            Some(self.v1)
+        } else if id == &self.v3.id {
+            Some(self.v2)
+        } else {
+            None
+        }
+    }
 }
 
 impl<'a> Triangle<'a> {
     pub fn from_vertices(v1: &'a Vertex, v2: &'a Vertex, v3: &'a Vertex) -> Self {
         let area = OnceCell::new();
         Self { v1, v2, v3, area }
+    }
+
+    pub fn reverse(&self) -> Self {
+        Triangle::from_vertices(self.v1, self.v3, self.v2)
     }
 
     pub fn to_line_segments(&self) -> Vec<LineSegment> {

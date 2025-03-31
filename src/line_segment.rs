@@ -23,6 +23,29 @@ impl Geometry for LineSegment<'_> {
         edges.insert((self.v1.id, self.v2.id));
         edges
     }
+
+    fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        if id == &self.v1.id {
+            return Some(self.v1);
+        } else if id == &self.v2.id {
+            return Some(self.v2);
+        }
+        None
+    }
+
+    fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        if id == &self.v1.id {
+            return Some(self.v2);
+        } else if id == &self.v2.id {
+            return Some(self.v1);
+        }
+        None
+    }
+
+    fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        // Treating these as cyclical
+        self.get_prev_vertex(id)
+    }
 }
 
 impl<'a> LineSegment<'a> {
@@ -88,6 +111,16 @@ impl<'a> LineSegment<'a> {
         self.v1.coords() == v.coords() || self.v2.coords() == v.coords()
     }
 
+    pub fn collinear_with(&self, cd: &LineSegment) -> bool {
+        let a = &self.v1;
+        let b = &self.v2;
+        let c = &cd.v1;
+        let d = &cd.v2;
+        let abc = Triangle::from_vertices(a, b, c);
+        let abd = Triangle::from_vertices(a, b, d);
+        abc.has_collinear_points() && abd.has_collinear_points()
+    }
+
     pub fn length(&self) -> f64 {
         Vector::from(self).magnitude()
     }
@@ -112,6 +145,17 @@ impl<'a> LineSegment<'a> {
         let t3 = self.v2.x * self.v1.y;
         let t4 = self.v2.y * self.v1.x;
         (t1 - t2 + t3 - t4).abs() / p1_to_p2.magnitude()
+    }
+
+    pub fn is_lower_tangent<T: Geometry>(&self, id: &VertexId, geom: &T) -> bool {
+        let v = geom.get_vertex(id).unwrap();
+        let prev = geom.get_prev_vertex(&v.id).unwrap();
+        let next = geom.get_next_vertex(&v.id).unwrap();
+        prev.left_on(self) && next.left_on(self)
+    }
+
+    pub fn is_upper_tangent<T: Geometry>(&self, id: &VertexId, geom: &T) -> bool {
+        self.reverse().is_lower_tangent(id, geom)
     }
 }
 

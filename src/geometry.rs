@@ -8,6 +8,18 @@ pub trait Geometry {
     // TODO could be better to make this vec of LineSegment?
     fn edges(&self) -> HashSet<(VertexId, VertexId)>;
 
+    fn get_vertex(&self, id: &VertexId) -> Option<&Vertex>;
+    fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex>;
+    fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex>;
+
+    fn prev_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
+        self.get_prev_vertex(id).map(|v| v.id)
+    }
+
+    fn next_vertex_id(&self, id: &VertexId) -> Option<VertexId> {
+        self.get_next_vertex(id).map(|v| v.id)
+    }
+
     fn num_edges(&self) -> usize {
         self.edges().len()
     }
@@ -78,5 +90,27 @@ pub trait Geometry {
         let mut vertices = self.vertices();
         vertices.sort_by_key(|v| (Reverse(OF(v.x)), Reverse(OF(v.y))));
         vertices[0]
+    }
+}
+
+impl<T: Geometry> Geometry for &T {
+    fn vertices(&self) -> Vec<&Vertex> {
+        (**self).vertices()
+    }
+
+    fn edges(&self) -> HashSet<(VertexId, VertexId)> {
+        (**self).edges()
+    }
+
+    fn get_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        (**self).get_vertex(id)
+    }
+
+    fn get_prev_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        (**self).get_prev_vertex(id)
+    }
+
+    fn get_next_vertex(&self, id: &VertexId) -> Option<&Vertex> {
+        (**self).get_next_vertex(id)
     }
 }

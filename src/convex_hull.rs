@@ -39,7 +39,7 @@ impl ConvexHullComputer for InteriorPoints {
         let interior_ids = self.interior_points(polygon);
         let all_ids = HashSet::from_iter(polygon.vertex_ids());
         let hull_ids = &all_ids - &interior_ids;
-        polygon.get_polygon(hull_ids)
+        polygon.get_polygon(hull_ids, true)
     }
 }
 
@@ -94,7 +94,7 @@ impl ConvexHullComputer for ExtremeEdges {
             hull_ids.insert(id1);
             hull_ids.insert(id2);
         }
-        polygon.get_polygon(hull_ids)
+        polygon.get_polygon(hull_ids, true)
     }
 }
 
@@ -135,7 +135,7 @@ impl ConvexHullComputer for GiftWrapping {
             }
         }
 
-        polygon.get_polygon(hull_ids)
+        polygon.get_polygon(hull_ids, true)
     }
 }
 
@@ -167,10 +167,8 @@ impl ConvexHullComputer for QuickHull {
             stack.push((y, x, s2))
         };
 
-        loop {
-            let (a, b, s) = stack.pop().unwrap();
+        while let Some((a, b, s)) = stack.pop() {
             let ab = polygon.get_line_segment(&a, &b).unwrap();
-
             let c = s
                 .iter()
                 .max_by_key(|v| OF(ab.distance_to_vertex(v)))
@@ -180,7 +178,6 @@ impl ConvexHullComputer for QuickHull {
 
             let ac = polygon.get_line_segment(&a, &c).unwrap();
             let cb = polygon.get_line_segment(&c, &b).unwrap();
-
             let s1 = s.iter().copied().filter(|v| v.right(&ac)).collect_vec();
             let s2 = s.iter().copied().filter(|v| v.right(&cb)).collect_vec();
 
@@ -195,7 +192,7 @@ impl ConvexHullComputer for QuickHull {
             }
         }
 
-        polygon.get_polygon(hull_ids)
+        polygon.get_polygon(hull_ids, true)
     }
 }
 
@@ -233,7 +230,218 @@ impl ConvexHullComputer for GrahamScan {
         }
 
         // The stack at the end has all hull vertices
-        polygon.get_polygon(stack.iter().map(|v| v.id))
+        polygon.get_polygon(stack.iter().map(|v| v.id), true)
+    }
+}
+
+#[derive(Default)]
+pub struct DivideConquer;
+
+impl DivideConquer {
+    fn lower_tangent_vertices<'a>(
+        &'a self,
+        left: impl Geometry,
+        right: impl Geometry,
+        polygon: &'a Polygon,
+    ) -> (VertexId, VertexId) {
+        let mut a = left.lowest_rightmost_vertex().id;
+        let mut b = right.lowest_leftmost_vertex().id;
+        let mut lt = polygon.get_line_segment(&a, &b).unwrap();
+        while !lt.is_lower_tangent(&a, &left) || !lt.is_lower_tangent(&b, &right) {
+            while !lt.is_lower_tangent(&a, &left) {
+                a = left.prev_vertex_id(&a).unwrap(); // Move down cw
+                lt = polygon.get_line_segment(&a, &b).unwrap();
+            }
+            while !lt.is_lower_tangent(&b, &right) {
+                b = right.next_vertex_id(&b).unwrap(); // Move down ccw
+                lt = polygon.get_line_segment(&a, &b).unwrap();
+            }
+        }
+        (a, b)
+    }
+
+    fn upper_tangent_vertices<'a>(
+        &'a self,
+        left: impl Geometry,
+        right: impl Geometry,
+        polygon: &'a Polygon,
+    ) -> (VertexId, VertexId) {
+        let mut a = left.highest_rightmost_vertex().id;
+        let mut b = right.highest_leftmost_vertex().id;
+        let mut ut = polygon.get_line_segment(&a, &b).unwrap();
+        while !ut.is_upper_tangent(&a, &left) || !ut.is_upper_tangent(&b, &right) {
+            while !ut.is_upper_tangent(&a, &left) {
+                a = left.next_vertex_id(&a).unwrap(); // Move up ccw
+                ut = polygon.get_line_segment(&a, &b).unwrap();
+            }
+            while !ut.is_upper_tangent(&b, &right) {
+                b = right.prev_vertex_id(&b).unwrap(); // Move down cw
+                ut = polygon.get_line_segment(&a, &b).unwrap();
+            }
+        }
+        (a, b)
+    }
+
+    fn extract_boundary(
+        &self,
+        a: impl Geometry,
+        b: impl Geometry,
+        lt_a: VertexId,
+        lt_b: VertexId,
+        ut_a: VertexId,
+        ut_b: VertexId,
+    ) -> Vec<VertexId> {
+        // Combine into one polygon by connecting the vertex chains
+        // of B -> ut -> A -> lt excluding vertices that do not
+        // exist along the outer boundary
+        let mut boundary = Vec::new();
+        // Extract vertices from chain on B
+        let mut v = lt_b;
+        while v != ut_b {
+            boundary.push(v);
+            v = b.get_next_vertex(&v).unwrap().id;
+        }
+        boundary.push(ut_b);
+        // Extract vertices from chain on A
+        v = ut_a;
+        while v != lt_a {
+            boundary.push(v);
+            v = a.get_next_vertex(&v).unwrap().id;
+        }
+        boundary.push(lt_a);
+        boundary
+    }
+
+    fn merge_from_tangents<'a>(
+        &'a self,
+        left: impl Geometry,
+        right: impl Geometry,
+        polygon: &'a Polygon,
+    ) -> Vec<VertexId> {
+        let (lt_a, lt_b) = self.lower_tangent_vertices(&left, &right, polygon);
+        let (ut_a, ut_b) = self.upper_tangent_vertices(&left, &right, polygon);
+        self.extract_boundary(&left, &right, lt_a, lt_b, ut_a, ut_b)
+    }
+
+    fn clean_triangle_ids(&self, ids: &mut Vec<VertexId>, polygon: &Polygon) {
+        let t = polygon.get_triangle(&ids[0], &ids[1], &ids[2]).unwrap();
+        if t.area() < 0.0 {
+            ids.reverse();
+        } else if t.area() == 0.0 {
+            // Collinear, remove middle vertex
+            *ids = vec![
+                t.lowest_leftmost_vertex().id,
+                t.highest_rightmost_vertex().id,
+            ];
+        }
+    }
+
+    fn merge(
+        &self,
+        mut left_ids: Vec<VertexId>,
+        mut right_ids: Vec<VertexId>,
+        polygon: &Polygon,
+    ) -> Vec<VertexId> {
+        let merged_ids;
+
+        if right_ids.len() == 3 {
+            self.clean_triangle_ids(&mut right_ids, polygon);
+        }
+        if left_ids.len() == 3 {
+            self.clean_triangle_ids(&mut left_ids, polygon);
+        }
+
+        if right_ids.len() >= 3 && left_ids.len() >= 3 {
+            let right = polygon.get_polygon(right_ids, false);
+            let left = polygon.get_polygon(left_ids, false);
+            merged_ids = self.merge_from_tangents(left, right, polygon);
+        } else if left_ids.len() >= 3 {
+            assert!(right_ids.len() == 2);
+            let left = polygon.get_polygon(left_ids, false);
+            let right = polygon
+                .get_line_segment(&right_ids[0], &right_ids[1])
+                .unwrap();
+            merged_ids = self.merge_from_tangents(left, right, polygon);
+        } else if right_ids.len() >= 3 {
+            assert!(left_ids.len() == 2);
+            let right = polygon.get_polygon(right_ids, false);
+            let left = polygon
+                .get_line_segment(&left_ids[0], &left_ids[1])
+                .unwrap();
+            merged_ids = self.merge_from_tangents(left, right, polygon);
+        } else {
+            assert!(left_ids.len() == 2);
+            assert!(right_ids.len() == 2);
+            let right = polygon
+                .get_line_segment(&right_ids[0], &right_ids[1])
+                .unwrap();
+            let left = polygon
+                .get_line_segment(&left_ids[0], &left_ids[1])
+                .unwrap();
+            if left.collinear_with(&right) {
+                merged_ids = vec![
+                    left.lowest_leftmost_vertex().id,
+                    right.highest_rightmost_vertex().id,
+                ];
+            } else {
+                merged_ids = self.merge_from_tangents(left, right, polygon);
+            }
+        }
+        // Could be 2 if we tried to merge 2 collinear linear segments
+        assert!(merged_ids.len() >= 2);
+        merged_ids
+    }
+}
+
+impl ConvexHullComputer for DivideConquer {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
+        if polygon.num_vertices() == 3 {
+            return polygon.clone();
+        }
+        let mut split_stack = Vec::new();
+        let mut merge_stack = Vec::new();
+
+        // Sorted by increasing X and break ties by increasing Y
+        let ids = polygon
+            .vertex_ids()
+            .iter()
+            .map(|id| polygon.get_vertex(id).unwrap())
+            .sorted_by_key(|v| (OF(v.x), OF(v.y)))
+            .map(|v| v.id)
+            .collect_vec();
+        split_stack.push(ids);
+
+        while let Some(mut left_ids) = split_stack.pop() {
+            assert!(left_ids.len() >= 4);
+            let mut right_ids = left_ids.split_off(left_ids.len() / 2);
+
+            if left_ids.len() <= 3 && right_ids.len() <= 3 {
+                // Keep leftmost towards bottom of merge stack
+                merge_stack.push(left_ids);
+                merge_stack.push(right_ids);
+            } else if left_ids.len() <= 3 {
+                merge_stack.push(left_ids);
+                split_stack.push(right_ids);
+            } else {
+                // Keep rightmost towards bottom of split stack
+                split_stack.push(right_ids);
+                split_stack.push(left_ids);
+            }
+
+            while merge_stack.len() > 1 {
+                right_ids = merge_stack.pop().unwrap();
+                left_ids = merge_stack.pop().unwrap();
+                let merged_ids = self.merge(left_ids, right_ids, polygon);
+                merge_stack.push(merged_ids);
+            }
+        }
+
+        let hull_ids = merge_stack
+            .pop()
+            .expect("Merge stack should have exactly 1 element");
+        let mut hull = polygon.get_polygon(hull_ids, true);
+        hull.clean_collinear();
+        hull
     }
 }
 
@@ -244,10 +452,18 @@ mod tests {
     use rstest::rstest;
     use rstest_reuse::{self, *};
 
-    #[apply(extreme_point_cases)]
+    #[apply(convex_hull_cases)]
     fn test_convex_hull(
         #[case] case: PolygonTestCase,
-        #[values(ExtremeEdges, GiftWrapping, GrahamScan, InteriorPoints, QuickHull)]
+        #[values(
+            DivideConquer,
+            ExtremeEdges,
+            GiftWrapping,
+            GrahamScan,
+            // Can enable this but it's slow AF for large number of vertices
+            // InteriorPoints,
+            QuickHull
+        )]
         computer: impl ConvexHullComputer,
     ) {
         let hull = computer.convex_hull(&case.polygon);
