@@ -448,24 +448,28 @@ impl ConvexHullComputer for DivideConquer {
 #[derive(Default)]
 pub struct Incremental;
 
-impl ConvexHullComputer for Incremental { 
+impl ConvexHullComputer for Incremental {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon {
-        let mut ids = polygon.get_vertex_ids().into_iter().collect_vec();
-        ids.sort();
+        let mut ids = polygon
+            .vertex_ids()
+            .iter()
+            .map(|id| polygon.get_vertex(id).unwrap())
+            .sorted_by_key(|v| (OF(v.x), OF(v.y)))
+            .map(|v| v.id)
+            .collect_vec();
 
         // Initialize hull with three leftmost vertices
-        let hull = polygon.get_polygon(ids.split_off(3));
-        
+        let hull = polygon.get_polygon(ids.split_off(3), false);
+
         // TODO iterate over vertices, for each one, find the
         // upper and lower tangents from the point to the hull.
 
         // TODO update hull chain prev/next refs to form new
         // hull.
 
-        todo!()
+        hull
     }
 }
-
 
 #[cfg(test)]
 mod tests {
