@@ -469,6 +469,9 @@ impl Incremental {
 
 impl ConvexHullComputer for Incremental {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon {
+        // TODO really just need to take a pass through this and
+        // clean up whatever seems necessary/helpful.
+
         let mut polygon = polygon.clone();
         if polygon.num_vertices() == 3 {
             return polygon;
