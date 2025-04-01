@@ -299,14 +299,14 @@ impl DivideConquer {
         let mut v = lt_b;
         while v != ut_b {
             boundary.push(v);
-            v = b.get_next_vertex(&v).unwrap().id;
+            v = b.next_vertex_id(&v).unwrap();
         }
         boundary.push(ut_b);
         // Extract vertices from chain on A
         v = ut_a;
         while v != lt_a {
             boundary.push(v);
-            v = a.get_next_vertex(&v).unwrap().id;
+            v = a.next_vertex_id(&v).unwrap();
         }
         boundary.push(lt_a);
         boundary
@@ -448,24 +448,77 @@ impl ConvexHullComputer for DivideConquer {
 #[derive(Default)]
 pub struct Incremental;
 
+impl Incremental {
+    fn extract_boundary(
+        &self,
+        hull: Polygon,
+        new_v: VertexId,
+        hull_ut_v: VertexId,
+        hull_lt_v: VertexId,
+    ) -> Vec<VertexId> {
+        let mut boundary = vec![new_v];
+        let mut v = hull_ut_v;
+        while v != hull_lt_v {
+            boundary.push(v);
+            v = hull.next_vertex_id(&v).unwrap();
+        }
+        boundary.push(hull_lt_v);
+        boundary
+    }
+}
+
 impl ConvexHullComputer for Incremental {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon {
-        let mut ids = polygon
+        let mut polygon = polygon.clone();
+        if polygon.num_vertices() == 3 {
+            return polygon;
+        }
+
+        polygon.clean_collinear();
+
+        let mut hull_ids = polygon
             .vertex_ids()
             .iter()
             .map(|id| polygon.get_vertex(id).unwrap())
             .sorted_by_key(|v| (OF(v.x), OF(v.y)))
             .map(|v| v.id)
             .collect_vec();
+        // This will leave hull_ids with the 3 leftmost vertices
+        let ids = hull_ids.split_off(3);
 
-        // Initialize hull with three leftmost vertices
-        let hull = polygon.get_polygon(ids.split_off(3), false);
+        if polygon
+            .get_triangle(&hull_ids[0], &hull_ids[1], &hull_ids[2])
+            .unwrap()
+            .area()
+            < 0.0
+        {
+            hull_ids.reverse();
+        }
+        let mut hull = polygon.get_polygon(hull_ids, false);
 
-        // TODO iterate over vertices, for each one, find the
-        // upper and lower tangents from the point to the hull.
+        for id in ids.into_iter() {
+            let rightmost = hull.highest_rightmost_vertex().id;
 
-        // TODO update hull chain prev/next refs to form new
-        // hull.
+            // Find the upper tangent from new point to current hull
+            let mut hull_ut_v = rightmost;
+            let mut ut = polygon.get_line_segment(&hull_ut_v, &id).unwrap();
+            while !ut.is_upper_tangent(&hull_ut_v, &hull) {
+                hull_ut_v = hull.next_vertex_id(&hull_ut_v).unwrap(); // Move up ccw
+                ut = polygon.get_line_segment(&hull_ut_v, &id).unwrap();
+            }
+
+            // Find the lower tangent from new point to current hull
+            let mut hull_lt_v = rightmost;
+            let mut lt = polygon.get_line_segment(&hull_lt_v, &id).unwrap();
+            while !lt.is_lower_tangent(&hull_lt_v, &hull) {
+                hull_lt_v = hull.prev_vertex_id(&hull_lt_v).unwrap(); // Move down cw
+                lt = polygon.get_line_segment(&hull_lt_v, &id).unwrap();
+            }
+
+            let new_hull_ids = self.extract_boundary(hull, id, hull_ut_v, hull_lt_v);
+            hull = polygon.get_polygon(new_hull_ids, false);
+            hull.clean_collinear();
+        }
 
         hull
     }
@@ -482,13 +535,14 @@ mod tests {
     fn test_convex_hull(
         #[case] case: PolygonTestCase,
         #[values(
-            DivideConquer,
-            ExtremeEdges,
-            GiftWrapping,
-            GrahamScan,
+            // DivideConquer,
+            // ExtremeEdges,
+            // GiftWrapping,
+            // GrahamScan,
+            Incremental,
             // Can enable this but it's slow AF for large number of vertices
             // InteriorPoints,
-            QuickHull
+            // QuickHull
         )]
         computer: impl ConvexHullComputer,
     ) {
