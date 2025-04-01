@@ -538,14 +538,14 @@ mod tests {
     fn test_convex_hull(
         #[case] case: PolygonTestCase,
         #[values(
-            // DivideConquer,
-            // ExtremeEdges,
-            // GiftWrapping,
-            // GrahamScan,
+            DivideConquer,
+            ExtremeEdges,
+            GiftWrapping,
+            GrahamScan,
             Incremental,
             // Can enable this but it's slow AF for large number of vertices
             // InteriorPoints,
-            // QuickHull
+            QuickHull
         )]
         computer: impl ConvexHullComputer,
     ) {
