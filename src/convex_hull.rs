@@ -401,14 +401,7 @@ impl ConvexHullComputer for DivideConquer {
         let mut split_stack = Vec::new();
         let mut merge_stack = Vec::new();
 
-        // Sorted by increasing X and break ties by increasing Y
-        let ids = polygon
-            .vertex_ids()
-            .iter()
-            .map(|id| polygon.get_vertex(id).unwrap())
-            .sorted_by_key(|v| (OF(v.x), OF(v.y)))
-            .map(|v| v.id)
-            .collect_vec();
+        let ids = polygon.vertex_ids_by_increasing_x();
         split_stack.push(ids);
 
         while let Some(mut left_ids) = split_stack.pop() {
@@ -450,12 +443,7 @@ impl Incremental {
     fn init_hull(&self, polygon: &Polygon) -> (Polygon, Vec<VertexId>) {
         // Initialize hull with three leftmost vertices
         // (accomplished by split_off call)
-        let mut hull_ids = polygon
-            .vertices()
-            .into_iter()
-            .sorted_by_key(|v| (OF(v.x), OF(v.y)))
-            .map(|v| v.id)
-            .collect_vec();
+        let mut hull_ids = polygon.vertex_ids_by_increasing_x();
         let ids = hull_ids.split_off(3);
         if polygon
             .get_triangle(&hull_ids[0], &hull_ids[1], &hull_ids[2])

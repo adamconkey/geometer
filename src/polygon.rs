@@ -155,6 +155,14 @@ impl Polygon {
         self.vertex_map.keys().cloned().collect_vec()
     }
 
+    pub fn vertex_ids_by_increasing_x(&self) -> Vec<VertexId> {
+        self.vertices()
+            .into_iter()
+            .sorted_by_key(|v| (OF(v.x), OF(v.y)))
+            .map(|v| v.id)
+            .collect_vec()
+    }
+
     pub fn min_angle_sorted_vertices(&self) -> Vec<&Vertex> {
         let v0 = self.rightmost_lowest_vertex();
         let mut v = v0.clone();
