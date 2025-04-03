@@ -257,6 +257,7 @@ impl Polygon {
         &self,
         ids: impl IntoIterator<Item = VertexId>,
         sort_by_id: bool,
+        clean_collinear: bool,
     ) -> Polygon {
         let mut vertices = ids
             .into_iter()
@@ -266,7 +267,15 @@ impl Polygon {
         if sort_by_id {
             vertices.sort_by_key(|v| v.id);
         }
-        Polygon::from_vertices(vertices)
+        let mut polygon = Polygon::from_vertices(vertices);
+        if clean_collinear {
+            polygon.clean_collinear();
+        }
+        polygon
+    }
+
+    pub fn clone_clean_collinear(&self) -> Polygon {
+        self.get_polygon(self.vertex_ids(), true, true)
     }
 
     pub fn distance_between(&self, id_1: &VertexId, id_2: &VertexId) -> f64 {

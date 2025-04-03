@@ -39,7 +39,7 @@ impl ConvexHullComputer for InteriorPoints {
         let interior_ids = self.interior_points(polygon);
         let all_ids = HashSet::from_iter(polygon.vertex_ids());
         let hull_ids = &all_ids - &interior_ids;
-        polygon.get_polygon(hull_ids, true)
+        polygon.get_polygon(hull_ids, true, false)
     }
 }
 
@@ -94,7 +94,7 @@ impl ConvexHullComputer for ExtremeEdges {
             hull_ids.insert(id1);
             hull_ids.insert(id2);
         }
-        polygon.get_polygon(hull_ids, true)
+        polygon.get_polygon(hull_ids, true, false)
     }
 }
 
@@ -135,7 +135,7 @@ impl ConvexHullComputer for GiftWrapping {
             }
         }
 
-        polygon.get_polygon(hull_ids, true)
+        polygon.get_polygon(hull_ids, true, false)
     }
 }
 
@@ -192,7 +192,7 @@ impl ConvexHullComputer for QuickHull {
             }
         }
 
-        polygon.get_polygon(hull_ids, true)
+        polygon.get_polygon(hull_ids, true, false)
     }
 }
 
@@ -230,7 +230,7 @@ impl ConvexHullComputer for GrahamScan {
         }
 
         // The stack at the end has all hull vertices
-        polygon.get_polygon(stack.iter().map(|v| v.id), true)
+        polygon.get_polygon(stack.iter().map(|v| v.id), true, false)
     }
 }
 
@@ -352,19 +352,19 @@ impl DivideConquer {
         }
 
         if right_ids.len() >= 3 && left_ids.len() >= 3 {
-            let right = polygon.get_polygon(right_ids, false);
-            let left = polygon.get_polygon(left_ids, false);
+            let right = polygon.get_polygon(right_ids, false, false);
+            let left = polygon.get_polygon(left_ids, false, false);
             merged_ids = self.merge_from_tangents(left, right, polygon);
         } else if left_ids.len() >= 3 {
             assert!(right_ids.len() == 2);
-            let left = polygon.get_polygon(left_ids, false);
+            let left = polygon.get_polygon(left_ids, false, false);
             let right = polygon
                 .get_line_segment(&right_ids[0], &right_ids[1])
                 .unwrap();
             merged_ids = self.merge_from_tangents(left, right, polygon);
         } else if right_ids.len() >= 3 {
             assert!(left_ids.len() == 2);
-            let right = polygon.get_polygon(right_ids, false);
+            let right = polygon.get_polygon(right_ids, false, false);
             let left = polygon
                 .get_line_segment(&left_ids[0], &left_ids[1])
                 .unwrap();
@@ -439,9 +439,7 @@ impl ConvexHullComputer for DivideConquer {
         let hull_ids = merge_stack
             .pop()
             .expect("Merge stack should have exactly 1 element");
-        let mut hull = polygon.get_polygon(hull_ids, true);
-        hull.clean_collinear();
-        hull
+        polygon.get_polygon(hull_ids, true, true)
     }
 }
 
@@ -449,6 +447,48 @@ impl ConvexHullComputer for DivideConquer {
 pub struct Incremental;
 
 impl Incremental {
+    fn init_hull(&self, polygon: &Polygon) -> (Polygon, Vec<VertexId>) {
+        // Initialize hull with three leftmost vertices
+        // (accomplished by split_off call)
+        let mut hull_ids = polygon
+            .vertices()
+            .into_iter()
+            .sorted_by_key(|v| (OF(v.x), OF(v.y)))
+            .map(|v| v.id)
+            .collect_vec();
+        let ids = hull_ids.split_off(3);
+        if polygon
+            .get_triangle(&hull_ids[0], &hull_ids[1], &hull_ids[2])
+            .unwrap()
+            .area()
+            < 0.0
+        {
+            hull_ids.reverse();
+        }
+        let hull = polygon.get_polygon(hull_ids, false, false);
+        (hull, ids)
+    }
+
+    fn upper_tangent_vertex(&self, hull: &Polygon, v: VertexId, polygon: &Polygon) -> VertexId {
+        let mut hull_ut_v = hull.highest_rightmost_vertex().id;
+        let mut ut = polygon.get_line_segment(&hull_ut_v, &v).unwrap();
+        while !ut.is_upper_tangent(&hull_ut_v, &hull) {
+            hull_ut_v = hull.next_vertex_id(&hull_ut_v).unwrap(); // Move up ccw
+            ut = polygon.get_line_segment(&hull_ut_v, &v).unwrap();
+        }
+        hull_ut_v
+    }
+
+    fn lower_tangent_vertex(&self, hull: &Polygon, v: VertexId, polygon: &Polygon) -> VertexId {
+        let mut hull_lt_v = hull.lowest_rightmost_vertex().id;
+        let mut lt = polygon.get_line_segment(&hull_lt_v, &v).unwrap();
+        while !lt.is_lower_tangent(&hull_lt_v, &hull) {
+            hull_lt_v = hull.prev_vertex_id(&hull_lt_v).unwrap(); // Move down cw
+            lt = polygon.get_line_segment(&hull_lt_v, &v).unwrap();
+        }
+        hull_lt_v
+    }
+
     fn extract_boundary(
         &self,
         hull: Polygon,
@@ -469,60 +509,15 @@ impl Incremental {
 
 impl ConvexHullComputer for Incremental {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon {
-        // TODO really just need to take a pass through this and
-        // clean up whatever seems necessary/helpful.
-
-        let mut polygon = polygon.clone();
-        if polygon.num_vertices() == 3 {
-            return polygon;
-        }
-
-        polygon.clean_collinear();
-
-        let mut hull_ids = polygon
-            .vertex_ids()
-            .iter()
-            .map(|id| polygon.get_vertex(id).unwrap())
-            .sorted_by_key(|v| (OF(v.x), OF(v.y)))
-            .map(|v| v.id)
-            .collect_vec();
-        // This will leave hull_ids with the 3 leftmost vertices
-        let ids = hull_ids.split_off(3);
-
-        if polygon
-            .get_triangle(&hull_ids[0], &hull_ids[1], &hull_ids[2])
-            .unwrap()
-            .area()
-            < 0.0
-        {
-            hull_ids.reverse();
-        }
-        let mut hull = polygon.get_polygon(hull_ids, false);
-
+        let polygon = polygon.clone_clean_collinear();
+        // Initialize the hull with the three leftmost vertices
+        let (mut hull, ids) = self.init_hull(&polygon);
         for id in ids.into_iter() {
-            let rightmost = hull.highest_rightmost_vertex().id;
-
-            // Find the upper tangent from new point to current hull
-            let mut hull_ut_v = rightmost;
-            let mut ut = polygon.get_line_segment(&hull_ut_v, &id).unwrap();
-            while !ut.is_upper_tangent(&hull_ut_v, &hull) {
-                hull_ut_v = hull.next_vertex_id(&hull_ut_v).unwrap(); // Move up ccw
-                ut = polygon.get_line_segment(&hull_ut_v, &id).unwrap();
-            }
-
-            // Find the lower tangent from new point to current hull
-            let mut hull_lt_v = rightmost;
-            let mut lt = polygon.get_line_segment(&hull_lt_v, &id).unwrap();
-            while !lt.is_lower_tangent(&hull_lt_v, &hull) {
-                hull_lt_v = hull.prev_vertex_id(&hull_lt_v).unwrap(); // Move down cw
-                lt = polygon.get_line_segment(&hull_lt_v, &id).unwrap();
-            }
-
-            let new_hull_ids = self.extract_boundary(hull, id, hull_ut_v, hull_lt_v);
-            hull = polygon.get_polygon(new_hull_ids, false);
-            hull.clean_collinear();
+            let ut_v = self.upper_tangent_vertex(&hull, id, &polygon);
+            let lt_v = self.lower_tangent_vertex(&hull, id, &polygon);
+            let new_hull_ids = self.extract_boundary(hull, id, ut_v, lt_v);
+            hull = polygon.get_polygon(new_hull_ids, false, true);
         }
-
         hull
     }
 }
