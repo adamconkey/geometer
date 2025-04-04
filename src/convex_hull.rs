@@ -18,8 +18,7 @@ impl InteriorPoints {
 
         // Don't be fooled by the runtime here, it's iterating over all
         // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3),
-        // so it's still O(n^4), this is just more compact than 4 nested
-        // for-loops.
+        // so it's still O(n^4), just more compact than 4 nested for-loops.
         for perm in ids.into_iter().permutations(4) {
             // TODO instead of unwrap, return result with error
             let v = polygon.get_vertex(&perm[0]).unwrap();
