@@ -440,7 +440,7 @@ impl ConvexHullComputer for DivideConquer {
 pub struct Incremental;
 
 impl Incremental {
-    fn init_hull(&self, polygon: &Polygon) -> (Polygon, Vec<VertexId>) {
+    fn init_hull_three_leftmost(&self, polygon: &Polygon) -> (Polygon, Vec<VertexId>) {
         // Initialize hull with three leftmost vertices
         // (accomplished by split_off call)
         let mut hull_ids = polygon.vertex_ids_by_increasing_x();
@@ -498,8 +498,7 @@ impl Incremental {
 impl ConvexHullComputer for Incremental {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon {
         let polygon = polygon.clone_clean_collinear();
-        // Initialize the hull with the three leftmost vertices
-        let (mut hull, ids) = self.init_hull(&polygon);
+        let (mut hull, ids) = self.init_hull_three_leftmost(&polygon);
         for id in ids.into_iter() {
             let ut_v = self.upper_tangent_vertex(&hull, id, &polygon);
             let lt_v = self.lower_tangent_vertex(&hull, id, &polygon);
