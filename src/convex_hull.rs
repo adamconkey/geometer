@@ -99,7 +99,7 @@ impl ConvexHullComputer for GiftWrapping {
         let mut v = v0;
         let mut e = None;
         while v.id != v0.id || e.is_none() {
-            let v_min_angle = polygon.min_angle_sorted_vertices(Some(&v), e)[0];
+            let v_min_angle = polygon.min_angle_sorted_vertices(Some(v), e)[0];
             e = polygon.get_line_segment(&v.id, &v_min_angle.id);
             v = v_min_angle;
             hull_ids.insert(v.id);
