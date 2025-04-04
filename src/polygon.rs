@@ -163,23 +163,25 @@ impl Polygon {
             .collect_vec()
     }
 
-    pub fn min_angle_sorted_vertices(&self) -> Vec<&Vertex> {
-        let v0 = self.rightmost_lowest_vertex();
-        let mut v = v0.clone();
-        v.x -= 1.0; // Arbitrary distance
-        let e0 = LineSegment::from_vertices(&v, v0);
-
-        let vertices: Vec<_> = self
-            .vertices()
+    pub fn min_angle_sorted_vertices(
+        &self,
+        v0: Option<&Vertex>,
+        e0: Option<LineSegment>,
+    ) -> Vec<&Vertex> {
+        let v0 = v0.unwrap_or(self.rightmost_lowest_vertex());
+        // This vertex is unused if Some(e0), but need its lifetime
+        // to be same as e0 in the event e0 is None
+        let mut horizontal_left_v = v0.clone();
+        horizontal_left_v.x -= 1.0; // Arbitrary distance
+        let e0 = e0.unwrap_or(LineSegment::from_vertices(&horizontal_left_v, v0));
+        self.vertices()
             .into_iter()
             .filter(|v| v.id != v0.id)
             // Break ties by sorting farthest to closest so that the dedup
-            // will keep the first instance (farthest) so it will favor
-            // extreme points
+            // will keep the first instance (farthest) favoring extreme points
             .sorted_by_key(|v| (OF(e0.angle_to_vertex(v)), Reverse(OF(v0.distance_to(v)))))
             .dedup_by(|a, b| e0.angle_to_vertex(a) == e0.angle_to_vertex(b))
-            .collect();
-        vertices
+            .collect_vec()
     }
 
     pub fn area(&self) -> f64 {
