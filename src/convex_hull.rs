@@ -124,11 +124,11 @@ impl ConvexHullComputer for QuickHull {
         let (s1, s2): (Vec<_>, Vec<_>) = s.partition(|v| v.right(&xy));
 
         if !s1.is_empty() {
-            stack.push((x, y, s1))
-        };
+            stack.push((x, y, s1));
+        }
         if !s2.is_empty() {
-            stack.push((y, x, s2))
-        };
+            stack.push((y, x, s2));
+        }
 
         while let Some((a, b, s)) = stack.pop() {
             let ab = polygon.get_line_segment(&a, &b).unwrap();
@@ -287,14 +287,14 @@ impl DivideConquer {
     }
 
     fn clean_triangle_ids(&self, ids: &mut Vec<VertexId>, polygon: &Polygon) {
-        let t = polygon.get_triangle(&ids[0], &ids[1], &ids[2]).unwrap();
-        if t.area() < 0.0 {
+        let triangle = polygon.get_triangle(&ids[0], &ids[1], &ids[2]).unwrap();
+        if triangle.area() < 0.0 {
             ids.reverse();
-        } else if t.area() == 0.0 {
+        } else if triangle.area() == 0.0 {
             // Collinear, remove middle vertex
             *ids = vec![
-                t.lowest_leftmost_vertex().id,
-                t.highest_rightmost_vertex().id,
+                triangle.lowest_leftmost_vertex().id,
+                triangle.highest_rightmost_vertex().id,
             ];
         }
     }
