@@ -69,11 +69,11 @@ impl ExtremeEdges {
 
 impl ConvexHullComputer for ExtremeEdges {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon {
-        let mut hull_ids = HashSet::new();
-        for (id1, id2) in self.extreme_edges(polygon).into_iter() {
-            hull_ids.insert(id1);
-            hull_ids.insert(id2);
-        }
+        let hull_ids = self
+            .extreme_edges(polygon)
+            .into_iter()
+            .map(|(id1, _)| id1)
+            .dedup();
         polygon.get_polygon(hull_ids, true, true)
     }
 }
