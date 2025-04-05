@@ -30,6 +30,8 @@ My goal for this repo is to eventually have a complete implementation of the alg
     - GiftWrapping $O(nh)$ for $h$ hull edges
     - QuickHull $O(n^2)$
     - GrahamScan $O(n \log n)$
+    - Incremental $O(n \log n)$
+    - Divide and Conquer $O(n \log n)$
 
 ### On the Roadmap
 - Convex Hull 3D
