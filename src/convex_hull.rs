@@ -73,8 +73,9 @@ impl ConvexHullComputer for ExtremeEdges {
             .extreme_edges(polygon)
             .into_iter()
             .map(|(id1, _)| id1)
+            .sorted()
             .dedup();
-        polygon.get_polygon(hull_ids, true, true)
+        polygon.get_polygon(hull_ids, false, true)
     }
 }
 
