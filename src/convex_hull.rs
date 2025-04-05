@@ -20,7 +20,6 @@ impl InteriorPoints {
         // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3),
         // so it's still O(n^4), just more compact than 4 nested for-loops.
         for perm in ids.into_iter().permutations(4) {
-            // TODO instead of unwrap, return result with error
             let v = polygon.get_vertex(&perm[0]).unwrap();
             let triangle = polygon.get_triangle(&perm[1], &perm[2], &perm[3]).unwrap();
             if triangle.contains(v) {
@@ -33,8 +32,6 @@ impl InteriorPoints {
 
 impl ConvexHullComputer for InteriorPoints {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon {
-        // NOTE: This is slow O(n^4) since the interior point
-        // computation being used has that runtime.
         let interior_ids = self.interior_points(polygon);
         let all_ids = HashSet::from_iter(polygon.vertex_ids());
         let hull_ids = &all_ids - &interior_ids;
@@ -52,11 +49,9 @@ impl ExtremeEdges {
         let ids = polygon.vertex_ids();
 
         for perm in ids.iter().permutations(2) {
-            // TODO instead of unwrap, return result with error
             let ls = polygon.get_line_segment(perm[0], perm[1]).unwrap();
             let mut is_extreme = true;
             for id3 in ids.iter().filter(|id| !perm.contains(id)) {
-                // TODO instead of unwrap, return result with error
                 let v = polygon.get_vertex(id3).unwrap();
                 if !v.left_on(&ls) {
                     is_extreme = false;
