@@ -28,7 +28,7 @@ My goal for this repo is to eventually have a complete implementation of the alg
     - From interior points $O(n^4)$
     - From extreme edges $O(n^3)$
     - GiftWrapping $O(nh)$ for $h$ hull edges
-    - QuickHull $O(n^2)$
+    - QuickHull $O(nh)$ for $h$ hull edges
     - GrahamScan $O(n \log n)$
     - Incremental $O(n \log n)$
     - Divide and Conquer $O(n \log n)$
