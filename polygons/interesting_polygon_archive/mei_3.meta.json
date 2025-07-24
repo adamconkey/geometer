@@ -1,10 +1,10 @@
 {
   "area": 180013.5,
   "extreme_points": [0, 3, 4, 20, 25, 26, 38],
-  "max_x": 0,
-  "max_y": 0,
-  "min_x": 0,
-  "min_y": 0,
+  "max_x": 706,
+  "max_y": 770,
+  "min_x": 62,
+  "min_y": 32,
   "num_edges": 42,
   "num_triangles": 40,
   "num_vertices": 42

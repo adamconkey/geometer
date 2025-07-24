@@ -3,10 +3,10 @@
   "extreme_points": [
     0, 1, 9, 10, 11, 13, 27, 28, 29, 37, 38, 45, 46, 53, 54, 65
   ],
-  "max_x": 0,
-  "max_y": 0,
-  "min_x": 0,
-  "min_y": 0,
+  "max_x": 760,
+  "max_y": 767,
+  "min_x": 22,
+  "min_y": 35,
   "num_edges": 69,
   "num_triangles": 67,
   "num_vertices": 69

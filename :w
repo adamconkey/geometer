@@ -5,9 +5,9 @@
     129, 145, 146
   ],
   "max_x": 761,
-  "max_y": 778,
+  "max_y": 0,
   "min_x": 57,
-  "min_y": 17,
+  "min_y": 0,
   "num_edges": 166,
   "num_triangles": 164,
   "num_vertices": 166

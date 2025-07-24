@@ -9,10 +9,10 @@
     20,
     27
   ],
-  "max_x": 0,
-  "max_y": 0,
-  "min_x": 0,
-  "min_y": 0,
+  "max_x": 577,
+  "max_y": 764,
+  "min_x": 220,
+  "min_y": 43,
   "num_edges": 33,
   "num_triangles": 31,
   "num_vertices": 33

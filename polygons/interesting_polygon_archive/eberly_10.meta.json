@@ -7,10 +7,10 @@
     13,
     14
   ],
-  "max_x": 0,
-  "max_y": 0,
-  "min_x": 0,
-  "min_y": 0,
+  "max_x": 767,
+  "max_y": 663,
+  "min_x": 31,
+  "min_y": 77,
   "num_edges": 15,
   "num_triangles": 13,
   "num_vertices": 15

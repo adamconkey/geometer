@@ -474,8 +474,7 @@ mod tests {
         assert_eq!(case.polygon, new_polygon);
     }
 
-    #[apply(all_custom_polygons)]
-    // TODO could expand this test to polygon cases
+    #[apply(all_polygons)]
     fn test_min_max(case: PolygonTestCase) {
         assert_eq!(case.polygon.min_x(), case.metadata.min_x);
         assert_eq!(case.polygon.max_x(), case.metadata.max_x);
