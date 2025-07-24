@@ -8,6 +8,10 @@
     4,
     5
   ],
+  "max_x": 0,
+  "max_y": 0,
+  "min_x": 0,
+  "min_y": 0,
   "num_edges": 6,
   "num_triangles": 4,
   "num_vertices": 6

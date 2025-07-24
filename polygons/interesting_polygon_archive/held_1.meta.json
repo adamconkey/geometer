@@ -14,6 +14,10 @@
     31,
     32
   ],
+  "max_x": 0,
+  "max_y": 0,
+  "min_x": 0,
+  "min_y": 0,
   "num_edges": 33,
   "num_triangles": 31,
   "num_vertices": 33
