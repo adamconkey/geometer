@@ -19,6 +19,10 @@ use crate::{
 pub struct PolygonMetadata {
     pub area: f64,
     pub extreme_points: Vec<VertexId>,
+    pub max_x: f64,
+    pub max_y: f64,
+    pub min_x: f64,
+    pub min_y: f64,
     pub num_edges: usize,
     pub num_triangles: usize,
     pub num_vertices: usize,
@@ -470,21 +474,13 @@ mod tests {
         assert_eq!(case.polygon, new_polygon);
     }
 
-    #[test]
+    #[apply(all_custom_polygons)]
     // TODO could expand this test to polygon cases
-    fn test_min_max() {
-        let coords = vec![
-            (0.0, 0.0),
-            (5.0, -1.0),
-            (7.0, 6.0),
-            (-4.0, 8.0),
-            (-2.0, -3.0),
-        ];
-        let polygon = Polygon::from_coords(coords);
-        assert_eq!(polygon.min_x(), -4.0);
-        assert_eq!(polygon.max_x(), 7.0);
-        assert_eq!(polygon.min_y(), -3.0);
-        assert_eq!(polygon.max_y(), 8.0);
+    fn test_min_max(case: PolygonTestCase) {
+        assert_eq!(case.polygon.min_x(), case.metadata.min_x);
+        assert_eq!(case.polygon.max_x(), case.metadata.max_x);
+        assert_eq!(case.polygon.min_y(), case.metadata.min_y);
+        assert_eq!(case.polygon.max_y(), case.metadata.max_y);
     }
 
     #[test]

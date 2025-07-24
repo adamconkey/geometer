@@ -9,6 +9,10 @@
     12,
     16
   ],
+  "max_x": 24,
+  "max_y": 24,
+  "min_x": -2,
+  "min_y": 0,
   "num_edges": 18,
   "num_triangles": 16,
   "num_vertices": 18

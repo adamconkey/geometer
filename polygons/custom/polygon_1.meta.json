@@ -7,6 +7,10 @@
     4,
     5
   ],
+  "max_x": 7,
+  "max_y": 9,
+  "min_x": -2,
+  "min_y": 0,
   "num_edges": 6,
   "num_triangles": 4,
   "num_vertices": 6
