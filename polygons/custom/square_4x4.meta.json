@@ -6,11 +6,19 @@
     2,
     3
   ],
+  "highest_leftmost_vertex": [0, 4],
+  "highest_rightmost_vertex": [4, 4],
+  "leftmost_lowest_vertex": [0, 0],
+  "leftmost_highest_vertex": [0, 4],
+  "lowest_leftmost_vertex": [0, 0],
+  "lowest_rightmost_vertex": [4, 0],
   "max_x": 4,
   "max_y": 4,
   "min_x": 0,
   "min_y": 0,
   "num_edges": 4,
   "num_triangles": 2,
-  "num_vertices": 4
+  "num_vertices": 4,
+  "rightmost_highest_vertex": [4, 4],
+  "rightmost_lowest_vertex": [4, 0]
 }

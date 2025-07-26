@@ -9,11 +9,19 @@
     12,
     16
   ],
+  "highest_leftmost_vertex": [-2, 11],
+  "highest_rightmost_vertex": [24, 10],
+  "leftmost_lowest_vertex": [0, 0],
+  "leftmost_highest_vertex": [8, 24],
+  "lowest_leftmost_vertex": [-2, 11],
+  "lowest_rightmost_vertex": [24, 10],
   "max_x": 24,
   "max_y": 24,
   "min_x": -2,
   "min_y": 0,
   "num_edges": 18,
   "num_triangles": 16,
-  "num_vertices": 18
+  "num_vertices": 18,
+  "rightmost_highest_vertex": [14, 24],
+  "rightmost_lowest_vertex": [0, 0]
 }

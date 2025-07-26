@@ -19,6 +19,12 @@ use crate::{
 pub struct PolygonMetadata {
     pub area: f64,
     pub extreme_points: Vec<VertexId>,
+    pub highest_leftmost_vertex: (f64, f64),
+    pub highest_rightmost_vertex: (f64, f64),
+    pub leftmost_highest_vertex: (f64, f64),
+    pub leftmost_lowest_vertex: (f64, f64),
+    pub lowest_leftmost_vertex: (f64, f64),
+    pub lowest_rightmost_vertex: (f64, f64),
     pub max_x: f64,
     pub max_y: f64,
     pub min_x: f64,
@@ -26,6 +32,8 @@ pub struct PolygonMetadata {
     pub num_edges: usize,
     pub num_triangles: usize,
     pub num_vertices: usize,
+    pub rightmost_highest_vertex: (f64, f64),
+    pub rightmost_lowest_vertex: (f64, f64),
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -482,20 +490,41 @@ mod tests {
         assert_eq!(case.polygon.max_y(), case.metadata.max_y);
     }
 
-    #[test]
-    // TODO could expand this test to polygon cases
-    fn test_lowest_vertex() {
-        let coords = vec![
-            (0.0, 0.0),
-            (5.0, -1.0),
-            (7.0, 6.0),
-            (-4.0, 8.0),
-            (-2.0, -3.0),
-        ];
-        let polygon = Polygon::from_coords(coords);
-        let lowest = polygon.leftmost_lowest_vertex();
-        assert_eq!(lowest.x, -2.0);
-        assert_eq!(lowest.y, -3.0);
+    // TODO need to expand to all_polygons
+    #[apply(all_custom_polygons)]
+    fn test_outer_vertices(case: PolygonTestCase) {
+        assert_eq!(
+            case.polygon.leftmost_lowest_vertex().coords(),
+            case.metadata.leftmost_lowest_vertex
+        );
+        assert_eq!(
+            case.polygon.leftmost_highest_vertex().coords(),
+            case.metadata.leftmost_highest_vertex
+        );
+        assert_eq!(
+            case.polygon.rightmost_lowest_vertex().coords(),
+            case.metadata.rightmost_lowest_vertex
+        );
+        assert_eq!(
+            case.polygon.rightmost_highest_vertex().coords(),
+            case.metadata.rightmost_highest_vertex
+        );
+        assert_eq!(
+            case.polygon.lowest_leftmost_vertex().coords(),
+            case.metadata.lowest_leftmost_vertex
+        );
+        assert_eq!(
+            case.polygon.lowest_rightmost_vertex().coords(),
+            case.metadata.lowest_rightmost_vertex
+        );
+        assert_eq!(
+            case.polygon.highest_leftmost_vertex().coords(),
+            case.metadata.highest_leftmost_vertex
+        );
+        assert_eq!(
+            case.polygon.highest_rightmost_vertex().coords(),
+            case.metadata.highest_rightmost_vertex
+        );
     }
 
     #[apply(all_polygons)]
