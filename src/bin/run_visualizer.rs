@@ -3,7 +3,7 @@ use itertools::Itertools;
 use random_color::RandomColor;
 
 use geometer::{
-    convex_hull::{ConvexHullComputer, QuickHull},
+    convex_hull::{ConvexHullComputer, ConvexHullTracer, Incremental, QuickHull},
     error::FileError,
     geometry::Geometry,
     polygon::Polygon,
@@ -14,6 +14,7 @@ use geometer::{
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Visualization {
     ConvexHull,
+    ConvexHullIncremental,
     Triangulation,
 }
 
@@ -113,8 +114,21 @@ impl RerunVisualizer {
     ) -> Result<(), VisualizationError> {
         let _ = self.visualize_polygon(polygon, &format!("{name}/polygon"), 5.0);
 
-        let hull = QuickHull.convex_hull(polygon);
+        let hull = QuickHull.convex_hull(polygon, &mut None);
         let _ = self.visualize_polygon(&hull, &format!("{name}/convex_hull"), 10.0);
+
+        Ok(())
+    }
+
+    pub fn visualize_convex_hull_incremental(
+        &self,
+        polygon: &Polygon,
+        name: &String,
+    ) -> Result<(), VisualizationError> {
+        let tracer = &mut Some(ConvexHullTracer::default());
+        let hull = Incremental.convex_hull(polygon, tracer);
+
+        println!("{:?}", tracer.as_ref());
 
         Ok(())
     }
@@ -170,6 +184,9 @@ fn main() -> Result<(), VisualizationError> {
 
     match args.visualization {
         Visualization::ConvexHull => visualizer?.visualize_convex_hull(&polygon, &name)?,
+        Visualization::ConvexHullIncremental => {
+            visualizer?.visualize_convex_hull_incremental(&polygon, &name)?
+        }
         Visualization::Triangulation => visualizer?.visualize_triangulation(&polygon, &name)?,
     };
 
