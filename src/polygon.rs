@@ -490,8 +490,7 @@ mod tests {
         assert_eq!(case.polygon.max_y(), case.metadata.max_y);
     }
 
-    // TODO need to expand to all_polygons
-    #[apply(all_custom_polygons)]
+    #[apply(all_polygons)]
     fn test_outer_vertices(case: PolygonTestCase) {
         assert_eq!(
             case.polygon.leftmost_lowest_vertex().coords(),

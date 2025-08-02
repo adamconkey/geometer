@@ -4,6 +4,12 @@
     0, 1, 2, 3, 26, 27, 28, 30, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46,
     47, 48, 49, 50, 51, 53, 55, 56, 57, 58, 59, 60
   ],
+  "highest_leftmost_vertex": [1, 2],
+  "highest_rightmost_vertex": [3, 4],
+  "leftmost_lowest_vertex": [5, 6],
+  "leftmost_highest_vertex": [7, 8],
+  "lowest_leftmost_vertex": [9, 10],
+  "lowest_rightmost_vertex": [11, 12],
   "max_x": 761,
   "max_y": 556,
   "min_x": 54,

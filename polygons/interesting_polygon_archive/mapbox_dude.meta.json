@@ -1,6 +1,12 @@
 {
   "area": 15357.5,
   "extreme_points": [1, 22, 43, 44, 48, 49, 50, 51, 62, 72, 73, 87, 88],
+  "highest_leftmost_vertex": [1, 2],
+  "highest_rightmost_vertex": [3, 4],
+  "leftmost_lowest_vertex": [5, 6],
+  "leftmost_highest_vertex": [7, 8],
+  "lowest_leftmost_vertex": [9, 10],
+  "lowest_rightmost_vertex": [11, 12],
   "max_x": 450,
   "max_y": 685,
   "min_x": 250,

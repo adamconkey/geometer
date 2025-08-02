@@ -14,6 +14,12 @@
     31,
     32
   ],
+  "highest_leftmost_vertex": [1, 2],
+  "highest_rightmost_vertex": [3, 4],
+  "leftmost_lowest_vertex": [5, 6],
+  "leftmost_highest_vertex": [7, 8],
+  "lowest_leftmost_vertex": [9, 10],
+  "lowest_rightmost_vertex": [11, 12],
   "max_x": 732,
   "max_y": 754,
   "min_x": 80,

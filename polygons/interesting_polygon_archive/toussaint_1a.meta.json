@@ -1,11 +1,19 @@
 {
   "area": 238110,
   "extreme_points": [0, 4, 6, 9, 10, 57, 59, 60, 61, 104, 105, 106, 123, 124],
+  "highest_leftmost_vertex": [34, 410],
+  "highest_rightmost_vertex": [775, 225],
+  "leftmost_lowest_vertex": [200, 41],
+  "leftmost_highest_vertex": [124, 759],
+  "lowest_leftmost_vertex": [34, 410],
+  "lowest_rightmost_vertex": [775, 225],
   "max_x": 775,
   "max_y": 759,
   "min_x": 34,
   "min_y": 41,
   "num_edges": 125,
   "num_triangles": 123,
-  "num_vertices": 125
+  "num_vertices": 125,
+  "rightmost_highest_vertex": [124, 759],
+  "rightmost_lowest_vertex": [200, 41]
 }

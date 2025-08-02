@@ -3,11 +3,19 @@
   "extreme_points": [
     0, 4, 6, 21, 22, 23, 33, 36, 51, 52, 54, 232, 235, 239, 250, 278
   ],
+  "highest_leftmost_vertex": [38, 468],
+  "highest_rightmost_vertex": [760, 475],
+  "leftmost_lowest_vertex": [658, 26],
+  "leftmost_highest_vertex": [487, 768],
+  "lowest_leftmost_vertex": [38, 468],
+  "lowest_rightmost_vertex": [760, 475],
   "max_x": 760,
   "max_y": 768,
   "min_x": 38,
   "min_y": 26,
   "num_edges": 279,
   "num_triangles": 277,
-  "num_vertices": 279
+  "num_vertices": 279,
+  "rightmost_highest_vertex": [487, 768],
+  "rightmost_lowest_vertex": [658, 26]
 }
