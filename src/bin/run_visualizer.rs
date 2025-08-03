@@ -68,8 +68,15 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
         vertex_radius: f32,
+        vertex_color: Option<[u8; 3]>,
+        edge_color: Option<[u8; 3]>,
+        frame: Option<i64>,
     ) -> Result<(), VisualizationError> {
-        let vertex_color = RandomColor::new().to_rgb_array();
+        if let Some(value) = frame {
+            self.rec.set_time_sequence("frame", value);
+        }
+
+        let vertex_color = vertex_color.unwrap_or(RandomColor::new().to_rgb_array());
         self.rec.log(
             format!("{}/vertices", name),
             &self
@@ -78,7 +85,7 @@ impl RerunVisualizer {
                 .with_colors([vertex_color]),
         )?;
 
-        let edge_color = RandomColor::new().to_rgb_array();
+        let edge_color = edge_color.unwrap_or(RandomColor::new().to_rgb_array());
         self.rec.log(
             format!("{}/edges", name),
             &self
@@ -98,7 +105,7 @@ impl RerunVisualizer {
         let triangulation = EarClipping.triangulation(polygon);
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation, polygon);
 
-        let _ = self.visualize_polygon(polygon, &name, 5.0);
+        let _ = self.visualize_polygon(polygon, &name, 5.0, None, None, None);
 
         for (i, mesh) in rerun_meshes.iter().enumerate() {
             self.rec.log(format!("{}/triangle_{}", &name, i), mesh)?;
@@ -112,10 +119,17 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        let _ = self.visualize_polygon(polygon, &format!("{name}/polygon"), 5.0);
+        let _ = self.visualize_polygon(polygon, &format!("{name}/polygon"), 5.0, None, None, None);
 
         let hull = QuickHull.convex_hull(polygon, &mut None);
-        let _ = self.visualize_polygon(&hull, &format!("{name}/convex_hull"), 10.0);
+        let _ = self.visualize_polygon(
+            &hull,
+            &format!("{name}/convex_hull"),
+            10.0,
+            None,
+            None,
+            None,
+        );
 
         Ok(())
     }
@@ -130,7 +144,14 @@ impl RerunVisualizer {
         println!("{:?}", tracer);
 
         for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
-            let _ = self.visualize_polygon(&step.hull, &format!("{name}/hull_{i}"), 1.0);
+            let _ = self.visualize_polygon(
+                &step.hull,
+                &format!("{name}/hull_{i}"),
+                1.0,
+                None,
+                None,
+                Some(i.try_into().unwrap()),
+            );
         }
 
         Ok(())
