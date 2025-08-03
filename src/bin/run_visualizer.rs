@@ -67,29 +67,32 @@ impl RerunVisualizer {
         &self,
         polygon: &Polygon,
         name: &String,
-        vertex_radius: f32,
-        vertex_color: Option<[u8; 3]>,
-        edge_color: Option<[u8; 3]>,
+        vertex_radius: Option<f32>,
+        vertex_color: Option<[u8; 4]>,
+        edge_color: Option<[u8; 4]>,
         frame: Option<i64>,
+        z: Option<f32>,
     ) -> Result<(), VisualizationError> {
         if let Some(value) = frame {
             self.rec.set_time_sequence("frame", value);
         }
 
-        let vertex_color = vertex_color.unwrap_or(RandomColor::new().to_rgb_array());
+        let vertex_radius = vertex_radius.unwrap_or(1.0);
+        let vertex_color = vertex_color.unwrap_or(RandomColor::new().to_rgba_array());
+
         self.rec.log(
             format!("{}/vertices", name),
             &self
-                .polygon_to_rerun_points(polygon)
+                .polygon_to_rerun_points(polygon, z)
                 .with_radii([vertex_radius])
                 .with_colors([vertex_color]),
         )?;
 
-        let edge_color = edge_color.unwrap_or(RandomColor::new().to_rgb_array());
+        let edge_color = edge_color.unwrap_or(RandomColor::new().to_rgba_array());
         self.rec.log(
             format!("{}/edges", name),
             &self
-                .polygon_to_rerun_edges(polygon)
+                .polygon_to_rerun_edges(polygon, z)
                 .with_colors([edge_color]),
         )?;
 
@@ -105,7 +108,7 @@ impl RerunVisualizer {
         let triangulation = EarClipping.triangulation(polygon);
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation, polygon);
 
-        let _ = self.visualize_polygon(polygon, &name, 5.0, None, None, None);
+        let _ = self.visualize_polygon(polygon, &name, None, None, None, None, None);
 
         for (i, mesh) in rerun_meshes.iter().enumerate() {
             self.rec.log(format!("{}/triangle_{}", &name, i), mesh)?;
@@ -119,13 +122,22 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        let _ = self.visualize_polygon(polygon, &format!("{name}/polygon"), 5.0, None, None, None);
+        let _ = self.visualize_polygon(
+            polygon,
+            &format!("{name}/polygon"),
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
 
         let hull = QuickHull.convex_hull(polygon, &mut None);
         let _ = self.visualize_polygon(
             &hull,
             &format!("{name}/convex_hull"),
-            10.0,
+            None,
+            None,
             None,
             None,
             None,
@@ -143,15 +155,32 @@ impl RerunVisualizer {
         let _final_hull = Incremental.convex_hull(polygon, tracer);
         println!("{:?}", tracer);
 
-        let color = [242, 192, 53];
+        // TODO need to show nominal polygon, and then tweak vis until
+        // it looks good. Can you also set frame so it automatically
+        // looks in the correct view instead of having to drag and
+        // drop around?
+
+        let polygon_color = [71, 121, 230, 100];
+        let _ = self.visualize_polygon(
+            polygon,
+            &format!("{name}/polygon"),
+            None,
+            Some(polygon_color),
+            Some(polygon_color),
+            Some(0),
+            None,
+        );
+
+        let hull_color = [242, 192, 53, 255];
         for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
             let _ = self.visualize_polygon(
                 &step.hull,
                 &format!("{name}/hull_{i}"),
-                1.0,
-                Some(color),
-                Some(color),
+                None,
+                Some(hull_color),
+                Some(hull_color),
                 Some(i.try_into().unwrap()),
+                Some(0.1),
             );
 
             if i > 0 {
@@ -164,22 +193,22 @@ impl RerunVisualizer {
         Ok(())
     }
 
-    fn polygon_to_rerun_points(&self, polygon: &Polygon) -> rerun::Points3D {
+    fn polygon_to_rerun_points(&self, polygon: &Polygon, z: Option<f32>) -> rerun::Points3D {
         rerun::Points3D::new(
             polygon
                 .vertices()
                 .into_iter()
                 // .sorted_by_key(|v| v.id)
-                .map(|v| (v.x as f32, v.y as f32, 0.0)),
+                .map(|v| (v.x as f32, v.y as f32, z.unwrap_or(0.0))),
         )
     }
 
-    fn polygon_to_rerun_edges(&self, polygon: &Polygon) -> rerun::LineStrips3D {
+    fn polygon_to_rerun_edges(&self, polygon: &Polygon, z: Option<f32>) -> rerun::LineStrips3D {
         let mut edge_points = polygon
             .vertices()
             .into_iter()
             // .sorted_by_key(|v| v.id)
-            .map(|v| (v.x as f32, v.y as f32, 0.0))
+            .map(|v| (v.x as f32, v.y as f32, z.unwrap_or(0.0)))
             .collect_vec();
         edge_points.push(edge_points[0]);
         rerun::LineStrips3D::new([edge_points])
