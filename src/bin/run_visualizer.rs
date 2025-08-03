@@ -126,9 +126,12 @@ impl RerunVisualizer {
         name: &String,
     ) -> Result<(), VisualizationError> {
         let tracer = &mut Some(ConvexHullTracer::default());
-        let hull = Incremental.convex_hull(polygon, tracer);
+        let _final_hull = Incremental.convex_hull(polygon, tracer);
+        println!("{:?}", tracer);
 
-        println!("{:?}", tracer.as_ref());
+        for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
+            let _ = self.visualize_polygon(&step.hull, &format!("{name}/hull_{i}"), 1.0);
+        }
 
         Ok(())
     }
@@ -138,18 +141,18 @@ impl RerunVisualizer {
             polygon
                 .vertices()
                 .into_iter()
-                .sorted_by_key(|v| v.id)
+                // .sorted_by_key(|v| v.id)
                 .map(|v| (v.x as f32, v.y as f32, 0.0)),
         )
     }
 
     fn polygon_to_rerun_edges(&self, polygon: &Polygon) -> rerun::LineStrips3D {
-        let mut edge_points: Vec<_> = polygon
+        let mut edge_points = polygon
             .vertices()
             .into_iter()
-            .sorted_by_key(|v| v.id)
+            // .sorted_by_key(|v| v.id)
             .map(|v| (v.x as f32, v.y as f32, 0.0))
-            .collect();
+            .collect_vec();
         edge_points.push(edge_points[0]);
         rerun::LineStrips3D::new([edge_points])
     }
