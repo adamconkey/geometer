@@ -155,33 +155,61 @@ impl RerunVisualizer {
         let _final_hull = Incremental.convex_hull(polygon, tracer);
         println!("{:?}", tracer);
 
-        // TODO need to show nominal polygon, and then tweak vis until
-        // it looks good. Can you also set frame so it automatically
-        // looks in the correct view instead of having to drag and
-        // drop around?
-
+        // Show nominal polygon for hull to be overlayed on
         let polygon_color = [71, 121, 230, 100];
         let _ = self.visualize_polygon(
             polygon,
             &format!("{name}/polygon"),
-            None,
+            Some(0.5),
             Some(polygon_color),
             Some(polygon_color),
             Some(0),
             None,
         );
 
+        let mut frame: i64 = 1;
         let hull_color = [242, 192, 53, 255];
+
+        // For each step will show upper/lower tangent vertex selection and
+        // how they connect to the current hull, followed by the resulting
+        // hull computed at that step
         for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
+            self.rec.set_time_sequence("frame", frame);
+            frame += 1;
+
+            // Show upper/lower tangent vertices and their connection
+            // to the current hull
+            if let Some(ut_id) = step.upper_tangent_vertex {
+                let ut_v = polygon.get_vertex(&ut_id).unwrap();
+                self.rec.log(
+                    format!("{name}/alg_{i}/upper_tangent_vertex"),
+                    &rerun::Points3D::new([(ut_v.x as f32, ut_v.y as f32, 0.1)])
+                        .with_radii([1.0])
+                        .with_colors([[255, 0, 0]]),
+                );
+            }
+            if let Some(lt_id) = step.lower_tangent_vertex {
+                let lt_v = polygon.get_vertex(&lt_id).unwrap();
+                self.rec.log(
+                    format!("{name}/alg_{i}/lower_tangent_vertex"),
+                    &rerun::Points3D::new([(lt_v.x as f32, lt_v.y as f32, 0.1)])
+                        .with_radii([1.0])
+                        .with_colors([[0, 255, 0]]),
+                );
+            }
+
+            // Show computed hull for this step
             let _ = self.visualize_polygon(
                 &step.hull,
                 &format!("{name}/hull_{i}"),
-                None,
+                Some(0.8),
                 Some(hull_color),
                 Some(hull_color),
-                Some(i.try_into().unwrap()),
+                Some(frame),
                 Some(0.1),
             );
+
+            frame += 1;
 
             if i > 0 {
                 let prev = i - 1;
