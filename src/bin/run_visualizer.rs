@@ -153,6 +153,12 @@ impl RerunVisualizer {
                 Some(color),
                 Some(i.try_into().unwrap()),
             );
+
+            if i > 0 {
+                let prev = i - 1;
+                self.rec
+                    .log(format!("{name}/hull_{prev}"), &rerun::Clear::recursive());
+            }
         }
 
         Ok(())
