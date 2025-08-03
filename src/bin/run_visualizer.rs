@@ -143,13 +143,14 @@ impl RerunVisualizer {
         let _final_hull = Incremental.convex_hull(polygon, tracer);
         println!("{:?}", tracer);
 
+        let color = [242, 192, 53];
         for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
             let _ = self.visualize_polygon(
                 &step.hull,
                 &format!("{name}/hull_{i}"),
                 1.0,
-                None,
-                None,
+                Some(color),
+                Some(color),
                 Some(i.try_into().unwrap()),
             );
         }
