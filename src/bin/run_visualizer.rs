@@ -157,7 +157,7 @@ impl RerunVisualizer {
 
         // Show nominal polygon for hull to be overlayed on
         let polygon_color = [71, 121, 230, 100];
-        let _ = self.visualize_polygon(
+        self.visualize_polygon(
             polygon,
             &format!("{name}/polygon"),
             Some(0.5),
@@ -165,7 +165,7 @@ impl RerunVisualizer {
             Some(polygon_color),
             Some(0),
             None,
-        );
+        )?;
 
         let mut frame: i64 = 1;
         let hull_color = [242, 192, 53, 255];
@@ -177,6 +177,14 @@ impl RerunVisualizer {
             self.rec.set_time_sequence("frame", frame);
             frame += 1;
 
+            // Clear out old algorithm visualizations
+            if i > 0 {
+                self.rec.log(
+                    format!("{}/alg_{}", name, i - 1),
+                    &rerun::Clear::recursive(),
+                )?;
+            }
+
             // Show upper/lower tangent vertices and their connection
             // to the current hull
             if let Some(ut_id) = step.upper_tangent_vertex {
@@ -186,7 +194,7 @@ impl RerunVisualizer {
                     &rerun::Points3D::new([(ut_v.x as f32, ut_v.y as f32, 0.1)])
                         .with_radii([1.0])
                         .with_colors([[255, 0, 0]]),
-                );
+                )?;
             }
             if let Some(lt_id) = step.lower_tangent_vertex {
                 let lt_v = polygon.get_vertex(&lt_id).unwrap();
@@ -195,11 +203,20 @@ impl RerunVisualizer {
                     &rerun::Points3D::new([(lt_v.x as f32, lt_v.y as f32, 0.1)])
                         .with_radii([1.0])
                         .with_colors([[0, 255, 0]]),
-                );
+                )?;
+            }
+            if let Some(n_id) = step.next_vertex {
+                let n_v = polygon.get_vertex(&n_id).unwrap();
+                self.rec.log(
+                    format!("{name}/alg_{i}/next_vertex"),
+                    &rerun::Points3D::new([(n_v.x as f32, n_v.y as f32, 0.1)])
+                        .with_radii([1.0])
+                        .with_colors([[0, 0, 255]]),
+                )?;
             }
 
             // Show computed hull for this step
-            let _ = self.visualize_polygon(
+            self.visualize_polygon(
                 &step.hull,
                 &format!("{name}/hull_{i}"),
                 Some(0.8),
@@ -207,14 +224,16 @@ impl RerunVisualizer {
                 Some(hull_color),
                 Some(frame),
                 Some(0.1),
-            );
+            )?;
 
             frame += 1;
 
+            // Clear out old hull visualizations
             if i > 0 {
-                let prev = i - 1;
-                self.rec
-                    .log(format!("{name}/hull_{prev}"), &rerun::Clear::recursive());
+                self.rec.log(
+                    format!("{}/hull_{}", name, i - 1),
+                    &rerun::Clear::recursive(),
+                )?;
             }
         }
 

@@ -8,18 +8,22 @@ use crate::{geometry::Geometry, polygon::Polygon, vertex::VertexId};
 #[derive(Default)]
 pub struct ConvexHullTracerStep {
     pub hull: Polygon,
+    pub next_vertex: Option<VertexId>,
     pub upper_tangent_vertex: Option<VertexId>,
     pub lower_tangent_vertex: Option<VertexId>,
 }
 
 impl fmt::Display for ConvexHullTracerStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let _ = writeln!(f, "\tHull Vertices: {:?}", self.hull.vertex_ids());
+        writeln!(f, "\tHull Vertices: {:?}", self.hull.vertex_ids())?;
+        if let Some(n_v) = self.next_vertex {
+            writeln!(f, "\tNext Vertex: {:?}", n_v)?;
+        }
         if let Some(ut_v) = self.upper_tangent_vertex {
-            let _ = writeln!(f, "\tUpper Tangent Vertex: {:?}", ut_v);
+            writeln!(f, "\tUpper Tangent Vertex: {:?}", ut_v)?;
         }
         if let Some(lt_v) = self.lower_tangent_vertex {
-            let _ = writeln!(f, "\tLower Tangent Vertex: {:?}", lt_v);
+            writeln!(f, "\tLower Tangent Vertex: {:?}", lt_v)?;
         }
         Ok(())
     }
@@ -33,7 +37,7 @@ pub struct ConvexHullTracer {
 impl fmt::Debug for ConvexHullTracer {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (i, step) in self.steps.iter().enumerate() {
-            let _ = write!(f, "STEP {}:\n{}", i, step);
+            write!(f, "STEP {}:\n{}", i, step)?;
         }
         Ok(())
     }
@@ -514,6 +518,7 @@ impl ConvexHullComputer for Incremental {
 
             if let Some(t) = tracer.as_mut() {
                 let mut step = ConvexHullTracerStep::default();
+                step.next_vertex = Some(id);
                 step.upper_tangent_vertex = Some(ut_v);
                 step.lower_tangent_vertex = Some(lt_v);
                 step.hull = hull.clone();
