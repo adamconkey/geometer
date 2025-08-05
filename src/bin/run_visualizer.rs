@@ -174,20 +174,15 @@ impl RerunVisualizer {
         // how they connect to the current hull, followed by the resulting
         // hull computed at that step
         for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
-            self.rec.set_time_sequence("frame", frame);
-            frame += 1;
-
-            // Clear out old algorithm visualizations
             if i > 0 {
-                self.rec.log(
-                    format!("{}/alg_{}", name, i - 1),
-                    &rerun::Clear::recursive(),
-                )?;
-            }
+                frame += 1;
+                self.rec.set_time_sequence("frame", frame);
 
-            // Show upper/lower tangent vertices and their connection
-            // to the current hull
-            if let Some(ut_id) = step.upper_tangent_vertex {
+                // Show upper/lower tangent vertices and their connection
+                // to the current hull
+                let ut_id = step
+                    .upper_tangent_vertex
+                    .expect("Upper tangent vertex should exist i > 0");
                 let ut_v = polygon.get_vertex(&ut_id).unwrap();
                 self.rec.log(
                     format!("{name}/alg_{i}/upper_tangent_vertex"),
@@ -195,8 +190,10 @@ impl RerunVisualizer {
                         .with_radii([1.0])
                         .with_colors([[255, 0, 0]]),
                 )?;
-            }
-            if let Some(lt_id) = step.lower_tangent_vertex {
+
+                let lt_id = step
+                    .lower_tangent_vertex
+                    .expect("Lower tangent vertex should exist i > 0");
                 let lt_v = polygon.get_vertex(&lt_id).unwrap();
                 self.rec.log(
                     format!("{name}/alg_{i}/lower_tangent_vertex"),
@@ -204,8 +201,8 @@ impl RerunVisualizer {
                         .with_radii([1.0])
                         .with_colors([[0, 255, 0]]),
                 )?;
-            }
-            if let Some(n_id) = step.next_vertex {
+
+                let n_id = step.next_vertex.expect("Next vertex should exist i > 0");
                 let n_v = polygon.get_vertex(&n_id).unwrap();
                 self.rec.log(
                     format!("{name}/alg_{i}/next_vertex"),
@@ -213,9 +210,29 @@ impl RerunVisualizer {
                         .with_radii([1.0])
                         .with_colors([[0, 0, 255]]),
                 )?;
+
+                self.rec.log(
+                    format!("{name}/alg_{i}/upper_tangent"),
+                    &rerun::LineStrips3D::new([[
+                        (ut_v.x as f32, ut_v.y as f32, 0.1),
+                        (n_v.x as f32, n_v.y as f32, 0.1),
+                    ]])
+                    .with_radii([0.2])
+                    .with_colors([[255, 0, 0]]),
+                )?;
+                self.rec.log(
+                    format!("{name}/alg_{i}/lower_tangent"),
+                    &rerun::LineStrips3D::new([[
+                        (lt_v.x as f32, lt_v.y as f32, 0.1),
+                        (n_v.x as f32, n_v.y as f32, 0.1),
+                    ]])
+                    .with_radii([0.2])
+                    .with_colors([[0, 0, 255]]),
+                )?;
             }
 
             // Show computed hull for this step
+            frame += 1;
             self.visualize_polygon(
                 &step.hull,
                 &format!("{name}/hull_{i}"),
@@ -225,8 +242,8 @@ impl RerunVisualizer {
                 Some(frame),
                 Some(0.1),
             )?;
-
-            frame += 1;
+            self.rec
+                .log(format!("{name}/alg_{i}"), &rerun::Clear::recursive())?;
 
             // Clear out old hull visualizations
             if i > 0 {
