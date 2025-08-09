@@ -7,7 +7,7 @@ use crate::{geometry::Geometry, polygon::Polygon, vertex::VertexId};
 
 #[derive(Default)]
 pub struct ConvexHullTracerStep {
-    pub hull: Polygon,
+    pub hull: Vec<VertexId>,
     pub next_vertex: Option<VertexId>,
     pub upper_tangent_vertex: Option<VertexId>,
     pub lower_tangent_vertex: Option<VertexId>,
@@ -15,7 +15,7 @@ pub struct ConvexHullTracerStep {
 
 impl fmt::Display for ConvexHullTracerStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "\tHull Vertices: {:?}", self.hull.vertex_ids())?;
+        writeln!(f, "\tHull Vertices: {:?}", self.hull)?;
         if let Some(n_v) = self.next_vertex {
             writeln!(f, "\tNext Vertex: {:?}", n_v)?;
         }
@@ -203,15 +203,21 @@ impl ConvexHullComputer for QuickHull {
 pub struct GrahamScan;
 
 impl ConvexHullComputer for GrahamScan {
-    fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+    fn convex_hull(&self, polygon: &Polygon, tracer: &mut Option<ConvexHullTracer>) -> Polygon {
         let mut stack = Vec::new();
         let mut vertices = polygon.min_angle_sorted_vertices(None, None);
 
         // Add rightmost lowest vertex and the next min-angle vertex
         // to stack to create initial line segment, both guaranteed
         // to be extreme based on vertices being sorted/cleaned
-        stack.push(polygon.rightmost_lowest_vertex());
-        stack.push(vertices.remove(0));
+        stack.push(polygon.rightmost_lowest_vertex().id);
+        stack.push(vertices.remove(0).id);
+
+        if let Some(t) = tracer.as_mut() {
+            let mut step = ConvexHullTracerStep::default();
+            step.hull = stack.clone();
+            t.steps.push(step);
+        }
 
         for v in vertices.iter() {
             // If current vertex is a left turn from current segment off
@@ -222,18 +228,28 @@ impl ConvexHullComputer for GrahamScan {
                 assert!(stack.len() >= 2);
                 let v_top = stack[stack.len() - 1];
                 let v_prev = stack[stack.len() - 2];
-                let ls = polygon.get_line_segment(&v_prev.id, &v_top.id).unwrap();
+                let ls = polygon.get_line_segment(&v_prev, &v_top).unwrap();
                 if v.left(&ls) {
-                    stack.push(v);
-                    break;
+                    stack.push(v.id);
                 } else {
                     stack.pop();
+                }
+
+                if let Some(t) = tracer.as_mut() {
+                    let mut step = ConvexHullTracerStep::default();
+                    step.hull = stack.clone();
+                    step.next_vertex = Some(v.id);
+                    t.steps.push(step);
+                }
+
+                if stack[stack.len() - 1] == v.id {
+                    break;
                 }
             }
         }
 
         // The stack at the end has all hull vertices
-        polygon.get_polygon(stack.iter().map(|v| v.id), true, false)
+        polygon.get_polygon(stack, true, false)
     }
 }
 
@@ -505,7 +521,7 @@ impl ConvexHullComputer for Incremental {
         let (mut hull, ids) = self.init_hull_three_leftmost(&polygon);
         if let Some(t) = tracer.as_mut() {
             let mut step = ConvexHullTracerStep::default();
-            step.hull = hull.clone();
+            step.hull = hull.vertex_ids();
             t.steps.push(step);
         }
 
@@ -521,7 +537,7 @@ impl ConvexHullComputer for Incremental {
                 step.next_vertex = Some(id);
                 step.upper_tangent_vertex = Some(ut_v);
                 step.lower_tangent_vertex = Some(lt_v);
-                step.hull = hull.clone();
+                step.hull = hull.vertex_ids();
                 t.steps.push(step);
             }
         }

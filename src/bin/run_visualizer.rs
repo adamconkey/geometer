@@ -3,7 +3,7 @@ use itertools::Itertools;
 use random_color::RandomColor;
 
 use geometer::{
-    convex_hull::{ConvexHullComputer, ConvexHullTracer, Incremental, QuickHull},
+    convex_hull::{ConvexHullComputer, ConvexHullTracer, GrahamScan, Incremental, QuickHull},
     error::FileError,
     geometry::Geometry,
     polygon::Polygon,
@@ -14,6 +14,7 @@ use geometer::{
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 enum Visualization {
     ConvexHull,
+    ConvexHullGrahamScan,
     ConvexHullIncremental,
     Triangulation,
 }
@@ -146,6 +147,118 @@ impl RerunVisualizer {
         Ok(())
     }
 
+    pub fn visualize_convex_hull_graham_scan(
+        &self,
+        polygon: &Polygon,
+        name: &String,
+    ) -> Result<(), VisualizationError> {
+        let tracer = &mut Some(ConvexHullTracer::default());
+        let _final_hull = GrahamScan.convex_hull(polygon, tracer);
+        println!("{:?}", tracer);
+
+        // Show nominal polygon for hull to be overlayed on
+        let polygon_color = [71, 121, 230, 100];
+        self.visualize_polygon(
+            polygon,
+            &format!("{name}/polygon"),
+            Some(0.5),
+            Some(polygon_color),
+            Some(polygon_color),
+            Some(0),
+            None,
+        )?;
+
+        let mut frame: i64 = 1;
+        let hull_color = [242, 192, 53, 255];
+
+        // For each step will show upper/lower tangent vertex selection and
+        // how they connect to the current hull, followed by the resulting
+        // hull computed at that step
+        for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
+            if i == 0 {
+
+                // TODO need to show first two vertices on stack as edge
+            } else {
+                frame += 1;
+                self.rec.set_time_sequence("frame", frame);
+
+                let n_id = step.next_vertex.expect("Next vertex should exist i > 0");
+                let n_v = polygon.get_vertex(&n_id).unwrap();
+                self.rec.log(
+                    format!("{name}/alg_{i}/next_vertex"),
+                    &rerun::Points3D::new([(n_v.x as f32, n_v.y as f32, 0.1)])
+                        .with_radii([1.0])
+                        .with_colors([[0, 0, 255]]),
+                )?;
+
+                let top_id = step.hull[step.hull.len() - 1];
+                let top_v = polygon.get_vertex(&top_id).unwrap();
+                let prev_id = step.hull[step.hull.len() - 2];
+                let prev_v = polygon.get_vertex(&prev_id).unwrap();
+                println!("NEXT: {n_id}, TOP: {top_id}, PREV: {prev_id}");
+                if n_id == top_id {
+                    // TODO Hull is fully repaired at this point, should show that
+                    // the final edge on stack connected to next vertex is a
+                    // left turn rendering the line strip green connecting
+                    // all three
+                    self.rec.log(
+                        format!("{name}/alg_{i}/valid"),
+                        &rerun::LineStrips3D::new([[
+                            (prev_v.x as f32, prev_v.y as f32, 0.1),
+                            (top_v.x as f32, top_v.y as f32, 0.1),
+                            (n_v.x as f32, n_v.y as f32, 0.1),
+                        ]])
+                        .with_radii([0.2])
+                        .with_colors([[0, 255, 0]]),
+                    )?;
+                } else {
+                    // TODO there's a bug here currently, for invalid ones the
+                    // invalidated vertex would have already been popped at the
+                    // current step so it's not able to render the edges correctly.
+                    // Need to track I think prev step hull so that you can render
+                    // the invalidated edge
+
+                    // Render final edge on stack to next vertex line strip
+                    // red since it's a right turn, and mark top vertex as red
+                    self.rec.log(
+                        format!("{name}/alg_{i}/invalid"),
+                        &rerun::LineStrips3D::new([[
+                            (prev_v.x as f32, prev_v.y as f32, 0.1),
+                            (top_v.x as f32, top_v.y as f32, 0.1),
+                            (n_v.x as f32, n_v.y as f32, 0.1),
+                        ]])
+                        .with_radii([0.2])
+                        .with_colors([[255, 0, 0]]),
+                    )?;
+                }
+
+                // Show computed hull for this step
+                frame += 1;
+                self.visualize_polygon(
+                    &polygon.get_polygon(step.hull.clone(), false, false),
+                    &format!("{name}/hull_{i}"),
+                    Some(0.8),
+                    Some(hull_color),
+                    Some(hull_color),
+                    Some(frame),
+                    Some(0.1),
+                )?;
+            }
+            // self.rec
+            //     .log(format!("{name}/alg_{i}"), &rerun::Clear::recursive())?;
+
+            // Clear out old hull visualizations
+            // if i > 0 {
+            //     self.rec.log(
+            //         format!("{}/hull_{}", name, i - 1),
+            //         &rerun::Clear::recursive(),
+            //     )?;
+            // }
+        }
+
+        Ok(())
+    }
+
     pub fn visualize_convex_hull_incremental(
         &self,
         polygon: &Polygon,
@@ -234,7 +347,7 @@ impl RerunVisualizer {
             // Show computed hull for this step
             frame += 1;
             self.visualize_polygon(
-                &step.hull,
+                &polygon.get_polygon(step.hull.clone(), false, false),
                 &format!("{name}/hull_{i}"),
                 Some(0.8),
                 Some(hull_color),
@@ -308,6 +421,9 @@ fn main() -> Result<(), VisualizationError> {
 
     match args.visualization {
         Visualization::ConvexHull => visualizer?.visualize_convex_hull(&polygon, &name)?,
+        Visualization::ConvexHullGrahamScan => {
+            visualizer?.visualize_convex_hull_graham_scan(&polygon, &name)?
+        }
         Visualization::ConvexHullIncremental => {
             visualizer?.visualize_convex_hull_incremental(&polygon, &name)?
         }
