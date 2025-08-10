@@ -3,7 +3,10 @@ use itertools::Itertools;
 use random_color::RandomColor;
 
 use geometer::{
-    convex_hull::{ConvexHullComputer, ConvexHullTracer, GrahamScan, Incremental, QuickHull},
+    convex_hull::{
+        ConvexHullComputer, ConvexHullTracer, ConvexHullTracerStep, GrahamScan, Incremental,
+        QuickHull,
+    },
     error::FileError,
     geometry::Geometry,
     polygon::Polygon,
@@ -174,6 +177,7 @@ impl RerunVisualizer {
         // For each step will show upper/lower tangent vertex selection and
         // how they connect to the current hull, followed by the resulting
         // hull computed at that step
+        let mut prev_step: Option<&ConvexHullTracerStep> = None;
         for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
             if i == 0 {
 
@@ -192,21 +196,23 @@ impl RerunVisualizer {
                 )?;
 
                 let top_id = step.hull[step.hull.len() - 1];
-                let top_v = polygon.get_vertex(&top_id).unwrap();
-                let prev_id = step.hull[step.hull.len() - 2];
-                let prev_v = polygon.get_vertex(&prev_id).unwrap();
-                println!("NEXT: {n_id}, TOP: {top_id}, PREV: {prev_id}");
                 if n_id == top_id {
                     // TODO Hull is fully repaired at this point, should show that
                     // the final edge on stack connected to next vertex is a
                     // left turn rendering the line strip green connecting
                     // all three
+                    let id_1 = top_id;
+                    let id_2 = step.hull[step.hull.len() - 2];
+                    let id_3 = step.hull[step.hull.len() - 3];
+                    let v_1 = polygon.get_vertex(&id_1).unwrap();
+                    let v_2 = polygon.get_vertex(&id_2).unwrap();
+                    let v_3 = polygon.get_vertex(&id_3).unwrap();
                     self.rec.log(
                         format!("{name}/alg_{i}/valid"),
                         &rerun::LineStrips3D::new([[
-                            (prev_v.x as f32, prev_v.y as f32, 0.1),
-                            (top_v.x as f32, top_v.y as f32, 0.1),
-                            (n_v.x as f32, n_v.y as f32, 0.1),
+                            (v_1.x as f32, v_1.y as f32, 0.1),
+                            (v_2.x as f32, v_2.y as f32, 0.1),
+                            (v_3.x as f32, v_3.y as f32, 0.1),
                         ]])
                         .with_radii([0.2])
                         .with_colors([[0, 255, 0]]),
@@ -220,12 +226,19 @@ impl RerunVisualizer {
 
                     // Render final edge on stack to next vertex line strip
                     // red since it's a right turn, and mark top vertex as red
+                    let prev_hull = prev_step.expect("Prev step exists for i > 0").hull.clone();
+                    let id_1 = n_id;
+                    let id_2 = prev_hull[prev_hull.len() - 1];
+                    let id_3 = prev_hull[prev_hull.len() - 2];
+                    let v_1 = polygon.get_vertex(&id_1).unwrap();
+                    let v_2 = polygon.get_vertex(&id_2).unwrap();
+                    let v_3 = polygon.get_vertex(&id_3).unwrap();
                     self.rec.log(
                         format!("{name}/alg_{i}/invalid"),
                         &rerun::LineStrips3D::new([[
-                            (prev_v.x as f32, prev_v.y as f32, 0.1),
-                            (top_v.x as f32, top_v.y as f32, 0.1),
-                            (n_v.x as f32, n_v.y as f32, 0.1),
+                            (v_1.x as f32, v_1.y as f32, 0.1),
+                            (v_2.x as f32, v_2.y as f32, 0.1),
+                            (v_3.x as f32, v_3.y as f32, 0.1),
                         ]])
                         .with_radii([0.2])
                         .with_colors([[255, 0, 0]]),
@@ -244,16 +257,18 @@ impl RerunVisualizer {
                     Some(0.1),
                 )?;
             }
-            // self.rec
-            //     .log(format!("{name}/alg_{i}"), &rerun::Clear::recursive())?;
+            prev_step = Some(step);
+
+            self.rec
+                .log(format!("{name}/alg_{i}"), &rerun::Clear::recursive())?;
 
             // Clear out old hull visualizations
-            // if i > 0 {
-            //     self.rec.log(
-            //         format!("{}/hull_{}", name, i - 1),
-            //         &rerun::Clear::recursive(),
-            //     )?;
-            // }
+            if i > 0 {
+                self.rec.log(
+                    format!("{}/hull_{}", name, i - 1),
+                    &rerun::Clear::recursive(),
+                )?;
+            }
         }
 
         Ok(())
