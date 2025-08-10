@@ -174,14 +174,43 @@ impl RerunVisualizer {
         let mut frame: i64 = 1;
         let hull_color = [95, 117, 156, 255];
 
+        // Show initial vertex establishing min angle order
+        let id_0 = polygon.vertex_ids()[0];
+        let v_0 = polygon.get_vertex(&id_0).unwrap();
+        self.rec.log(
+            format!("{name}/alg_init/init_vertex"),
+            &rerun::Points3D::new([(v_0.x as f32, v_0.y as f32, 0.0)])
+                .with_radii([1.0])
+                .with_colors([[255, 255, 255]]),
+        )?;
         // For each step will show upper/lower tangent vertex selection and
         // how they connect to the current hull, followed by the resulting
         // hull computed at that step
         let mut prev_step: Option<&ConvexHullTracerStep> = None;
         for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
             if i == 0 {
-
-                // TODO need to show first two vertices on stack as edge
+                // Show initial edge of hull
+                let id_1 = step.hull[step.hull.len() - 1];
+                let id_2 = step.hull[step.hull.len() - 2];
+                let v_1 = polygon.get_vertex(&id_1).unwrap();
+                let v_2 = polygon.get_vertex(&id_2).unwrap();
+                self.rec.log(
+                    format!("{name}/hull_{i}/edges"),
+                    &rerun::LineStrips3D::new([[
+                        (v_1.x as f32, v_1.y as f32, 0.0),
+                        (v_2.x as f32, v_2.y as f32, 0.0),
+                    ]])
+                    .with_colors([hull_color]),
+                )?;
+                self.rec.log(
+                    format!("{name}/hull_{i}/vertices"),
+                    &rerun::Points3D::new([
+                        (v_1.x as f32, v_1.y as f32, 0.0),
+                        (v_2.x as f32, v_2.y as f32, 0.0),
+                    ])
+                    .with_radii([0.8])
+                    .with_colors([hull_color]),
+                )?;
             } else {
                 frame += 1;
                 self.rec.set_time_sequence("frame", frame);
@@ -190,7 +219,7 @@ impl RerunVisualizer {
                 let n_v = polygon.get_vertex(&n_id).unwrap();
                 self.rec.log(
                     format!("{name}/alg_{i}/next_vertex"),
-                    &rerun::Points3D::new([(n_v.x as f32, n_v.y as f32, 0.1)])
+                    &rerun::Points3D::new([(n_v.x as f32, n_v.y as f32, 0.0)])
                         .with_radii([1.0])
                         .with_colors([[0, 0, 255]]),
                 )?;
@@ -210,9 +239,9 @@ impl RerunVisualizer {
                     self.rec.log(
                         format!("{name}/alg_{i}/valid"),
                         &rerun::LineStrips3D::new([[
-                            (v_1.x as f32, v_1.y as f32, 0.1),
-                            (v_2.x as f32, v_2.y as f32, 0.1),
-                            (v_3.x as f32, v_3.y as f32, 0.1),
+                            (v_1.x as f32, v_1.y as f32, 0.0),
+                            (v_2.x as f32, v_2.y as f32, 0.0),
+                            (v_3.x as f32, v_3.y as f32, 0.0),
                         ]])
                         .with_radii([0.2])
                         .with_colors([[0, 255, 0]]),
@@ -230,9 +259,9 @@ impl RerunVisualizer {
                     self.rec.log(
                         format!("{name}/alg_{i}/invalid"),
                         &rerun::LineStrips3D::new([[
-                            (v_1.x as f32, v_1.y as f32, 0.1),
-                            (v_2.x as f32, v_2.y as f32, 0.1),
-                            (v_3.x as f32, v_3.y as f32, 0.1),
+                            (v_1.x as f32, v_1.y as f32, 0.0),
+                            (v_2.x as f32, v_2.y as f32, 0.0),
+                            (v_3.x as f32, v_3.y as f32, 0.0),
                         ]])
                         .with_radii([0.2])
                         .with_colors([[255, 0, 0]]),
@@ -258,8 +287,8 @@ impl RerunVisualizer {
                 self.rec.log(
                     format!("{name}/alg_{}/check_edge", i + 1),
                     &rerun::LineStrips3D::new([[
-                        (v_1.x as f32, v_1.y as f32, 0.1),
-                        (v_2.x as f32, v_2.y as f32, 0.1),
+                        (v_1.x as f32, v_1.y as f32, 0.0),
+                        (v_2.x as f32, v_2.y as f32, 0.0),
                     ]])
                     .with_radii([0.2])
                     .with_colors([[242, 192, 53]]),
