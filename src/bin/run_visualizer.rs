@@ -172,7 +172,7 @@ impl RerunVisualizer {
         )?;
 
         let mut frame: i64 = 1;
-        let hull_color = [242, 192, 53, 255];
+        let hull_color = [95, 117, 156, 255];
 
         // For each step will show upper/lower tangent vertex selection and
         // how they connect to the current hull, followed by the resulting
@@ -218,12 +218,6 @@ impl RerunVisualizer {
                         .with_colors([[0, 255, 0]]),
                     )?;
                 } else {
-                    // TODO there's a bug here currently, for invalid ones the
-                    // invalidated vertex would have already been popped at the
-                    // current step so it's not able to render the edges correctly.
-                    // Need to track I think prev step hull so that you can render
-                    // the invalidated edge
-
                     // Render final edge on stack to next vertex line strip
                     // red since it's a right turn, and mark top vertex as red
                     let prev_hull = prev_step.expect("Prev step exists for i > 0").hull.clone();
@@ -255,6 +249,20 @@ impl RerunVisualizer {
                     Some(hull_color),
                     Some(frame),
                     Some(0.1),
+                )?;
+                // Show highlighted edge used for subsequent angle tests
+                let id_1 = step.hull[step.hull.len() - 1];
+                let id_2 = step.hull[step.hull.len() - 2];
+                let v_1 = polygon.get_vertex(&id_1).unwrap();
+                let v_2 = polygon.get_vertex(&id_2).unwrap();
+                self.rec.log(
+                    format!("{name}/alg_{}/check_edge", i + 1),
+                    &rerun::LineStrips3D::new([[
+                        (v_1.x as f32, v_1.y as f32, 0.1),
+                        (v_2.x as f32, v_2.y as f32, 0.1),
+                    ]])
+                    .with_radii([0.2])
+                    .with_colors([[242, 192, 53]]),
                 )?;
             }
             prev_step = Some(step);
