@@ -63,7 +63,7 @@ pub struct RerunVisualizer {
 
 impl RerunVisualizer {
     pub fn new(name: String) -> Result<Self, VisualizationError> {
-        let rec = rerun::RecordingStreamBuilder::new(name).connect_tcp()?;
+        let rec = rerun::RecordingStreamBuilder::new(name).connect_grpc()?;
         Ok(RerunVisualizer { rec })
     }
 
@@ -75,7 +75,7 @@ impl RerunVisualizer {
         vertex_color: Option<[u8; 4]>,
         edge_color: Option<[u8; 4]>,
         frame: Option<i64>,
-        z: Option<f32>,
+        draw_order: Option<f32>,
     ) -> Result<(), VisualizationError> {
         if let Some(value) = frame {
             self.rec.set_time_sequence("frame", value);
@@ -83,21 +83,25 @@ impl RerunVisualizer {
 
         let vertex_radius = vertex_radius.unwrap_or(1.0);
         let vertex_color = vertex_color.unwrap_or(RandomColor::new().to_rgba_array());
+        let draw_order = draw_order.unwrap_or(30.0);
 
         self.rec.log(
             format!("{}/vertices", name),
             &self
-                .polygon_to_rerun_points(polygon, z)
+                .polygon_to_rerun_points(polygon)
                 .with_radii([vertex_radius])
-                .with_colors([vertex_color]),
+                .with_colors([vertex_color])
+                .with_draw_order(draw_order),
         )?;
 
         let edge_color = edge_color.unwrap_or(RandomColor::new().to_rgba_array());
         self.rec.log(
             format!("{}/edges", name),
             &self
-                .polygon_to_rerun_edges(polygon, z)
-                .with_colors([edge_color]),
+                .polygon_to_rerun_edges(polygon)
+                .with_colors([edge_color])
+                // Want edges always below vertices
+                .with_draw_order(draw_order - 1.0),
         )?;
 
         Ok(())
@@ -168,7 +172,7 @@ impl RerunVisualizer {
             Some(polygon_color),
             Some(polygon_color),
             Some(0),
-            None,
+            Some(10.0),
         )?;
 
         let mut frame: i64 = 1;
@@ -179,13 +183,12 @@ impl RerunVisualizer {
         let v_0 = polygon.get_vertex(&id_0).unwrap();
         self.rec.log(
             format!("{name}/alg_init/init_vertex"),
-            &rerun::Points3D::new([(v_0.x as f32, v_0.y as f32, 0.0)])
+            &rerun::Points2D::new([(v_0.x as f32, v_0.y as f32)])
                 .with_radii([1.0])
-                .with_colors([[255, 255, 255]]),
+                .with_colors([[255, 255, 255]])
+                .with_draw_order(100.0),
         )?;
-        // For each step will show upper/lower tangent vertex selection and
-        // how they connect to the current hull, followed by the resulting
-        // hull computed at that step
+
         let mut prev_step: Option<&ConvexHullTracerStep> = None;
         for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
             if i == 0 {
@@ -196,40 +199,61 @@ impl RerunVisualizer {
                 let v_2 = polygon.get_vertex(&id_2).unwrap();
                 self.rec.log(
                     format!("{name}/hull_{i}/edges"),
-                    &rerun::LineStrips3D::new([[
-                        (v_1.x as f32, v_1.y as f32, 0.0),
-                        (v_2.x as f32, v_2.y as f32, 0.0),
+                    &rerun::LineStrips2D::new([[
+                        (v_1.x as f32, v_1.y as f32),
+                        (v_2.x as f32, v_2.y as f32),
                     ]])
                     .with_colors([hull_color]),
                 )?;
                 self.rec.log(
                     format!("{name}/hull_{i}/vertices"),
-                    &rerun::Points3D::new([
-                        (v_1.x as f32, v_1.y as f32, 0.0),
-                        (v_2.x as f32, v_2.y as f32, 0.0),
+                    &rerun::Points2D::new([
+                        (v_1.x as f32, v_1.y as f32),
+                        (v_2.x as f32, v_2.y as f32),
                     ])
                     .with_radii([0.8])
                     .with_colors([hull_color]),
                 )?;
             } else {
-                frame += 1;
-                self.rec.set_time_sequence("frame", frame);
+                // Show highlighted edge used for angle test
+                let prev_hull = prev_step
+                    .expect("Prev step should exist i > 0")
+                    .hull
+                    .clone();
+                let id_head = prev_hull[prev_hull.len() - 1];
+                let id_origin = prev_hull[prev_hull.len() - 2];
+                let v_head = polygon.get_vertex(&id_head).unwrap();
+                let v_origin = polygon.get_vertex(&id_origin).unwrap();
+                self.rec.log(
+                    format!("{name}/alg_{i}/check_edge"),
+                    &rerun::Arrows2D::from_vectors([(
+                        (v_head.x - v_origin.x) as f32,
+                        (v_head.y - v_origin.y) as f32,
+                    )])
+                    .with_origins([(v_origin.x as f32, v_origin.y as f32)])
+                    .with_radii([0.2])
+                    .with_colors([[242, 192, 53]])
+                    .with_draw_order(100.0),
+                )?;
 
+                // Show next vertex used for angle test
                 let n_id = step.next_vertex.expect("Next vertex should exist i > 0");
                 let n_v = polygon.get_vertex(&n_id).unwrap();
                 self.rec.log(
                     format!("{name}/alg_{i}/next_vertex"),
-                    &rerun::Points3D::new([(n_v.x as f32, n_v.y as f32, 0.0)])
+                    &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
                         .with_radii([1.0])
-                        .with_colors([[0, 0, 255]]),
+                        .with_colors([[242, 192, 53]])
+                        .with_draw_order(100.0),
                 )?;
+
+                frame += 1;
+                self.rec.set_time_sequence("frame", frame);
 
                 let top_id = step.hull[step.hull.len() - 1];
                 if n_id == top_id {
-                    // TODO Hull is fully repaired at this point, should show that
-                    // the final edge on stack connected to next vertex is a
-                    // left turn rendering the line strip green connecting
-                    // all three
+                    // Hull is fully repaired at this point, show final edge
+                    // on stack connected to next vertex is a left turn
                     let id_1 = top_id;
                     let id_2 = step.hull[step.hull.len() - 2];
                     let id_3 = step.hull[step.hull.len() - 3];
@@ -238,17 +262,17 @@ impl RerunVisualizer {
                     let v_3 = polygon.get_vertex(&id_3).unwrap();
                     self.rec.log(
                         format!("{name}/alg_{i}/valid"),
-                        &rerun::LineStrips3D::new([[
-                            (v_1.x as f32, v_1.y as f32, 0.0),
-                            (v_2.x as f32, v_2.y as f32, 0.0),
-                            (v_3.x as f32, v_3.y as f32, 0.0),
+                        &rerun::LineStrips2D::new([[
+                            (v_1.x as f32, v_1.y as f32),
+                            (v_2.x as f32, v_2.y as f32),
+                            (v_3.x as f32, v_3.y as f32),
                         ]])
                         .with_radii([0.2])
-                        .with_colors([[0, 255, 0]]),
+                        .with_colors([[0, 255, 0]])
+                        .with_draw_order(99.0),
                     )?;
                 } else {
-                    // Render final edge on stack to next vertex line strip
-                    // red since it's a right turn, and mark top vertex as red
+                    // Render final edge on stack to next vertex as right turn
                     let prev_hull = prev_step.expect("Prev step exists for i > 0").hull.clone();
                     let id_1 = n_id;
                     let id_2 = prev_hull[prev_hull.len() - 1];
@@ -258,13 +282,14 @@ impl RerunVisualizer {
                     let v_3 = polygon.get_vertex(&id_3).unwrap();
                     self.rec.log(
                         format!("{name}/alg_{i}/invalid"),
-                        &rerun::LineStrips3D::new([[
-                            (v_1.x as f32, v_1.y as f32, 0.0),
-                            (v_2.x as f32, v_2.y as f32, 0.0),
-                            (v_3.x as f32, v_3.y as f32, 0.0),
+                        &rerun::LineStrips2D::new([[
+                            (v_1.x as f32, v_1.y as f32),
+                            (v_2.x as f32, v_2.y as f32),
+                            (v_3.x as f32, v_3.y as f32),
                         ]])
                         .with_radii([0.2])
-                        .with_colors([[255, 0, 0]]),
+                        .with_colors([[255, 0, 0]])
+                        .with_draw_order(99.0),
                     )?;
                 }
 
@@ -277,21 +302,7 @@ impl RerunVisualizer {
                     Some(hull_color),
                     Some(hull_color),
                     Some(frame),
-                    Some(0.1),
-                )?;
-                // Show highlighted edge used for subsequent angle tests
-                let id_1 = step.hull[step.hull.len() - 1];
-                let id_2 = step.hull[step.hull.len() - 2];
-                let v_1 = polygon.get_vertex(&id_1).unwrap();
-                let v_2 = polygon.get_vertex(&id_2).unwrap();
-                self.rec.log(
-                    format!("{name}/alg_{}/check_edge", i + 1),
-                    &rerun::LineStrips3D::new([[
-                        (v_1.x as f32, v_1.y as f32, 0.0),
-                        (v_2.x as f32, v_2.y as f32, 0.0),
-                    ]])
-                    .with_radii([0.2])
-                    .with_colors([[242, 192, 53]]),
+                    None,
                 )?;
             }
             prev_step = Some(step);
@@ -329,7 +340,7 @@ impl RerunVisualizer {
             Some(polygon_color),
             Some(polygon_color),
             Some(0),
-            None,
+            Some(10.0),
         )?;
 
         let mut frame: i64 = 1;
@@ -405,7 +416,7 @@ impl RerunVisualizer {
                 Some(hull_color),
                 Some(hull_color),
                 Some(frame),
-                Some(0.1),
+                Some(50.0),
             )?;
             self.rec
                 .log(format!("{name}/alg_{i}"), &rerun::Clear::recursive())?;
@@ -422,25 +433,23 @@ impl RerunVisualizer {
         Ok(())
     }
 
-    fn polygon_to_rerun_points(&self, polygon: &Polygon, z: Option<f32>) -> rerun::Points3D {
-        rerun::Points3D::new(
+    fn polygon_to_rerun_points(&self, polygon: &Polygon) -> rerun::Points2D {
+        rerun::Points2D::new(
             polygon
                 .vertices()
                 .into_iter()
-                // .sorted_by_key(|v| v.id)
-                .map(|v| (v.x as f32, v.y as f32, z.unwrap_or(0.0))),
+                .map(|v| (v.x as f32, v.y as f32)),
         )
     }
 
-    fn polygon_to_rerun_edges(&self, polygon: &Polygon, z: Option<f32>) -> rerun::LineStrips3D {
+    fn polygon_to_rerun_edges(&self, polygon: &Polygon) -> rerun::LineStrips2D {
         let mut edge_points = polygon
             .vertices()
             .into_iter()
-            // .sorted_by_key(|v| v.id)
-            .map(|v| (v.x as f32, v.y as f32, z.unwrap_or(0.0)))
+            .map(|v| (v.x as f32, v.y as f32))
             .collect_vec();
         edge_points.push(edge_points[0]);
-        rerun::LineStrips3D::new([edge_points])
+        rerun::LineStrips2D::new([edge_points])
     }
 
     fn triangulation_to_rerun_meshes(
