@@ -73,6 +73,7 @@ impl RerunVisualizer {
         name: &String,
         vertex_radius: Option<f32>,
         vertex_color: Option<[u8; 4]>,
+        edge_radius: Option<f32>,
         edge_color: Option<[u8; 4]>,
         frame: Option<i64>,
         draw_order: Option<f32>,
@@ -94,11 +95,13 @@ impl RerunVisualizer {
                 .with_draw_order(draw_order),
         )?;
 
+        let edge_radius = edge_radius.unwrap_or(0.1);
         let edge_color = edge_color.unwrap_or(RandomColor::new().to_rgba_array());
         self.rec.log(
             format!("{}/edges", name),
             &self
                 .polygon_to_rerun_edges(polygon)
+                .with_radii([edge_radius])
                 .with_colors([edge_color])
                 // Want edges always below vertices
                 .with_draw_order(draw_order - 1.0),
@@ -116,7 +119,7 @@ impl RerunVisualizer {
         let triangulation = EarClipping.triangulation(polygon);
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation, polygon);
 
-        let _ = self.visualize_polygon(polygon, &name, None, None, None, None, None);
+        let _ = self.visualize_polygon(polygon, &name, None, None, None, None, None, None);
 
         for (i, mesh) in rerun_meshes.iter().enumerate() {
             self.rec.log(format!("{}/triangle_{}", &name, i), mesh)?;
@@ -138,12 +141,14 @@ impl RerunVisualizer {
             None,
             None,
             None,
+            None,
         );
 
         let hull = QuickHull.convex_hull(polygon, &mut None);
         let _ = self.visualize_polygon(
             &hull,
             &format!("{name}/convex_hull"),
+            None,
             None,
             None,
             None,
@@ -164,19 +169,20 @@ impl RerunVisualizer {
         println!("{:?}", tracer);
 
         // Show nominal polygon for hull to be overlayed on
-        let polygon_color = [71, 121, 230, 100];
+        let polygon_color = [132, 90, 109, 255];
         self.visualize_polygon(
             polygon,
             &format!("{name}/polygon"),
             Some(0.5),
             Some(polygon_color),
+            None,
             Some(polygon_color),
             Some(0),
             Some(10.0),
         )?;
 
         let mut frame: i64 = 1;
-        let hull_color = [95, 117, 156, 255];
+        let hull_color = [25, 100, 126, 255];
 
         // Show initial vertex establishing min angle order
         let id_0 = polygon.vertex_ids()[0];
@@ -203,6 +209,7 @@ impl RerunVisualizer {
                         (v_1.x as f32, v_1.y as f32),
                         (v_2.x as f32, v_2.y as f32),
                     ]])
+                    .with_radii([0.2])
                     .with_colors([hull_color]),
                 )?;
                 self.rec.log(
@@ -231,7 +238,7 @@ impl RerunVisualizer {
                         (v_head.y - v_origin.y) as f32,
                     )])
                     .with_origins([(v_origin.x as f32, v_origin.y as f32)])
-                    .with_radii([0.2])
+                    .with_radii([0.3])
                     .with_colors([[242, 192, 53]])
                     .with_draw_order(100.0),
                 )?;
@@ -250,6 +257,11 @@ impl RerunVisualizer {
                 frame += 1;
                 self.rec.set_time_sequence("frame", frame);
 
+                self.rec
+                    .log(format!("{name}/alg_{i}/check_edge"), &rerun::Clear::flat())?;
+                self.rec
+                    .log(format!("{name}/alg_{i}/next_vertex"), &rerun::Clear::flat())?;
+
                 let top_id = step.hull[step.hull.len() - 1];
                 if n_id == top_id {
                     // Hull is fully repaired at this point, show final edge
@@ -267,7 +279,7 @@ impl RerunVisualizer {
                             (v_2.x as f32, v_2.y as f32),
                             (v_3.x as f32, v_3.y as f32),
                         ]])
-                        .with_radii([0.2])
+                        .with_radii([0.3])
                         .with_colors([[0, 255, 0]])
                         .with_draw_order(99.0),
                     )?;
@@ -287,7 +299,7 @@ impl RerunVisualizer {
                             (v_2.x as f32, v_2.y as f32),
                             (v_3.x as f32, v_3.y as f32),
                         ]])
-                        .with_radii([0.2])
+                        .with_radii([0.3])
                         .with_colors([[255, 0, 0]])
                         .with_draw_order(99.0),
                     )?;
@@ -300,6 +312,7 @@ impl RerunVisualizer {
                     &format!("{name}/hull_{i}"),
                     Some(0.8),
                     Some(hull_color),
+                    Some(0.2),
                     Some(hull_color),
                     Some(frame),
                     None,
@@ -338,6 +351,7 @@ impl RerunVisualizer {
             &format!("{name}/polygon"),
             Some(0.5),
             Some(polygon_color),
+            None,
             Some(polygon_color),
             Some(0),
             Some(10.0),
@@ -414,6 +428,7 @@ impl RerunVisualizer {
                 &format!("{name}/hull_{i}"),
                 Some(0.8),
                 Some(hull_color),
+                None,
                 Some(hull_color),
                 Some(frame),
                 Some(50.0),
