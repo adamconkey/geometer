@@ -283,7 +283,7 @@ impl RerunVisualizer {
                             (v_3.x as f32, v_3.y as f32),
                         ]])
                         .with_radii([0.3])
-                        .with_colors([[0, 255, 0]])
+                        .with_colors([[52, 163, 82]])
                         .with_draw_order(99.0),
                     )?;
                     self.rec.log(
@@ -294,7 +294,7 @@ impl RerunVisualizer {
                             (v_3.x as f32, v_3.y as f32),
                         ])
                         .with_radii([1.0])
-                        .with_colors([[0, 255, 0]])
+                        .with_colors([[52, 163, 82]])
                         .with_draw_order(100.0),
                     )?;
                 } else {
@@ -314,7 +314,7 @@ impl RerunVisualizer {
                             (v_3.x as f32, v_3.y as f32),
                         ]])
                         .with_radii([0.3])
-                        .with_colors([[255, 0, 0]])
+                        .with_colors([[163, 0, 0]])
                         .with_draw_order(99.0),
                     )?;
                     self.rec.log(
@@ -325,7 +325,7 @@ impl RerunVisualizer {
                             (v_3.x as f32, v_3.y as f32),
                         ])
                         .with_radii([1.0])
-                        .with_colors([[255, 0, 0]])
+                        .with_colors([[163, 0, 0]])
                         .with_draw_order(100.0),
                     )?;
                 }
