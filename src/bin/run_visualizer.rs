@@ -222,6 +222,9 @@ impl RerunVisualizer {
                     .with_colors([hull_color]),
                 )?;
             } else {
+                frame += 1;
+                self.rec.set_time_sequence("frame", frame);
+
                 // Show highlighted edge used for angle test
                 let prev_hull = prev_step
                     .expect("Prev step should exist i > 0")
@@ -273,7 +276,7 @@ impl RerunVisualizer {
                     let v_2 = polygon.get_vertex(&id_2).unwrap();
                     let v_3 = polygon.get_vertex(&id_3).unwrap();
                     self.rec.log(
-                        format!("{name}/alg_{i}/valid"),
+                        format!("{name}/alg_{i}/valid/edges"),
                         &rerun::LineStrips2D::new([[
                             (v_1.x as f32, v_1.y as f32),
                             (v_2.x as f32, v_2.y as f32),
@@ -282,6 +285,17 @@ impl RerunVisualizer {
                         .with_radii([0.3])
                         .with_colors([[0, 255, 0]])
                         .with_draw_order(99.0),
+                    )?;
+                    self.rec.log(
+                        format!("{name}/alg_{i}/valid/vertices"),
+                        &rerun::Points2D::new([
+                            (v_1.x as f32, v_1.y as f32),
+                            (v_2.x as f32, v_2.y as f32),
+                            (v_3.x as f32, v_3.y as f32),
+                        ])
+                        .with_radii([1.0])
+                        .with_colors([[0, 255, 0]])
+                        .with_draw_order(100.0),
                     )?;
                 } else {
                     // Render final edge on stack to next vertex as right turn
@@ -293,7 +307,7 @@ impl RerunVisualizer {
                     let v_2 = polygon.get_vertex(&id_2).unwrap();
                     let v_3 = polygon.get_vertex(&id_3).unwrap();
                     self.rec.log(
-                        format!("{name}/alg_{i}/invalid"),
+                        format!("{name}/alg_{i}/invalid/edges"),
                         &rerun::LineStrips2D::new([[
                             (v_1.x as f32, v_1.y as f32),
                             (v_2.x as f32, v_2.y as f32),
@@ -302,6 +316,17 @@ impl RerunVisualizer {
                         .with_radii([0.3])
                         .with_colors([[255, 0, 0]])
                         .with_draw_order(99.0),
+                    )?;
+                    self.rec.log(
+                        format!("{name}/alg_{i}/invalid/vertices"),
+                        &rerun::Points2D::new([
+                            (v_1.x as f32, v_1.y as f32),
+                            (v_2.x as f32, v_2.y as f32),
+                            (v_3.x as f32, v_3.y as f32),
+                        ])
+                        .with_radii([1.0])
+                        .with_colors([[255, 0, 0]])
+                        .with_draw_order(100.0),
                     )?;
                 }
 
