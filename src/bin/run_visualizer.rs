@@ -257,6 +257,16 @@ impl RerunVisualizer {
                         .with_draw_order(100.0),
                 )?;
 
+                self.rec.log(
+                    format!("{name}/alg/next_vertex_marker"),
+                    &rerun::LineStrips2D::new([[
+                        (v_0.x as f32, v_0.y as f32),
+                        (n_v.x as f32, n_v.y as f32),
+                    ]])
+                    .with_radii([0.1])
+                    .with_colors([[255, 255, 255]]),
+                )?;
+
                 frame += 1;
                 self.rec.set_time_sequence("frame", frame);
 
