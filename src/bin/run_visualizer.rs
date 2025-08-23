@@ -88,7 +88,7 @@ impl RerunVisualizer {
         let draw_order = draw_order.unwrap_or(30.0);
 
         self.rec.log(
-            format!("{}/vertices", name),
+            format!("{name}/vertices"),
             &rerun::Points2D::new(vertices.iter().map(|v| (v.x as f32, v.y as f32)))
                 .with_radii([vertex_radius])
                 .with_colors([vertex_color])
@@ -103,7 +103,7 @@ impl RerunVisualizer {
             .collect_vec();
         edge_points.push(edge_points[0]);
         self.rec.log(
-            format!("{}/edges", name),
+            format!("{name}/edges"),
             &rerun::LineStrips2D::new([edge_points])
                 .with_radii([edge_radius])
                 .with_colors([edge_color])
@@ -181,8 +181,14 @@ impl RerunVisualizer {
         let _final_hull = GrahamScan.convex_hull(polygon, tracer);
         println!("{:?}", tracer);
 
-        // Show nominal polygon for hull to be overlayed on
+        let init_vertex_color = [255, 255, 255, 255];
         let polygon_color = [132, 90, 109, 255];
+        let hull_color = [25, 100, 126, 255];
+        let check_color = [242, 192, 53, 255];
+        let valid_color = [52, 163, 82, 255];
+        let invalid_color = [163, 0, 0, 255];
+
+        // Show nominal polygon for hull to be overlayed on
         self.visualize_vertex_chain(
             &polygon.vertices().into_iter().cloned().collect(),
             &format!("{name}/polygon"),
@@ -195,7 +201,6 @@ impl RerunVisualizer {
         )?;
 
         let mut frame: i64 = 1;
-        let hull_color = [25, 100, 126, 255];
 
         // Show initial vertex establishing min angle order
         let id_0 = polygon.vertex_ids()[0];
@@ -204,7 +209,7 @@ impl RerunVisualizer {
             format!("{name}/alg_init/init_vertex"),
             &rerun::Points2D::new([(v_0.x as f32, v_0.y as f32)])
                 .with_radii([1.0])
-                .with_colors([[255, 255, 255]])
+                .with_colors([init_vertex_color])
                 .with_draw_order(100.0),
         )?;
 
@@ -255,7 +260,7 @@ impl RerunVisualizer {
                     )])
                     .with_origins([(v_origin.x as f32, v_origin.y as f32)])
                     .with_radii([0.3])
-                    .with_colors([[242, 192, 53]])
+                    .with_colors([check_color])
                     .with_draw_order(100.0),
                 )?;
 
@@ -266,7 +271,7 @@ impl RerunVisualizer {
                     format!("{name}/alg_{i}/next_vertex"),
                     &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
                         .with_radii([1.0])
-                        .with_colors([[242, 192, 53]])
+                        .with_colors([check_color])
                         .with_draw_order(100.0),
                 )?;
 
@@ -306,7 +311,7 @@ impl RerunVisualizer {
                             (v_3.x as f32, v_3.y as f32),
                         ]])
                         .with_radii([0.3])
-                        .with_colors([[52, 163, 82]])
+                        .with_colors([valid_color])
                         .with_draw_order(99.0),
                     )?;
                     self.rec.log(
@@ -317,7 +322,7 @@ impl RerunVisualizer {
                             (v_3.x as f32, v_3.y as f32),
                         ])
                         .with_radii([1.0])
-                        .with_colors([[52, 163, 82]])
+                        .with_colors([valid_color])
                         .with_draw_order(100.0),
                     )?;
                 } else {
@@ -337,7 +342,7 @@ impl RerunVisualizer {
                             (v_3.x as f32, v_3.y as f32),
                         ]])
                         .with_radii([0.3])
-                        .with_colors([[163, 0, 0]])
+                        .with_colors([invalid_color])
                         .with_draw_order(99.0),
                     )?;
                     self.rec.log(
@@ -348,7 +353,7 @@ impl RerunVisualizer {
                             (v_3.x as f32, v_3.y as f32),
                         ])
                         .with_radii([1.0])
-                        .with_colors([[163, 0, 0]])
+                        .with_colors([invalid_color])
                         .with_draw_order(100.0),
                     )?;
                 }
