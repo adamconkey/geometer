@@ -12,6 +12,7 @@ use geometer::{
     polygon::Polygon,
     triangulation::{EarClipping, Triangulation, TriangulationComputer},
     util::load_polygon,
+    vertex::Vertex,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -67,9 +68,9 @@ impl RerunVisualizer {
         Ok(RerunVisualizer { rec })
     }
 
-    pub fn visualize_polygon(
+    pub fn visualize_vertex_chain(
         &self,
-        polygon: &Polygon,
+        vertices: &Vec<&Vertex>,
         name: &String,
         vertex_radius: Option<f32>,
         vertex_color: Option<[u8; 4]>,
@@ -88,8 +89,7 @@ impl RerunVisualizer {
 
         self.rec.log(
             format!("{}/vertices", name),
-            &self
-                .polygon_to_rerun_points(polygon)
+            &rerun::Points2D::new(vertices.iter().map(|v| (v.x as f32, v.y as f32)))
                 .with_radii([vertex_radius])
                 .with_colors([vertex_color])
                 .with_draw_order(draw_order),
@@ -97,10 +97,14 @@ impl RerunVisualizer {
 
         let edge_radius = edge_radius.unwrap_or(0.1);
         let edge_color = edge_color.unwrap_or(RandomColor::new().to_rgba_array());
+        let mut edge_points = vertices
+            .iter()
+            .map(|v| (v.x as f32, v.y as f32))
+            .collect_vec();
+        edge_points.push(edge_points[0]);
         self.rec.log(
             format!("{}/edges", name),
-            &self
-                .polygon_to_rerun_edges(polygon)
+            &rerun::LineStrips2D::new([edge_points])
                 .with_radii([edge_radius])
                 .with_colors([edge_color])
                 // Want edges always below vertices
@@ -119,7 +123,16 @@ impl RerunVisualizer {
         let triangulation = EarClipping.triangulation(polygon);
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation, polygon);
 
-        let _ = self.visualize_polygon(polygon, &name, None, None, None, None, None, None);
+        let _ = self.visualize_vertex_chain(
+            &polygon.vertices(),
+            &name,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
 
         for (i, mesh) in rerun_meshes.iter().enumerate() {
             self.rec.log(format!("{}/triangle_{}", &name, i), mesh)?;
@@ -133,8 +146,8 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        let _ = self.visualize_polygon(
-            polygon,
+        let _ = self.visualize_vertex_chain(
+            &polygon.vertices(),
             &format!("{name}/polygon"),
             None,
             None,
@@ -145,8 +158,8 @@ impl RerunVisualizer {
         );
 
         let hull = QuickHull.convex_hull(polygon, &mut None);
-        let _ = self.visualize_polygon(
-            &hull,
+        let _ = self.visualize_vertex_chain(
+            &hull.vertices(),
             &format!("{name}/convex_hull"),
             None,
             None,
@@ -170,8 +183,8 @@ impl RerunVisualizer {
 
         // Show nominal polygon for hull to be overlayed on
         let polygon_color = [132, 90, 109, 255];
-        self.visualize_polygon(
-            polygon,
+        self.visualize_vertex_chain(
+            &polygon.vertices(),
             &format!("{name}/polygon"),
             Some(0.5),
             Some(polygon_color),
@@ -342,8 +355,12 @@ impl RerunVisualizer {
 
                 // Show computed hull for this step
                 frame += 1;
-                self.visualize_polygon(
-                    &polygon.get_polygon(step.hull.clone(), false, false),
+                self.visualize_vertex_chain(
+                    // TODO this is silly to get polygon then retrive vertices,
+                    // need a func to just retrieve vertex subset given IDs
+                    &polygon
+                        .get_polygon(step.hull.clone(), false, false)
+                        .vertices(),
                     &format!("{name}/hull_{i}"),
                     Some(0.8),
                     Some(hull_color),
@@ -381,8 +398,8 @@ impl RerunVisualizer {
 
         // Show nominal polygon for hull to be overlayed on
         let polygon_color = [71, 121, 230, 100];
-        self.visualize_polygon(
-            polygon,
+        self.visualize_vertex_chain(
+            &polygon.vertices(),
             &format!("{name}/polygon"),
             Some(0.5),
             Some(polygon_color),
@@ -458,8 +475,11 @@ impl RerunVisualizer {
 
             // Show computed hull for this step
             frame += 1;
-            self.visualize_polygon(
-                &polygon.get_polygon(step.hull.clone(), false, false),
+            self.visualize_vertex_chain(
+                // TODO make function to retrive vetex subset
+                &polygon
+                    .get_polygon(step.hull.clone(), false, false)
+                    .vertices(),
                 &format!("{name}/hull_{i}"),
                 Some(0.8),
                 Some(hull_color),
@@ -481,25 +501,6 @@ impl RerunVisualizer {
         }
 
         Ok(())
-    }
-
-    fn polygon_to_rerun_points(&self, polygon: &Polygon) -> rerun::Points2D {
-        rerun::Points2D::new(
-            polygon
-                .vertices()
-                .into_iter()
-                .map(|v| (v.x as f32, v.y as f32)),
-        )
-    }
-
-    fn polygon_to_rerun_edges(&self, polygon: &Polygon) -> rerun::LineStrips2D {
-        let mut edge_points = polygon
-            .vertices()
-            .into_iter()
-            .map(|v| (v.x as f32, v.y as f32))
-            .collect_vec();
-        edge_points.push(edge_points[0]);
-        rerun::LineStrips2D::new([edge_points])
     }
 
     fn triangulation_to_rerun_meshes(
