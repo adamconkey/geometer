@@ -70,7 +70,7 @@ impl RerunVisualizer {
 
     pub fn visualize_vertex_chain(
         &self,
-        vertices: &Vec<&Vertex>,
+        vertices: &Vec<Vertex>,
         name: &String,
         vertex_radius: Option<f32>,
         vertex_color: Option<[u8; 4]>,
@@ -124,7 +124,7 @@ impl RerunVisualizer {
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation, polygon);
 
         let _ = self.visualize_vertex_chain(
-            &polygon.vertices(),
+            &polygon.vertices().into_iter().cloned().collect(),
             &name,
             None,
             None,
@@ -147,7 +147,7 @@ impl RerunVisualizer {
         name: &String,
     ) -> Result<(), VisualizationError> {
         let _ = self.visualize_vertex_chain(
-            &polygon.vertices(),
+            &polygon.vertices().into_iter().cloned().collect(),
             &format!("{name}/polygon"),
             None,
             None,
@@ -159,7 +159,7 @@ impl RerunVisualizer {
 
         let hull = QuickHull.convex_hull(polygon, &mut None);
         let _ = self.visualize_vertex_chain(
-            &hull.vertices(),
+            &hull.vertices().into_iter().cloned().collect(),
             &format!("{name}/convex_hull"),
             None,
             None,
@@ -184,7 +184,7 @@ impl RerunVisualizer {
         // Show nominal polygon for hull to be overlayed on
         let polygon_color = [132, 90, 109, 255];
         self.visualize_vertex_chain(
-            &polygon.vertices(),
+            &polygon.vertices().into_iter().cloned().collect(),
             &format!("{name}/polygon"),
             Some(0.5),
             Some(polygon_color),
@@ -356,11 +356,7 @@ impl RerunVisualizer {
                 // Show computed hull for this step
                 frame += 1;
                 self.visualize_vertex_chain(
-                    // TODO this is silly to get polygon then retrive vertices,
-                    // need a func to just retrieve vertex subset given IDs
-                    &polygon
-                        .get_polygon(step.hull.clone(), false, false)
-                        .vertices(),
+                    &polygon.get_vertices(step.hull.clone()),
                     &format!("{name}/hull_{i}"),
                     Some(0.8),
                     Some(hull_color),
@@ -399,7 +395,7 @@ impl RerunVisualizer {
         // Show nominal polygon for hull to be overlayed on
         let polygon_color = [71, 121, 230, 100];
         self.visualize_vertex_chain(
-            &polygon.vertices(),
+            &polygon.vertices().into_iter().cloned().collect(),
             &format!("{name}/polygon"),
             Some(0.5),
             Some(polygon_color),
@@ -476,10 +472,7 @@ impl RerunVisualizer {
             // Show computed hull for this step
             frame += 1;
             self.visualize_vertex_chain(
-                // TODO make function to retrive vetex subset
-                &polygon
-                    .get_polygon(step.hull.clone(), false, false)
-                    .vertices(),
+                &polygon.get_vertices(step.hull.clone()),
                 &format!("{name}/hull_{i}"),
                 Some(0.8),
                 Some(hull_color),

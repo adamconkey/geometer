@@ -283,17 +283,20 @@ impl Polygon {
         None
     }
 
+    pub fn get_vertices(&self, ids: impl IntoIterator<Item = VertexId>) -> Vec<Vertex> {
+        ids.into_iter()
+            .map(|id| self.get_vertex(&id).unwrap()) // TODO don't unwrap
+            .cloned()
+            .collect_vec()
+    }
+
     pub fn get_polygon(
         &self,
         ids: impl IntoIterator<Item = VertexId>,
         sort_by_id: bool,
         clean_collinear: bool,
     ) -> Polygon {
-        let mut vertices = ids
-            .into_iter()
-            .map(|id| self.get_vertex(&id).unwrap()) // TODO don't unwrap
-            .cloned()
-            .collect_vec();
+        let mut vertices = self.get_vertices(ids);
         if sort_by_id {
             vertices.sort_by_key(|v| v.id);
         }
