@@ -29,6 +29,12 @@ impl fmt::Display for ConvexHullTracerStep {
     }
 }
 
+impl ConvexHullTracerStep {
+    pub fn hull_tail(&self, num_elements: usize) -> Vec<VertexId> {
+        self.hull[self.hull.len() - num_elements..].to_vec()
+    }
+}
+
 #[derive(Default)]
 pub struct ConvexHullTracer {
     pub steps: Vec<ConvexHullTracerStep>,
