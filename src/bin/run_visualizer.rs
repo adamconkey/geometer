@@ -76,13 +76,9 @@ impl RerunVisualizer {
         vertex_color: Option<[u8; 4]>,
         edge_radius: Option<f32>,
         edge_color: Option<[u8; 4]>,
-        frame: Option<i64>,
         draw_order: Option<f32>,
+        close_chain: bool,
     ) -> Result<(), VisualizationError> {
-        if let Some(value) = frame {
-            self.rec.set_time_sequence("frame", value);
-        }
-
         let vertex_radius = vertex_radius.unwrap_or(1.0);
         let vertex_color = vertex_color.unwrap_or(RandomColor::new().to_rgba_array());
         let draw_order = draw_order.unwrap_or(30.0);
@@ -101,7 +97,9 @@ impl RerunVisualizer {
             .iter()
             .map(|v| (v.x as f32, v.y as f32))
             .collect_vec();
-        edge_points.push(edge_points[0]);
+        if close_chain {
+            edge_points.push(edge_points[0]);
+        }
         self.rec.log(
             format!("{name}/edges"),
             &rerun::LineStrips2D::new([edge_points])
@@ -123,7 +121,7 @@ impl RerunVisualizer {
         let triangulation = EarClipping.triangulation(polygon);
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation, polygon);
 
-        let _ = self.visualize_vertex_chain(
+        self.visualize_vertex_chain(
             &polygon.vertices().into_iter().cloned().collect(),
             &name,
             None,
@@ -131,8 +129,8 @@ impl RerunVisualizer {
             None,
             None,
             None,
-            None,
-        );
+            true,
+        )?;
 
         for (i, mesh) in rerun_meshes.iter().enumerate() {
             self.rec.log(format!("{}/triangle_{}", &name, i), mesh)?;
@@ -154,7 +152,7 @@ impl RerunVisualizer {
             None,
             None,
             None,
-            None,
+            true,
         );
 
         let hull = QuickHull.convex_hull(polygon, &mut None);
@@ -166,7 +164,7 @@ impl RerunVisualizer {
             None,
             None,
             None,
-            None,
+            true,
         );
 
         Ok(())
@@ -188,6 +186,9 @@ impl RerunVisualizer {
         let valid_color = [52, 163, 82, 255];
         let invalid_color = [163, 0, 0, 255];
 
+        let mut frame: i64 = 0;
+        self.rec.set_time_sequence("frame", frame);
+
         // Show nominal polygon for hull to be overlayed on
         self.visualize_vertex_chain(
             &polygon.vertices().into_iter().cloned().collect(),
@@ -196,11 +197,9 @@ impl RerunVisualizer {
             Some(polygon_color),
             None,
             Some(polygon_color),
-            Some(0),
             Some(10.0),
+            true,
         )?;
-
-        let mut frame: i64 = 1;
 
         // Show initial vertex establishing min angle order
         let id_0 = polygon.vertex_ids()[0];
@@ -219,25 +218,15 @@ impl RerunVisualizer {
                 // Show initial edge of hull
                 let id_1 = step.hull[step.hull.len() - 1];
                 let id_2 = step.hull[step.hull.len() - 2];
-                let v_1 = polygon.get_vertex(&id_1).unwrap();
-                let v_2 = polygon.get_vertex(&id_2).unwrap();
-                self.rec.log(
-                    format!("{name}/hull_{i}/edges"),
-                    &rerun::LineStrips2D::new([[
-                        (v_1.x as f32, v_1.y as f32),
-                        (v_2.x as f32, v_2.y as f32),
-                    ]])
-                    .with_radii([0.2])
-                    .with_colors([hull_color]),
-                )?;
-                self.rec.log(
-                    format!("{name}/hull_{i}/vertices"),
-                    &rerun::Points2D::new([
-                        (v_1.x as f32, v_1.y as f32),
-                        (v_2.x as f32, v_2.y as f32),
-                    ])
-                    .with_radii([0.8])
-                    .with_colors([hull_color]),
+                self.visualize_vertex_chain(
+                    &polygon.get_vertices(vec![id_1, id_2]),
+                    &format!("{name}/hull_{i}"),
+                    Some(0.8),
+                    Some(hull_color),
+                    Some(0.2),
+                    Some(hull_color),
+                    None,
+                    false,
                 )?;
             } else {
                 frame += 1;
@@ -300,30 +289,15 @@ impl RerunVisualizer {
                     let id_1 = top_id;
                     let id_2 = step.hull[step.hull.len() - 2];
                     let id_3 = step.hull[step.hull.len() - 3];
-                    let v_1 = polygon.get_vertex(&id_1).unwrap();
-                    let v_2 = polygon.get_vertex(&id_2).unwrap();
-                    let v_3 = polygon.get_vertex(&id_3).unwrap();
-                    self.rec.log(
-                        format!("{name}/alg_{i}/valid/edges"),
-                        &rerun::LineStrips2D::new([[
-                            (v_1.x as f32, v_1.y as f32),
-                            (v_2.x as f32, v_2.y as f32),
-                            (v_3.x as f32, v_3.y as f32),
-                        ]])
-                        .with_radii([0.3])
-                        .with_colors([valid_color])
-                        .with_draw_order(99.0),
-                    )?;
-                    self.rec.log(
-                        format!("{name}/alg_{i}/valid/vertices"),
-                        &rerun::Points2D::new([
-                            (v_1.x as f32, v_1.y as f32),
-                            (v_2.x as f32, v_2.y as f32),
-                            (v_3.x as f32, v_3.y as f32),
-                        ])
-                        .with_radii([1.0])
-                        .with_colors([valid_color])
-                        .with_draw_order(100.0),
+                    self.visualize_vertex_chain(
+                        &polygon.get_vertices(vec![id_1, id_2, id_3]),
+                        &format!("{name}/alg_{i}/valid"),
+                        Some(1.0),
+                        Some(valid_color),
+                        Some(0.3),
+                        Some(valid_color),
+                        Some(100.0),
+                        false,
                     )?;
                 } else {
                     // Render final edge on stack to next vertex as right turn
@@ -331,35 +305,21 @@ impl RerunVisualizer {
                     let id_1 = n_id;
                     let id_2 = prev_hull[prev_hull.len() - 1];
                     let id_3 = prev_hull[prev_hull.len() - 2];
-                    let v_1 = polygon.get_vertex(&id_1).unwrap();
-                    let v_2 = polygon.get_vertex(&id_2).unwrap();
-                    let v_3 = polygon.get_vertex(&id_3).unwrap();
-                    self.rec.log(
-                        format!("{name}/alg_{i}/invalid/edges"),
-                        &rerun::LineStrips2D::new([[
-                            (v_1.x as f32, v_1.y as f32),
-                            (v_2.x as f32, v_2.y as f32),
-                            (v_3.x as f32, v_3.y as f32),
-                        ]])
-                        .with_radii([0.3])
-                        .with_colors([invalid_color])
-                        .with_draw_order(99.0),
-                    )?;
-                    self.rec.log(
-                        format!("{name}/alg_{i}/invalid/vertices"),
-                        &rerun::Points2D::new([
-                            (v_1.x as f32, v_1.y as f32),
-                            (v_2.x as f32, v_2.y as f32),
-                            (v_3.x as f32, v_3.y as f32),
-                        ])
-                        .with_radii([1.0])
-                        .with_colors([invalid_color])
-                        .with_draw_order(100.0),
+                    self.visualize_vertex_chain(
+                        &polygon.get_vertices(vec![id_1, id_2, id_3]),
+                        &format!("{name}/alg_{i}/invalid"),
+                        Some(1.0),
+                        Some(invalid_color),
+                        Some(0.3),
+                        Some(invalid_color),
+                        Some(100.0),
+                        false,
                     )?;
                 }
 
                 // Show computed hull for this step
                 frame += 1;
+                self.rec.set_time_sequence("frame", frame);
                 self.visualize_vertex_chain(
                     &polygon.get_vertices(step.hull.clone()),
                     &format!("{name}/hull_{i}"),
@@ -367,8 +327,8 @@ impl RerunVisualizer {
                     Some(hull_color),
                     Some(0.2),
                     Some(hull_color),
-                    Some(frame),
                     None,
+                    true,
                 )?;
             }
             prev_step = Some(step);
@@ -406,8 +366,8 @@ impl RerunVisualizer {
             Some(polygon_color),
             None,
             Some(polygon_color),
-            Some(0),
             Some(10.0),
+            true,
         )?;
 
         let mut frame: i64 = 1;
@@ -476,6 +436,7 @@ impl RerunVisualizer {
 
             // Show computed hull for this step
             frame += 1;
+            self.rec.set_time_sequence("frame", frame);
             self.visualize_vertex_chain(
                 &polygon.get_vertices(step.hull.clone()),
                 &format!("{name}/hull_{i}"),
@@ -483,8 +444,8 @@ impl RerunVisualizer {
                 Some(hull_color),
                 None,
                 Some(hull_color),
-                Some(frame),
                 Some(50.0),
+                true,
             )?;
             self.rec
                 .log(format!("{name}/alg_{i}"), &rerun::Clear::recursive())?;
