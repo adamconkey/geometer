@@ -5,7 +5,7 @@ use random_color::RandomColor;
 use geometer::{
     convex_hull::{
         ConvexHullComputer, ConvexHullTracer, ConvexHullTracerStep, GrahamScan, Incremental,
-        QuickHull,
+        InteriorPoints, QuickHull,
     },
     error::FileError,
     geometry::Geometry,
@@ -121,19 +121,20 @@ impl RerunVisualizer {
         let triangulation = EarClipping.triangulation(polygon);
         let rerun_meshes = self.triangulation_to_rerun_meshes(&triangulation, polygon);
 
+        let polygon_color = [132, 90, 109, 255];
         self.visualize_vertex_chain(
             &polygon.vertices().into_iter().cloned().collect(),
             &name,
+            Some(0.5),
+            Some(polygon_color),
             None,
-            None,
-            None,
-            None,
+            Some(polygon_color),
             None,
             true,
         )?;
 
         for (i, mesh) in rerun_meshes.iter().enumerate() {
-            self.rec.log(format!("{}/triangle_{}", &name, i), mesh)?;
+            self.rec.log(format!("{name}/triangle_{i}"), mesh)?;
         }
 
         Ok(())
@@ -171,6 +172,87 @@ impl RerunVisualizer {
             Some(0.3),
             Some(hull_color),
             Some(100.0),
+            true,
+        )?;
+
+        Ok(())
+    }
+
+    pub fn visualize_convex_hull_interior_points(
+        &self,
+        polygon: &Polygon,
+        name: &String,
+    ) -> Result<(), VisualizationError> {
+        let tracer = &mut Some(ConvexHullTracer::default());
+        let _final_hull = InteriorPoints.convex_hull(polygon, tracer);
+
+        // TODO will ultimately want a config such that these could
+        // be specified in some configurable or at the very least
+        // more interpretable way? For now just hardcoding values
+        // for color scheme I think looks decent
+        let polygon_color = [132, 90, 109, 255];
+        let hull_color = [25, 100, 126, 255];
+        let check_color = [242, 192, 53, 255];
+        let interior_color = [163, 0, 0, 255];
+
+        let mut frame: i64 = 0;
+        self.rec.set_time_sequence("frame", frame);
+
+        // Show nominal polygon for hull to be overlayed on
+        self.visualize_vertex_chain(
+            &polygon.vertices().into_iter().cloned().collect(),
+            &format!("{name}/polygon"),
+            Some(0.5),
+            Some(polygon_color),
+            None,
+            Some(polygon_color),
+            Some(10.0),
+            true,
+        )?;
+
+        for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
+            // TODO this is currently just holdover from copying from graham,
+            // will want to display the test vertex along with the triangle
+            // (vertex chain) used for the test, it will turn red iff it's
+            // interior to the triangle. Will need tracer to log the next
+            // vertex being checked, and the 3 ids forming the triangle.
+            let n_id = step.next_vertex.expect("Next vertex should exist i > 0");
+            let n_v = polygon.get_vertex(&n_id).unwrap();
+            self.rec.log(
+                format!("{name}/alg_{i}/check_vertex"),
+                &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
+                    .with_radii([1.0])
+                    .with_colors([check_color])
+                    .with_draw_order(100.0),
+            )?;
+
+            self.visualize_vertex_chain(
+                &polygon.get_vertices(step.hull_tail(3)),
+                &format!("{name}/alg_{i}/check_triangle"),
+                Some(1.0),
+                Some(valid_color),
+                Some(0.3),
+                Some(valid_color),
+                Some(100.0),
+                false,
+            )?;
+
+            self.clear_recursive(format!("{name}/alg_{i}"))?;
+        }
+
+        // TODO should make this a helper function to show final hull
+        // taking just the tracer and polygon as input
+        // Show the final hull
+        self.increment_frame(&mut frame);
+        let final_step = tracer.as_ref().unwrap().steps.last().unwrap();
+        self.visualize_vertex_chain(
+            &polygon.get_vertices(final_step.hull.clone()),
+            &format!("{name}/hull_final"),
+            Some(1.0),
+            Some(hull_color),
+            Some(0.3),
+            Some(hull_color),
+            Some(200.0),
             true,
         )?;
 
