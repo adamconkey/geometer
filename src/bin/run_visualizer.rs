@@ -144,28 +144,35 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        let _ = self.visualize_vertex_chain(
+        let polygon_color = [132, 90, 109, 255];
+        let hull_color = [25, 100, 126, 255];
+
+        let mut frame: i64 = 0;
+        self.rec.set_time_sequence("frame", frame);
+
+        self.visualize_vertex_chain(
             &polygon.vertices().into_iter().cloned().collect(),
             &format!("{name}/polygon"),
+            Some(0.5),
+            Some(polygon_color),
             None,
-            None,
-            None,
-            None,
+            Some(polygon_color),
             None,
             true,
-        );
+        )?;
 
+        self.increment_frame(&mut frame);
         let hull = QuickHull.convex_hull(polygon, &mut None);
-        let _ = self.visualize_vertex_chain(
+        self.visualize_vertex_chain(
             &hull.vertices().into_iter().cloned().collect(),
             &format!("{name}/convex_hull"),
-            None,
-            None,
-            None,
-            None,
-            None,
+            Some(1.0),
+            Some(hull_color),
+            Some(0.3),
+            Some(hull_color),
+            Some(100.0),
             true,
-        );
+        )?;
 
         Ok(())
     }
