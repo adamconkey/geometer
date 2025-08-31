@@ -330,6 +330,20 @@ impl RerunVisualizer {
             }
         }
 
+        // Show the final hull
+        self.increment_frame(&mut frame);
+        let final_hull = &prev_step.expect("Prev step should exist at end").hull;
+        self.visualize_vertex_chain(
+            &polygon.get_vertices(final_hull.clone()),
+            &format!("{name}/hull_final"),
+            Some(1.0),
+            Some(hull_color),
+            Some(0.3),
+            Some(hull_color),
+            Some(200.0),
+            true,
+        )?;
+
         Ok(())
     }
 
@@ -351,8 +365,8 @@ impl RerunVisualizer {
         let polygon_color = [132, 90, 109, 255];
         let hull_color = [25, 100, 126, 255];
         let next_vertex_color = [242, 192, 53, 255];
-        let lt_color = [0, 255, 0, 255];
-        let ut_color = [255, 0, 0, 255];
+        let ut_color = [52, 163, 82, 255];
+        let lt_color = [163, 0, 0, 255];
 
         // Show nominal polygon for hull to be overlayed on
         self.visualize_vertex_chain(
@@ -435,6 +449,20 @@ impl RerunVisualizer {
                 self.clear_recursive(format!("{name}/hull_{}", i - 1))?;
             }
         }
+
+        // Show the final hull
+        self.increment_frame(&mut frame);
+        let final_step = tracer.as_ref().unwrap().steps.last().unwrap();
+        self.visualize_vertex_chain(
+            &polygon.get_vertices(final_step.hull.clone()),
+            &format!("{name}/hull_final"),
+            Some(1.0),
+            Some(hull_color),
+            Some(0.3),
+            Some(hull_color),
+            Some(200.0),
+            true,
+        )?;
 
         Ok(())
     }
