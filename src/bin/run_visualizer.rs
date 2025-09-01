@@ -320,7 +320,7 @@ impl RerunVisualizer {
         }
 
         self.increment_frame(&mut frame);
-        self.visualize_final_hull(&polygon, tracer, &name, hull_color);
+        self.visualize_final_hull(&polygon, tracer, &name, hull_color)?;
 
         Ok(())
     }
