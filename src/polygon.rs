@@ -26,6 +26,10 @@ pub struct PolygonMetadata {
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Polygon {
+    // TODO not sure if the anchor is really needed, but currently
+    // I'm facing non-determinism in boundary traversal so it's
+    // nice to be able to have a stable point to start from
+    anchor: VertexId,
     vertex_map: HashMap<VertexId, Vertex>,
     prev_map: HashMap<VertexId, VertexId>,
     next_map: HashMap<VertexId, VertexId>,
@@ -33,7 +37,14 @@ pub struct Polygon {
 
 impl Geometry for Polygon {
     fn vertices(&self) -> Vec<&Vertex> {
-        self.vertex_map.values().collect_vec()
+        let anchor = self.get_vertex(&self.anchor).unwrap();
+        let mut vertices = vec![anchor];
+        let mut current = self.get_next_vertex(&self.anchor).unwrap();
+        while current.id != self.anchor {
+            vertices.push(current);
+            current = self.get_next_vertex(&current.id).unwrap();
+        }
+        vertices
     }
 
     fn edges(&self) -> HashSet<(VertexId, VertexId)> {
@@ -88,6 +99,7 @@ impl Polygon {
         // but it was global which was harder to test with
         let num_points = coords.len();
         let vertex_ids = (0..num_points).map(VertexId::from).collect_vec();
+        let anchor = vertex_ids[0];
 
         for (i, coord) in coords.into_iter().enumerate() {
             let prev_id = vertex_ids[(i + num_points - 1) % num_points];
@@ -100,6 +112,7 @@ impl Polygon {
         }
 
         let polygon = Polygon {
+            anchor,
             vertex_map,
             prev_map,
             next_map,
@@ -115,6 +128,7 @@ impl Polygon {
 
         let num_vs = vertices.len();
         let vertex_ids = vertices.iter().map(|v| v.id).collect_vec();
+        let anchor = vertex_ids[0];
 
         for (i, v) in vertices.iter().cloned().enumerate() {
             let prev_id = vertex_ids[(i + num_vs - 1) % num_vs];
@@ -125,6 +139,7 @@ impl Polygon {
         }
 
         let polygon = Polygon {
+            anchor,
             vertex_map,
             prev_map,
             next_map,
@@ -152,7 +167,7 @@ impl Polygon {
     }
 
     pub fn vertex_ids(&self) -> Vec<VertexId> {
-        self.vertex_map.keys().cloned().collect_vec()
+        self.vertices().into_iter().map(|v| v.id).collect_vec()
     }
 
     pub fn vertex_ids_by_increasing_x(&self) -> Vec<VertexId> {
@@ -202,6 +217,11 @@ impl Polygon {
             let v_next = self.next_map.remove(&v.id).unwrap();
             self.next_map.insert(v_prev, v_next);
             self.prev_map.insert(v_next, v_prev);
+            if &self.anchor == id {
+                // Removing the current anchor so redefine it arbitrarily
+                // to be the next vertex
+                self.anchor = v_next;
+            }
             return Some(v);
         }
         None
@@ -238,7 +258,7 @@ impl Polygon {
         self.vertex_map.get_mut(id)
     }
 
-    pub fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> Option<LineSegment> {
+    pub fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> Option<LineSegment<'_>> {
         if let Some(v1) = self.get_vertex(id_1) {
             if let Some(v2) = self.get_vertex(id_2) {
                 return Some(LineSegment::from_vertices(v1, v2));
@@ -252,7 +272,7 @@ impl Polygon {
         id_1: &VertexId,
         id_2: &VertexId,
         id_3: &VertexId,
-    ) -> Option<Triangle> {
+    ) -> Option<Triangle<'_>> {
         if let Some(v1) = self.vertex_map.get(id_1) {
             if let Some(v2) = self.vertex_map.get(id_2) {
                 if let Some(v3) = self.vertex_map.get(id_3) {
@@ -263,17 +283,20 @@ impl Polygon {
         None
     }
 
+    pub fn get_vertices(&self, ids: impl IntoIterator<Item = VertexId>) -> Vec<Vertex> {
+        ids.into_iter()
+            .map(|id| self.get_vertex(&id).unwrap()) // TODO don't unwrap
+            .cloned()
+            .collect_vec()
+    }
+
     pub fn get_polygon(
         &self,
         ids: impl IntoIterator<Item = VertexId>,
         sort_by_id: bool,
         clean_collinear: bool,
     ) -> Polygon {
-        let mut vertices = ids
-            .into_iter()
-            .map(|id| self.get_vertex(&id).unwrap()) // TODO don't unwrap
-            .cloned()
-            .collect_vec();
+        let mut vertices = self.get_vertices(ids);
         if sort_by_id {
             vertices.sort_by_key(|v| v.id);
         }
