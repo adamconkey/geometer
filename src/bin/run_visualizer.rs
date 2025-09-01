@@ -5,7 +5,7 @@ use random_color::RandomColor;
 use geometer::{
     convex_hull::{
         ConvexHullComputer, ConvexHullTracer, ConvexHullTracerStep, GrahamScan, Incremental,
-        InteriorPoints, QuickHull,
+        QuickHull,
     },
     error::FileError,
     geometry::Geometry,
@@ -151,16 +151,7 @@ impl RerunVisualizer {
         let mut frame: i64 = 0;
         self.rec.set_time_sequence("frame", frame);
 
-        self.visualize_vertex_chain(
-            &polygon.vertices().into_iter().cloned().collect(),
-            &format!("{name}/polygon"),
-            Some(0.5),
-            Some(polygon_color),
-            None,
-            Some(polygon_color),
-            None,
-            true,
-        )?;
+        self.visualize_nominal_polygon(&polygon, &name, polygon_color)?;
 
         self.increment_frame(&mut frame);
         let hull = QuickHull.convex_hull(polygon, &mut None);
@@ -172,87 +163,6 @@ impl RerunVisualizer {
             Some(0.3),
             Some(hull_color),
             Some(100.0),
-            true,
-        )?;
-
-        Ok(())
-    }
-
-    pub fn visualize_convex_hull_interior_points(
-        &self,
-        polygon: &Polygon,
-        name: &String,
-    ) -> Result<(), VisualizationError> {
-        let tracer = &mut Some(ConvexHullTracer::default());
-        let _final_hull = InteriorPoints.convex_hull(polygon, tracer);
-
-        // TODO will ultimately want a config such that these could
-        // be specified in some configurable or at the very least
-        // more interpretable way? For now just hardcoding values
-        // for color scheme I think looks decent
-        let polygon_color = [132, 90, 109, 255];
-        let hull_color = [25, 100, 126, 255];
-        let check_color = [242, 192, 53, 255];
-        let interior_color = [163, 0, 0, 255];
-
-        let mut frame: i64 = 0;
-        self.rec.set_time_sequence("frame", frame);
-
-        // Show nominal polygon for hull to be overlayed on
-        self.visualize_vertex_chain(
-            &polygon.vertices().into_iter().cloned().collect(),
-            &format!("{name}/polygon"),
-            Some(0.5),
-            Some(polygon_color),
-            None,
-            Some(polygon_color),
-            Some(10.0),
-            true,
-        )?;
-
-        for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
-            // TODO this is currently just holdover from copying from graham,
-            // will want to display the test vertex along with the triangle
-            // (vertex chain) used for the test, it will turn red iff it's
-            // interior to the triangle. Will need tracer to log the next
-            // vertex being checked, and the 3 ids forming the triangle.
-            let n_id = step.next_vertex.expect("Next vertex should exist i > 0");
-            let n_v = polygon.get_vertex(&n_id).unwrap();
-            self.rec.log(
-                format!("{name}/alg_{i}/check_vertex"),
-                &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
-                    .with_radii([1.0])
-                    .with_colors([check_color])
-                    .with_draw_order(100.0),
-            )?;
-
-            self.visualize_vertex_chain(
-                &polygon.get_vertices(step.hull_tail(3)),
-                &format!("{name}/alg_{i}/check_triangle"),
-                Some(1.0),
-                Some(valid_color),
-                Some(0.3),
-                Some(valid_color),
-                Some(100.0),
-                false,
-            )?;
-
-            self.clear_recursive(format!("{name}/alg_{i}"))?;
-        }
-
-        // TODO should make this a helper function to show final hull
-        // taking just the tracer and polygon as input
-        // Show the final hull
-        self.increment_frame(&mut frame);
-        let final_step = tracer.as_ref().unwrap().steps.last().unwrap();
-        self.visualize_vertex_chain(
-            &polygon.get_vertices(final_step.hull.clone()),
-            &format!("{name}/hull_final"),
-            Some(1.0),
-            Some(hull_color),
-            Some(0.3),
-            Some(hull_color),
-            Some(200.0),
             true,
         )?;
 
@@ -281,17 +191,7 @@ impl RerunVisualizer {
         let mut frame: i64 = 0;
         self.rec.set_time_sequence("frame", frame);
 
-        // Show nominal polygon for hull to be overlayed on
-        self.visualize_vertex_chain(
-            &polygon.vertices().into_iter().cloned().collect(),
-            &format!("{name}/polygon"),
-            Some(0.5),
-            Some(polygon_color),
-            None,
-            Some(polygon_color),
-            Some(10.0),
-            true,
-        )?;
+        self.visualize_nominal_polygon(&polygon, &name, polygon_color)?;
 
         // Show initial vertex establishing min angle order
         let id_0 = polygon.vertex_ids()[0];
@@ -419,19 +319,8 @@ impl RerunVisualizer {
             }
         }
 
-        // Show the final hull
         self.increment_frame(&mut frame);
-        let final_hull = &prev_step.expect("Prev step should exist at end").hull;
-        self.visualize_vertex_chain(
-            &polygon.get_vertices(final_hull.clone()),
-            &format!("{name}/hull_final"),
-            Some(1.0),
-            Some(hull_color),
-            Some(0.3),
-            Some(hull_color),
-            Some(200.0),
-            true,
-        )?;
+        self.visualize_final_hull(&polygon, tracer, &name, hull_color);
 
         Ok(())
     }
@@ -457,17 +346,7 @@ impl RerunVisualizer {
         let ut_color = [52, 163, 82, 255];
         let lt_color = [163, 0, 0, 255];
 
-        // Show nominal polygon for hull to be overlayed on
-        self.visualize_vertex_chain(
-            &polygon.vertices().into_iter().cloned().collect(),
-            &format!("{name}/polygon"),
-            Some(0.5),
-            Some(polygon_color),
-            None,
-            Some(polygon_color),
-            Some(10.0),
-            true,
-        )?;
+        self.visualize_nominal_polygon(&polygon, &name, polygon_color)?;
 
         // For each step will show upper/lower tangent vertex selection and
         // how they connect to the current hull, followed by the resulting
@@ -539,8 +418,37 @@ impl RerunVisualizer {
             }
         }
 
-        // Show the final hull
         self.increment_frame(&mut frame);
+        self.visualize_final_hull(&polygon, tracer, &name, hull_color)?;
+
+        Ok(())
+    }
+
+    fn visualize_nominal_polygon(
+        &self,
+        polygon: &Polygon,
+        name: &String,
+        polygon_color: [u8; 4],
+    ) -> Result<(), VisualizationError> {
+        self.visualize_vertex_chain(
+            &polygon.vertices().into_iter().cloned().collect(),
+            &format!("{name}/polygon"),
+            Some(0.5),
+            Some(polygon_color),
+            None,
+            Some(polygon_color),
+            Some(10.0),
+            true,
+        )
+    }
+
+    fn visualize_final_hull(
+        &self,
+        polygon: &Polygon,
+        tracer: &mut Option<ConvexHullTracer>,
+        name: &String,
+        hull_color: [u8; 4],
+    ) -> Result<(), VisualizationError> {
         let final_step = tracer.as_ref().unwrap().steps.last().unwrap();
         self.visualize_vertex_chain(
             &polygon.get_vertices(final_step.hull.clone()),
@@ -551,9 +459,7 @@ impl RerunVisualizer {
             Some(hull_color),
             Some(200.0),
             true,
-        )?;
-
-        Ok(())
+        )
     }
 
     fn increment_frame(&self, frame: &mut i64) {
