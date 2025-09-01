@@ -53,7 +53,7 @@ impl<'a> LineSegment<'a> {
         LineSegment { v1, v2 }
     }
 
-    pub fn reverse(&self) -> LineSegment {
+    pub fn reverse(&self) -> LineSegment<'_> {
         LineSegment::from_vertices(self.v2, self.v1)
     }
 

@@ -73,7 +73,7 @@ impl<'a> Triangle<'a> {
         Triangle::from_vertices(self.v1, self.v3, self.v2)
     }
 
-    pub fn to_line_segments(&self) -> Vec<LineSegment> {
+    pub fn to_line_segments(&self) -> Vec<LineSegment<'_>> {
         let ls1 = LineSegment::from_vertices(self.v1, self.v2);
         let ls2 = LineSegment::from_vertices(self.v2, self.v3);
         let ls3 = LineSegment::from_vertices(self.v3, self.v1);

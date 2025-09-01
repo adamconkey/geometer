@@ -258,7 +258,7 @@ impl Polygon {
         self.vertex_map.get_mut(id)
     }
 
-    pub fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> Option<LineSegment> {
+    pub fn get_line_segment(&self, id_1: &VertexId, id_2: &VertexId) -> Option<LineSegment<'_>> {
         if let Some(v1) = self.get_vertex(id_1) {
             if let Some(v2) = self.get_vertex(id_2) {
                 return Some(LineSegment::from_vertices(v1, v2));
@@ -272,7 +272,7 @@ impl Polygon {
         id_1: &VertexId,
         id_2: &VertexId,
         id_3: &VertexId,
-    ) -> Option<Triangle> {
+    ) -> Option<Triangle<'_>> {
         if let Some(v1) = self.vertex_map.get(id_1) {
             if let Some(v2) = self.vertex_map.get(id_2) {
                 if let Some(v3) = self.vertex_map.get(id_3) {
