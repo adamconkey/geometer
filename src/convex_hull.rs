@@ -220,9 +220,10 @@ impl ConvexHullComputer for GrahamScan {
         stack.push(vertices.remove(0).id);
 
         if let Some(t) = tracer.as_mut() {
-            let mut step = ConvexHullTracerStep::default();
-            step.hull = stack.clone();
-            t.steps.push(step);
+            t.steps.push(ConvexHullTracerStep {
+                hull: stack.clone(),
+                ..Default::default()
+            });
         }
 
         for v in vertices.iter() {
@@ -242,10 +243,11 @@ impl ConvexHullComputer for GrahamScan {
                 }
 
                 if let Some(t) = tracer.as_mut() {
-                    let mut step = ConvexHullTracerStep::default();
-                    step.hull = stack.clone();
-                    step.next_vertex = Some(v.id);
-                    t.steps.push(step);
+                    t.steps.push(ConvexHullTracerStep {
+                        hull: stack.clone(),
+                        next_vertex: Some(v.id),
+                        ..Default::default()
+                    });
                 }
 
                 if stack[stack.len() - 1] == v.id {
@@ -526,9 +528,10 @@ impl ConvexHullComputer for Incremental {
 
         let (mut hull, ids) = self.init_hull_three_leftmost(&polygon);
         if let Some(t) = tracer.as_mut() {
-            let mut step = ConvexHullTracerStep::default();
-            step.hull = hull.vertex_ids();
-            t.steps.push(step);
+            t.steps.push(ConvexHullTracerStep {
+                hull: hull.vertex_ids(),
+                ..Default::default()
+            });
         }
 
         for id in ids.into_iter() {
@@ -539,12 +542,12 @@ impl ConvexHullComputer for Incremental {
             hull = polygon.get_polygon(new_hull_ids, false, true);
 
             if let Some(t) = tracer.as_mut() {
-                let mut step = ConvexHullTracerStep::default();
-                step.next_vertex = Some(id);
-                step.upper_tangent_vertex = Some(ut_v);
-                step.lower_tangent_vertex = Some(lt_v);
-                step.hull = hull.vertex_ids();
-                t.steps.push(step);
+                t.steps.push(ConvexHullTracerStep {
+                    next_vertex: Some(id),
+                    upper_tangent_vertex: Some(ut_v),
+                    lower_tangent_vertex: Some(lt_v),
+                    hull: hull.vertex_ids(),
+                });
             }
         }
         hull

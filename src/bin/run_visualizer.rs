@@ -68,9 +68,10 @@ impl RerunVisualizer {
         Ok(RerunVisualizer { rec })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn visualize_vertex_chain(
         &self,
-        vertices: &Vec<Vertex>,
+        vertices: &[Vertex],
         name: &String,
         vertex_radius: Option<f32>,
         vertex_color: Option<[u8; 4]>,
@@ -123,7 +124,7 @@ impl RerunVisualizer {
 
         let polygon_color = [132, 90, 109, 255];
         self.visualize_vertex_chain(
-            &polygon.vertices().into_iter().cloned().collect(),
+            &polygon.vertices().into_iter().cloned().collect_vec(),
             &name,
             Some(0.5),
             Some(polygon_color),
@@ -151,12 +152,12 @@ impl RerunVisualizer {
         let mut frame: i64 = 0;
         self.rec.set_time_sequence("frame", frame);
 
-        self.visualize_nominal_polygon(&polygon, &name, polygon_color)?;
+        self.visualize_nominal_polygon(polygon, name, polygon_color)?;
 
         self.increment_frame(&mut frame);
         let hull = QuickHull.convex_hull(polygon, &mut None);
         self.visualize_vertex_chain(
-            &hull.vertices().into_iter().cloned().collect(),
+            &hull.vertices().into_iter().cloned().collect_vec(),
             &format!("{name}/convex_hull"),
             Some(1.0),
             Some(hull_color),
@@ -191,7 +192,7 @@ impl RerunVisualizer {
         let mut frame: i64 = 0;
         self.rec.set_time_sequence("frame", frame);
 
-        self.visualize_nominal_polygon(&polygon, &name, polygon_color)?;
+        self.visualize_nominal_polygon(polygon, name, polygon_color)?;
 
         // Show initial vertex establishing min angle order
         let id_0 = polygon.vertex_ids()[0];
@@ -320,7 +321,7 @@ impl RerunVisualizer {
         }
 
         self.increment_frame(&mut frame);
-        self.visualize_final_hull(&polygon, tracer, &name, hull_color)?;
+        self.visualize_final_hull(polygon, tracer, name, hull_color)?;
 
         Ok(())
     }
@@ -346,7 +347,7 @@ impl RerunVisualizer {
         let ut_color = [52, 163, 82, 255];
         let lt_color = [163, 0, 0, 255];
 
-        self.visualize_nominal_polygon(&polygon, &name, polygon_color)?;
+        self.visualize_nominal_polygon(polygon, name, polygon_color)?;
 
         // For each step will show upper/lower tangent vertex selection and
         // how they connect to the current hull, followed by the resulting
@@ -419,7 +420,7 @@ impl RerunVisualizer {
         }
 
         self.increment_frame(&mut frame);
-        self.visualize_final_hull(&polygon, tracer, &name, hull_color)?;
+        self.visualize_final_hull(polygon, tracer, name, hull_color)?;
 
         Ok(())
     }
@@ -431,7 +432,7 @@ impl RerunVisualizer {
         polygon_color: [u8; 4],
     ) -> Result<(), VisualizationError> {
         self.visualize_vertex_chain(
-            &polygon.vertices().into_iter().cloned().collect(),
+            &polygon.vertices().into_iter().cloned().collect_vec(),
             &format!("{name}/polygon"),
             Some(0.5),
             Some(polygon_color),

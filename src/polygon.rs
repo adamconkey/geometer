@@ -99,7 +99,7 @@ impl Polygon {
         // but it was global which was harder to test with
         let num_points = coords.len();
         let vertex_ids = (0..num_points).map(VertexId::from).collect_vec();
-        let anchor = vertex_ids[0].clone();
+        let anchor = vertex_ids[0];
 
         for (i, coord) in coords.into_iter().enumerate() {
             let prev_id = vertex_ids[(i + num_points - 1) % num_points];
@@ -128,7 +128,7 @@ impl Polygon {
 
         let num_vs = vertices.len();
         let vertex_ids = vertices.iter().map(|v| v.id).collect_vec();
-        let anchor = vertex_ids[0].clone();
+        let anchor = vertex_ids[0];
 
         for (i, v) in vertices.iter().cloned().enumerate() {
             let prev_id = vertex_ids[(i + num_vs - 1) % num_vs];
