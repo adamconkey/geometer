@@ -30,11 +30,23 @@ impl fmt::Debug for VertexId {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Deserialize, PartialEq, Serialize)]
 pub struct Vertex {
     pub id: VertexId,
     pub x: f64,
     pub y: f64,
+}
+
+impl fmt::Display for Vertex {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{ id: {}, x: {}, y: {} }}", self.id, self.x, self.y)
+    }
+}
+
+impl fmt::Debug for Vertex {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{ id: {}, x: {}, y: {} }}", self.id, self.x, self.y)
+    }
 }
 
 impl Vertex {

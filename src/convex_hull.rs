@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
 use std::collections::HashSet;
 use std::fmt;
@@ -485,13 +486,23 @@ impl Incremental {
     }
 
     fn upper_tangent_vertex(&self, hull: &Polygon, v: VertexId, polygon: &Polygon) -> VertexId {
-        let mut hull_ut_v = hull.highest_rightmost_vertex().id;
-        let mut ut = polygon.get_line_segment(&hull_ut_v, &v).unwrap();
-        while !ut.is_upper_tangent(&hull_ut_v, &hull) {
-            hull_ut_v = hull.next_vertex_id(&hull_ut_v).unwrap(); // Move up ccw
-            ut = polygon.get_line_segment(&hull_ut_v, &v).unwrap();
+        let mut ut_v_id = hull.highest_rightmost_vertex().id;
+        let mut ut = polygon.get_line_segment(&ut_v_id, &v).unwrap();
+
+        trace!(
+            v:?=polygon.get_vertex(&ut_v_id).unwrap(), ut:?;
+            "Starting upper tangent vertex search"
+        );
+
+        let mut count = 1;
+        while !ut.is_upper_tangent(&ut_v_id, &hull) {
+            ut_v_id = hull.next_vertex_id(&ut_v_id).unwrap(); // Move up ccw
+            ut = polygon.get_line_segment(&ut_v_id, &v).unwrap();
+            trace!(v:?=polygon.get_vertex(&ut_v_id).unwrap(), ut:?; "Step {count}");
+            count += 1;
         }
-        hull_ut_v
+
+        ut_v_id
     }
 
     fn lower_tangent_vertex(&self, hull: &Polygon, v: VertexId, polygon: &Polygon) -> VertexId {
@@ -558,6 +569,7 @@ impl ConvexHullComputer for Incremental {
 mod tests {
     use super::*;
     use crate::test_util::*;
+    use env_logger;
     use rstest::rstest;
     use rstest_reuse::{self, *};
 
@@ -576,6 +588,7 @@ mod tests {
         )]
         computer: impl ConvexHullComputer,
     ) {
+        let _ = env_logger::builder().is_test(true).try_init();
         let hull = computer.convex_hull(&case.polygon, &mut None);
         let hull_ids = hull.vertex_ids().into_iter().sorted().collect_vec();
         assert_eq!(hull_ids, case.metadata.extreme_points);

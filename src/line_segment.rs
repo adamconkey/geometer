@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::fmt;
 
 use crate::{
     geometry::Geometry,
@@ -7,10 +8,22 @@ use crate::{
     vertex::{Vertex, VertexId},
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct LineSegment<'a> {
     pub v1: &'a Vertex,
     pub v2: &'a Vertex,
+}
+
+impl fmt::Display for LineSegment<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} -- {}", self.v1, self.v2)
+    }
+}
+
+impl fmt::Debug for LineSegment<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} -- {}", self.v1, self.v2)
+    }
 }
 
 impl Geometry for LineSegment<'_> {
