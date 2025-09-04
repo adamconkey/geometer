@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use log::{debug, info, trace};
+use log::trace;
 use ordered_float::OrderedFloat as OF;
 use std::collections::HashSet;
 use std::fmt;
