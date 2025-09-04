@@ -494,25 +494,35 @@ impl Incremental {
             "Starting upper tangent vertex search"
         );
 
-        let mut count = 1;
+        let mut step = 1;
         while !ut.is_upper_tangent(&ut_v_id, &hull) {
             ut_v_id = hull.next_vertex_id(&ut_v_id).unwrap(); // Move up ccw
             ut = polygon.get_line_segment(&ut_v_id, &v).unwrap();
-            trace!(v:?=polygon.get_vertex(&ut_v_id).unwrap(), ut:?; "Step {count}");
-            count += 1;
+            trace!(v:?=polygon.get_vertex(&ut_v_id).unwrap(), ut:?; "Step {step}");
+            step += 1;
         }
 
         ut_v_id
     }
 
     fn lower_tangent_vertex(&self, hull: &Polygon, v: VertexId, polygon: &Polygon) -> VertexId {
-        let mut hull_lt_v = hull.lowest_rightmost_vertex().id;
-        let mut lt = polygon.get_line_segment(&hull_lt_v, &v).unwrap();
-        while !lt.is_lower_tangent(&hull_lt_v, &hull) {
-            hull_lt_v = hull.prev_vertex_id(&hull_lt_v).unwrap(); // Move down cw
-            lt = polygon.get_line_segment(&hull_lt_v, &v).unwrap();
+        let mut lt_v_id = hull.lowest_rightmost_vertex().id;
+        let mut lt = polygon.get_line_segment(&lt_v_id, &v).unwrap();
+
+        trace!(
+            v:?=polygon.get_vertex(&lt_v_id).unwrap(), lt:?;
+            "Starting lower tangent vertex search"
+        );
+
+        let mut step = 1;
+        while !lt.is_lower_tangent(&lt_v_id, &hull) {
+            lt_v_id = hull.prev_vertex_id(&lt_v_id).unwrap(); // Move down cw
+            lt = polygon.get_line_segment(&lt_v_id, &v).unwrap();
+            trace!(v:?=polygon.get_vertex(&lt_v_id).unwrap(), lt:?; "Step {step}");
+            step += 1;
         }
-        hull_lt_v
+
+        lt_v_id
     }
 
     fn extract_boundary(
