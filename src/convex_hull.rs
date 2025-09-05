@@ -534,9 +534,13 @@ impl Incremental {
     ) -> Vec<VertexId> {
         let mut boundary = vec![new_v];
         let mut v = hull_ut_v;
+
+        trace!(new_v:?, hull_ut_v:?, hull_lt_v:?; "Extracting boundary");
+
         while v != hull_lt_v {
             boundary.push(v);
             v = hull.next_vertex_id(&v).unwrap();
+            trace!(v:?; "Boundary vertex");
         }
         boundary.push(hull_lt_v);
         boundary
