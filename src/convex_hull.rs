@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use log::trace;
+use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
 use std::collections::HashSet;
 use std::fmt;
@@ -470,19 +470,20 @@ pub struct Incremental;
 impl Incremental {
     fn init_hull_three_leftmost(&self, polygon: &Polygon) -> (Polygon, Vec<VertexId>) {
         // Initialize hull with three leftmost vertices
-        // (accomplished by split_off call)
         let mut hull_ids = polygon.vertex_ids_by_increasing_x();
-        let ids = hull_ids.split_off(3);
+        let other_ids = hull_ids.split_off(3);
         if polygon
             .get_triangle(&hull_ids[0], &hull_ids[1], &hull_ids[2])
             .unwrap()
             .area()
             < 0.0
         {
+            debug!("Reversing init vertices to have valid CCW area");
             hull_ids.reverse();
         }
+        debug!("Initial hull (three leftmost vertices): {hull_ids:?}");
         let hull = polygon.get_polygon(hull_ids, false, false);
-        (hull, ids)
+        (hull, other_ids)
     }
 
     fn upper_tangent_vertex(&self, hull: &Polygon, v: VertexId, polygon: &Polygon) -> VertexId {
@@ -549,8 +550,9 @@ impl Incremental {
 
 impl ConvexHullComputer for Incremental {
     fn convex_hull(&self, polygon: &Polygon, tracer: &mut Option<ConvexHullTracer>) -> Polygon {
-        let polygon = polygon.clone_clean_collinear();
+        info!("Computing convex hull with the Incremental algorithm");
 
+        let polygon = polygon.clone_clean_collinear();
         let (mut hull, ids) = self.init_hull_three_leftmost(&polygon);
         if let Some(t) = tracer.as_mut() {
             t.steps.push(ConvexHullTracerStep {
@@ -560,10 +562,13 @@ impl ConvexHullComputer for Incremental {
         }
 
         for id in ids.into_iter() {
+            debug!("Current ID: {id}");
+
             let ut_v = self.upper_tangent_vertex(&hull, id, &polygon);
             let lt_v = self.lower_tangent_vertex(&hull, id, &polygon);
             let new_hull_ids = self.extract_boundary(hull, id, ut_v, lt_v);
 
+            debug!("Current hull: {new_hull_ids:?}");
             hull = polygon.get_polygon(new_hull_ids, false, true);
 
             if let Some(t) = tracer.as_mut() {
@@ -575,6 +580,8 @@ impl ConvexHullComputer for Incremental {
                 });
             }
         }
+
+        info!("Computed convex hull with {} vertices", hull.num_vertices());
         hull
     }
 }
