@@ -423,9 +423,12 @@ impl DivideConquer {
 
 impl ConvexHullComputer for DivideConquer {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+        info!("Computing convex hull with the Divide and Conquer algorithm");
+
         if polygon.num_vertices() == 3 {
             return polygon.clone();
         }
+
         let mut split_stack = Vec::new();
         let mut merge_stack = Vec::new();
 
@@ -460,6 +463,7 @@ impl ConvexHullComputer for DivideConquer {
         let hull_ids = merge_stack
             .pop()
             .expect("Merge stack should have exactly 1 element");
+        info!("Computed convex hull with {} vertices", hull_ids.len());
         polygon.get_polygon(hull_ids, true, true)
     }
 }
