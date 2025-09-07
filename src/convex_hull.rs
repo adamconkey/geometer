@@ -275,16 +275,24 @@ impl DivideConquer {
         let mut a = left.lowest_rightmost_vertex().id;
         let mut b = right.lowest_leftmost_vertex().id;
         let mut lt = polygon.get_line_segment(&a, &b).unwrap();
+        trace!(a_0:?=a, b_0:?=b, lt_0:?=lt; "Searching for lower tangent vertices");
         while !lt.is_lower_tangent(&a, &left) || !lt.is_lower_tangent(&b, &right) {
+            trace!("Moving left vertex down CW until lower tangent");
             while !lt.is_lower_tangent(&a, &left) {
                 a = left.prev_vertex_id(&a).unwrap(); // Move down cw
                 lt = polygon.get_line_segment(&a, &b).unwrap();
+                trace!(a:?, lt:?; "Step");
             }
+            trace!("Left lower tangent satisfied");
+            trace!("Moving right vertex up CCW until lower tangent");
             while !lt.is_lower_tangent(&b, &right) {
                 b = right.next_vertex_id(&b).unwrap(); // Move down ccw
                 lt = polygon.get_line_segment(&a, &b).unwrap();
+                trace!(b:?, lt:?; "Step");
             }
+            trace!("Right lower tangent satisfied");
         }
+        trace!("Lower tangent vertices: {a}, {b}");
         (a, b)
     }
 
@@ -297,16 +305,24 @@ impl DivideConquer {
         let mut a = left.highest_rightmost_vertex().id;
         let mut b = right.highest_leftmost_vertex().id;
         let mut ut = polygon.get_line_segment(&a, &b).unwrap();
+        trace!(a_0:?=a, b_0:?=b, ut_0:?=ut; "Searching for upper tangent vertices");
         while !ut.is_upper_tangent(&a, &left) || !ut.is_upper_tangent(&b, &right) {
+            trace!("Moving left vertex up CCW until upper tangent");
             while !ut.is_upper_tangent(&a, &left) {
                 a = left.next_vertex_id(&a).unwrap(); // Move up ccw
                 ut = polygon.get_line_segment(&a, &b).unwrap();
+                trace!(a:?, ut:?; "Step");
             }
+            trace!("Left upper tangent satisfied");
+            trace!("Moving right vertex down CW until upper tangent");
             while !ut.is_upper_tangent(&b, &right) {
                 b = right.prev_vertex_id(&b).unwrap(); // Move down cw
                 ut = polygon.get_line_segment(&a, &b).unwrap();
+                trace!(b:?, ut:?; "Step");
             }
+            trace!("Right upper tangent satisfied");
         }
+        trace!("Upper tangent vertices: {a}, {b}");
         (a, b)
     }
 
@@ -319,24 +335,33 @@ impl DivideConquer {
         ut_a: VertexId,
         ut_b: VertexId,
     ) -> Vec<VertexId> {
+        trace!(lt_a:?, lt_b:?, ut_a:?, ut_b:?; "Extracting boundary");
+
         // Combine into one polygon by connecting the vertex chains
         // of B -> ut -> A -> lt excluding vertices that do not
         // exist along the outer boundary
         let mut boundary = Vec::new();
         // Extract vertices from chain on B
+        trace!("Starting at lower tangent vertex on B: {lt_b}");
         let mut v = lt_b;
         while v != ut_b {
             boundary.push(v);
+            trace!("Boundary vertex: {v}");
             v = b.next_vertex_id(&v).unwrap();
         }
+        trace!("Reached upper tangent vertex on B: {ut_b}");
         boundary.push(ut_b);
         // Extract vertices from chain on A
+        trace!("Adding upper tangent vertex on A: {ut_a}");
         v = ut_a;
         while v != lt_a {
             boundary.push(v);
+            trace!("Boundary vertex: {v}");
             v = a.next_vertex_id(&v).unwrap();
         }
         boundary.push(lt_a);
+        trace!("Reached lower tangent vertex on A: {lt_a}");
+        trace!("Final boundary: {boundary:?}");
         boundary
     }
 
@@ -370,6 +395,8 @@ impl DivideConquer {
         mut right_ids: Vec<VertexId>,
         polygon: &Polygon,
     ) -> Vec<VertexId> {
+        trace!("Merging {left_ids:?} and {right_ids:?}");
+
         let merged_ids;
 
         if right_ids.len() == 3 {
@@ -407,6 +434,7 @@ impl DivideConquer {
                 .get_line_segment(&left_ids[0], &left_ids[1])
                 .unwrap();
             if left.collinear_with(&right) {
+                trace!("Merging as collinear line segments");
                 merged_ids = vec![
                     left.lowest_leftmost_vertex().id,
                     right.highest_rightmost_vertex().id,
@@ -417,13 +445,14 @@ impl DivideConquer {
         }
         // Could be 2 if we tried to merge 2 collinear linear segments
         assert!(merged_ids.len() >= 2);
+        trace!("Merged: {merged_ids:?}");
         merged_ids
     }
 }
 
 impl ConvexHullComputer for DivideConquer {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
-        info!("Computing convex hull with the Divide and Conquer algorithm");
+        info!("Computing convex hull with the DivideConquer algorithm");
 
         if polygon.num_vertices() == 3 {
             return polygon.clone();
@@ -433,6 +462,7 @@ impl ConvexHullComputer for DivideConquer {
         let mut merge_stack = Vec::new();
 
         let ids = polygon.vertex_ids_by_increasing_x();
+        trace!("Push split stack: {ids:?}");
         split_stack.push(ids);
 
         while let Some(mut left_ids) = split_stack.pop() {
@@ -441,13 +471,19 @@ impl ConvexHullComputer for DivideConquer {
 
             if left_ids.len() <= 3 && right_ids.len() <= 3 {
                 // Keep leftmost towards bottom of merge stack
+                trace!("Push merge stack: {left_ids:?}");
+                trace!("Push merge stack: {right_ids:?}");
                 merge_stack.push(left_ids);
                 merge_stack.push(right_ids);
             } else if left_ids.len() <= 3 {
+                trace!("Push merge stack: {left_ids:?}");
+                trace!("Push split stack: {right_ids:?}");
                 merge_stack.push(left_ids);
                 split_stack.push(right_ids);
             } else {
                 // Keep rightmost towards bottom of split stack
+                trace!("Push split stack: {left_ids:?}");
+                trace!("Push split stack: {right_ids:?}");
                 split_stack.push(right_ids);
                 split_stack.push(left_ids);
             }
@@ -456,6 +492,7 @@ impl ConvexHullComputer for DivideConquer {
                 right_ids = merge_stack.pop().unwrap();
                 left_ids = merge_stack.pop().unwrap();
                 let merged_ids = self.merge(left_ids, right_ids, polygon);
+                trace!("Push merge stack: {merged_ids:?}");
                 merge_stack.push(merged_ids);
             }
         }
