@@ -221,6 +221,8 @@ pub struct GrahamScan;
 
 impl ConvexHullComputer for GrahamScan {
     fn convex_hull(&self, polygon: &Polygon, tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+        info!("Computing convex hull with the GrahamScan algorithm");
+
         let mut stack = Vec::new();
         let mut vertices = polygon.min_angle_sorted_vertices(None, None);
 
@@ -229,6 +231,7 @@ impl ConvexHullComputer for GrahamScan {
         // to be extreme based on vertices being sorted/cleaned
         stack.push(polygon.rightmost_lowest_vertex().id);
         stack.push(vertices.remove(0).id);
+        debug!("Init stack: {stack:?}");
 
         if let Some(t) = tracer.as_mut() {
             t.steps.push(ConvexHullTracerStep {
@@ -238,6 +241,7 @@ impl ConvexHullComputer for GrahamScan {
         }
 
         for v in vertices.iter() {
+            debug!("Current vertex: {}", v.id);
             // If current vertex is a left turn from current segment off
             // top of stack, add vertex to incremental hull on stack and
             // continue to next vertex. Otherwise the current hull on
@@ -248,8 +252,10 @@ impl ConvexHullComputer for GrahamScan {
                 let v_prev = stack[stack.len() - 2];
                 let ls = polygon.get_line_segment(&v_prev, &v_top).unwrap();
                 if v.left(&ls) {
+                    debug!(v:?, ls:?; "Valid, push to stack");
                     stack.push(v.id);
                 } else {
+                    debug!(v:?, ls:?; "Invalid, pop from stack");
                     stack.pop();
                 }
 
@@ -262,12 +268,14 @@ impl ConvexHullComputer for GrahamScan {
                 }
 
                 if stack[stack.len() - 1] == v.id {
+                    debug!("Current hull is valid, continue to next vertex");
                     break;
                 }
             }
         }
 
         // The stack at the end has all hull vertices
+        info!("Computed convex hull with {} vertices", stack.len());
         polygon.get_polygon(stack, true, false)
     }
 }
