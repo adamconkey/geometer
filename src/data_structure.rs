@@ -1,5 +1,8 @@
-use log::trace;
+use log::{debug, trace};
+use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
+
+use crate::vertex::VertexId;
 
 pub struct Stack<T> {
     vec: Vec<T>,
@@ -17,6 +20,15 @@ impl<T> Deref for Stack<T> {
 impl<T> DerefMut for Stack<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.vec
+    }
+}
+
+impl<T> IntoIterator for Stack<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.vec.into_iter()
     }
 }
 
@@ -60,5 +72,45 @@ impl<T: std::fmt::Debug> Stack<T> {
             }
         }
         element
+    }
+}
+
+pub struct HullSet {
+    hull: HashSet<VertexId>,
+}
+
+impl Deref for HullSet {
+    type Target = HashSet<VertexId>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.hull
+    }
+}
+
+impl DerefMut for HullSet {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.hull
+    }
+}
+
+impl IntoIterator for HullSet {
+    type Item = VertexId;
+    type IntoIter = std::collections::hash_set::IntoIter<VertexId>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.hull.into_iter()
+    }
+}
+
+impl HullSet {
+    pub fn new() -> Self {
+        Self {
+            hull: HashSet::new(),
+        }
+    }
+
+    pub fn insert(&mut self, id: VertexId) {
+        debug!("Adding vertex to hull: {id}");
+        self.hull.insert(id);
     }
 }
