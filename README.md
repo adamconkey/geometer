@@ -82,8 +82,8 @@ cargo bench --bench convex_hull
 
 Here is a visualization comparing the various implementations:
 
-![Screen Shot 2025-03-09 at 9 56 02 PM](https://github.com/user-attachments/assets/7181b26b-a220-4710-b7c5-f7ca5794f8a5)
+<img width="941" height="529" alt="Screen Shot 2025-09-14 at 2 10 45 PM" src="https://github.com/user-attachments/assets/eccbd34c-b29f-467a-8f5e-b8df1209db70" />
 
-This is obviously not super informative, but exists more as a starting infrastructure for benchmarking than a meaningful comparison at this stage.
+You'll notice it's a little noisy as it goes across, this is in part due to the benchmark inputs not being particularly well controlled and they are just polygons I happen to have defined. I hope to improve this at some point.
 
 ---
