@@ -55,77 +55,6 @@ pub trait ConvexHullComputer {
 }
 
 #[derive(Default)]
-pub struct InteriorPoints;
-
-impl InteriorPoints {
-    pub fn interior_points(&self, polygon: &Polygon) -> HashSet<VertexId> {
-        let mut interior_points = HashSet::new();
-        let ids = polygon.vertex_ids();
-
-        // Don't be fooled by the runtime here, it's iterating over all
-        // permutations, which is n! / (n-4)! = n * (n-1) * (n-2) * (n-3),
-        // so it's still O(n^4), just more compact than 4 nested for-loops.
-        for perm in ids.into_iter().permutations(4) {
-            let v = polygon.get_vertex(&perm[0]).unwrap();
-            let triangle = polygon.get_triangle(&perm[1], &perm[2], &perm[3]).unwrap();
-            if triangle.contains(v) {
-                interior_points.insert(perm[0]);
-            }
-        }
-        interior_points
-    }
-}
-
-impl ConvexHullComputer for InteriorPoints {
-    fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
-        let interior_ids = self.interior_points(polygon);
-        let all_ids = HashSet::from_iter(polygon.vertex_ids());
-        let hull_ids = &all_ids - &interior_ids;
-        polygon.get_polygon(hull_ids, true, false)
-    }
-}
-
-#[derive(Default)]
-pub struct ExtremeEdges;
-
-impl ExtremeEdges {
-    pub fn extreme_edges(&self, polygon: &Polygon) -> Vec<(VertexId, VertexId)> {
-        // NOTE: This is O(n^3)
-        let mut extreme_edges = Vec::new();
-        let ids = polygon.vertex_ids();
-
-        for perm in ids.iter().permutations(2) {
-            let ls = polygon.get_line_segment(perm[0], perm[1]).unwrap();
-            let mut is_extreme = true;
-            for id3 in ids.iter().filter(|id| !perm.contains(id)) {
-                let v = polygon.get_vertex(id3).unwrap();
-                if !v.left_on(&ls) {
-                    is_extreme = false;
-                    break;
-                }
-            }
-            if is_extreme {
-                extreme_edges.push((*perm[0], *perm[1]));
-            }
-        }
-
-        extreme_edges
-    }
-}
-
-impl ConvexHullComputer for ExtremeEdges {
-    fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
-        let hull_ids = self
-            .extreme_edges(polygon)
-            .into_iter()
-            .map(|(id1, _)| id1)
-            .sorted()
-            .dedup();
-        polygon.get_polygon(hull_ids, false, true)
-    }
-}
-
-#[derive(Default)]
 pub struct GiftWrapping;
 
 impl ConvexHullComputer for GiftWrapping {
@@ -665,16 +594,7 @@ mod tests {
     #[apply(convex_hull_cases)]
     fn test_convex_hull(
         #[case] case: PolygonTestCase,
-        #[values(
-            DivideConquer,
-            ExtremeEdges,
-            GiftWrapping,
-            GrahamScan,
-            Incremental,
-            // Can enable this but it's slow AF for large number of vertices
-            // InteriorPoints,
-            QuickHull
-        )]
+        #[values(DivideConquer, GiftWrapping, GrahamScan, Incremental, QuickHull)]
         computer: impl ConvexHullComputer,
     ) {
         let _ = env_logger::builder().is_test(true).try_init();
