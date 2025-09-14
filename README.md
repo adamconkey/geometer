@@ -19,9 +19,7 @@ Currently the algorithms are implemented following Joseph O'Rourke's [Computatio
 - Triangulation - $O(n^2)$
 - Rotation and translation
 - Bounding box
-- Convex hull (various implementations for benchmarking)
-    - From interior points $O(n^4)$
-    - From extreme edges $O(n^3)$
+- Convex hull
     - GiftWrapping $O(nh)$ for $h$ hull edges
     - QuickHull $O(nh)$ for $h$ hull edges
     - GrahamScan $O(n \log n)$
