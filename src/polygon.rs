@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use log::debug;
 use ordered_float::OrderedFloat as OF;
 use serde::Deserialize;
 use std::cmp::Reverse;
@@ -247,6 +248,7 @@ impl Polygon {
         // about this
         let mut collinear = self.get_collinear();
         while !collinear.is_empty() {
+            debug!("Removing collinear vertices: {collinear:?}");
             for id in collinear.iter() {
                 self.remove_vertex(id);
             }

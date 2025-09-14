@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
 use std::collections::HashSet;
 use std::fmt;
@@ -129,9 +130,13 @@ pub struct GiftWrapping;
 
 impl ConvexHullComputer for GiftWrapping {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+        info!("Computing convex hull with the GiftWrapping algorithm");
+
         let mut hull_ids = HashSet::new();
         let v0 = polygon.rightmost_lowest_vertex();
         hull_ids.insert(v0.id);
+        debug!("Init vertex: {}", v0.id);
+
         // Perform gift-wrapping, using the previous hull edge as a vector to
         // find the point with the least CCW angle w.r.t. the vector. Connect
         // that point to the current terminal vertex to form the newest hull
@@ -139,11 +144,16 @@ impl ConvexHullComputer for GiftWrapping {
         let mut v = v0;
         let mut e = None;
         while v.id != v0.id || e.is_none() {
+            debug!(v:?=v.id, e:?; "Computing min angle vertex");
             let v_min_angle = polygon.min_angle_sorted_vertices(Some(v), e)[0];
+            debug!("Min angle vertex: {}", v_min_angle.id);
             e = polygon.get_line_segment(&v.id, &v_min_angle.id);
             v = v_min_angle;
+            debug!("Adding to hull: {}", v.id);
             hull_ids.insert(v.id);
         }
+
+        info!("Computed convex hull with {} vertices", hull_ids.len());
         polygon.get_polygon(hull_ids, true, false)
     }
 }
@@ -153,6 +163,8 @@ pub struct QuickHull;
 
 impl ConvexHullComputer for QuickHull {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+        info!("Computing convex hull with the QuickHull algorithm");
+
         let mut hull_ids = HashSet::new();
         let mut stack = Vec::new();
 
@@ -166,13 +178,16 @@ impl ConvexHullComputer for QuickHull {
 
         hull_ids.insert(x);
         hull_ids.insert(y);
+        trace!("Init hull: {hull_ids:?}");
 
         let (s1, s2): (Vec<_>, Vec<_>) = s.partition(|v| v.right(&xy));
 
         if !s1.is_empty() {
+            trace!(v1:?=x, v2:?=y, s:?=s1.iter().map(|v| v.id).collect_vec(); "Push to stack");
             stack.push((x, y, s1));
         }
         if !s2.is_empty() {
+            trace!(v1:?=y, v2:?=x, s:?=s2.iter().map(|v| v.id).collect_vec(); "Push to stack");
             stack.push((y, x, s2));
         }
 
@@ -183,6 +198,7 @@ impl ConvexHullComputer for QuickHull {
                 .max_by_key(|v| OF(ab.distance_to_vertex(v)))
                 .unwrap()
                 .id;
+            trace!("Add to hull: {c:?}");
             hull_ids.insert(c);
 
             let ac = polygon.get_line_segment(&a, &c).unwrap();
@@ -191,16 +207,20 @@ impl ConvexHullComputer for QuickHull {
             let s2 = s.iter().copied().filter(|v| v.right(&cb)).collect_vec();
 
             if !s1.is_empty() {
+                trace!(v1:?=a, v2:?=c, s:?=s1.iter().map(|v| v.id).collect_vec(); "Push to stack");
                 stack.push((a, c, s1));
             }
             if !s2.is_empty() {
+                trace!(v1:?=c, v2:?=b, s:?=s2.iter().map(|v| v.id).collect_vec(); "Push to stack");
                 stack.push((c, b, s2));
             }
             if stack.is_empty() {
+                trace!("Stack is empty");
                 break;
             }
         }
 
+        info!("Computed convex hull with {} vertices", hull_ids.len());
         polygon.get_polygon(hull_ids, true, false)
     }
 }
@@ -210,6 +230,8 @@ pub struct GrahamScan;
 
 impl ConvexHullComputer for GrahamScan {
     fn convex_hull(&self, polygon: &Polygon, tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+        info!("Computing convex hull with the GrahamScan algorithm");
+
         let mut stack = Vec::new();
         let mut vertices = polygon.min_angle_sorted_vertices(None, None);
 
@@ -218,6 +240,7 @@ impl ConvexHullComputer for GrahamScan {
         // to be extreme based on vertices being sorted/cleaned
         stack.push(polygon.rightmost_lowest_vertex().id);
         stack.push(vertices.remove(0).id);
+        debug!("Init stack: {stack:?}");
 
         if let Some(t) = tracer.as_mut() {
             t.steps.push(ConvexHullTracerStep {
@@ -227,6 +250,7 @@ impl ConvexHullComputer for GrahamScan {
         }
 
         for v in vertices.iter() {
+            debug!("Current vertex: {}", v.id);
             // If current vertex is a left turn from current segment off
             // top of stack, add vertex to incremental hull on stack and
             // continue to next vertex. Otherwise the current hull on
@@ -237,8 +261,10 @@ impl ConvexHullComputer for GrahamScan {
                 let v_prev = stack[stack.len() - 2];
                 let ls = polygon.get_line_segment(&v_prev, &v_top).unwrap();
                 if v.left(&ls) {
+                    debug!(v:?, ls:?; "Valid, push to stack");
                     stack.push(v.id);
                 } else {
+                    debug!(v:?, ls:?; "Invalid, pop from stack");
                     stack.pop();
                 }
 
@@ -251,12 +277,14 @@ impl ConvexHullComputer for GrahamScan {
                 }
 
                 if stack[stack.len() - 1] == v.id {
+                    debug!("Current hull is valid, continue to next vertex");
                     break;
                 }
             }
         }
 
         // The stack at the end has all hull vertices
+        info!("Computed convex hull with {} vertices", stack.len());
         polygon.get_polygon(stack, true, false)
     }
 }
@@ -274,16 +302,24 @@ impl DivideConquer {
         let mut a = left.lowest_rightmost_vertex().id;
         let mut b = right.lowest_leftmost_vertex().id;
         let mut lt = polygon.get_line_segment(&a, &b).unwrap();
+        trace!(a_0:?=a, b_0:?=b, lt_0:?=lt; "Searching for lower tangent vertices");
         while !lt.is_lower_tangent(&a, &left) || !lt.is_lower_tangent(&b, &right) {
+            trace!("Moving left vertex down CW until lower tangent");
             while !lt.is_lower_tangent(&a, &left) {
                 a = left.prev_vertex_id(&a).unwrap(); // Move down cw
                 lt = polygon.get_line_segment(&a, &b).unwrap();
+                trace!(a:?, lt:?; "Step");
             }
+            trace!("Left lower tangent satisfied");
+            trace!("Moving right vertex up CCW until lower tangent");
             while !lt.is_lower_tangent(&b, &right) {
                 b = right.next_vertex_id(&b).unwrap(); // Move down ccw
                 lt = polygon.get_line_segment(&a, &b).unwrap();
+                trace!(b:?, lt:?; "Step");
             }
+            trace!("Right lower tangent satisfied");
         }
+        trace!("Lower tangent vertices: {a}, {b}");
         (a, b)
     }
 
@@ -296,16 +332,24 @@ impl DivideConquer {
         let mut a = left.highest_rightmost_vertex().id;
         let mut b = right.highest_leftmost_vertex().id;
         let mut ut = polygon.get_line_segment(&a, &b).unwrap();
+        trace!(a_0:?=a, b_0:?=b, ut_0:?=ut; "Searching for upper tangent vertices");
         while !ut.is_upper_tangent(&a, &left) || !ut.is_upper_tangent(&b, &right) {
+            trace!("Moving left vertex up CCW until upper tangent");
             while !ut.is_upper_tangent(&a, &left) {
                 a = left.next_vertex_id(&a).unwrap(); // Move up ccw
                 ut = polygon.get_line_segment(&a, &b).unwrap();
+                trace!(a:?, ut:?; "Step");
             }
+            trace!("Left upper tangent satisfied");
+            trace!("Moving right vertex down CW until upper tangent");
             while !ut.is_upper_tangent(&b, &right) {
                 b = right.prev_vertex_id(&b).unwrap(); // Move down cw
                 ut = polygon.get_line_segment(&a, &b).unwrap();
+                trace!(b:?, ut:?; "Step");
             }
+            trace!("Right upper tangent satisfied");
         }
+        trace!("Upper tangent vertices: {a}, {b}");
         (a, b)
     }
 
@@ -318,24 +362,33 @@ impl DivideConquer {
         ut_a: VertexId,
         ut_b: VertexId,
     ) -> Vec<VertexId> {
+        trace!(lt_a:?, lt_b:?, ut_a:?, ut_b:?; "Extracting boundary");
+
         // Combine into one polygon by connecting the vertex chains
         // of B -> ut -> A -> lt excluding vertices that do not
         // exist along the outer boundary
         let mut boundary = Vec::new();
         // Extract vertices from chain on B
+        trace!("Starting at lower tangent vertex on B: {lt_b}");
         let mut v = lt_b;
         while v != ut_b {
             boundary.push(v);
+            trace!("Boundary vertex: {v}");
             v = b.next_vertex_id(&v).unwrap();
         }
+        trace!("Reached upper tangent vertex on B: {ut_b}");
         boundary.push(ut_b);
         // Extract vertices from chain on A
+        trace!("Adding upper tangent vertex on A: {ut_a}");
         v = ut_a;
         while v != lt_a {
             boundary.push(v);
+            trace!("Boundary vertex: {v}");
             v = a.next_vertex_id(&v).unwrap();
         }
         boundary.push(lt_a);
+        trace!("Reached lower tangent vertex on A: {lt_a}");
+        trace!("Final boundary: {boundary:?}");
         boundary
     }
 
@@ -369,6 +422,8 @@ impl DivideConquer {
         mut right_ids: Vec<VertexId>,
         polygon: &Polygon,
     ) -> Vec<VertexId> {
+        trace!("Merging {left_ids:?} and {right_ids:?}");
+
         let merged_ids;
 
         if right_ids.len() == 3 {
@@ -406,6 +461,7 @@ impl DivideConquer {
                 .get_line_segment(&left_ids[0], &left_ids[1])
                 .unwrap();
             if left.collinear_with(&right) {
+                trace!("Merging as collinear line segments");
                 merged_ids = vec![
                     left.lowest_leftmost_vertex().id,
                     right.highest_rightmost_vertex().id,
@@ -416,19 +472,24 @@ impl DivideConquer {
         }
         // Could be 2 if we tried to merge 2 collinear linear segments
         assert!(merged_ids.len() >= 2);
+        trace!("Merged: {merged_ids:?}");
         merged_ids
     }
 }
 
 impl ConvexHullComputer for DivideConquer {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+        info!("Computing convex hull with the DivideConquer algorithm");
+
         if polygon.num_vertices() == 3 {
             return polygon.clone();
         }
+
         let mut split_stack = Vec::new();
         let mut merge_stack = Vec::new();
 
         let ids = polygon.vertex_ids_by_increasing_x();
+        trace!("Push to split stack: {ids:?}");
         split_stack.push(ids);
 
         while let Some(mut left_ids) = split_stack.pop() {
@@ -437,13 +498,19 @@ impl ConvexHullComputer for DivideConquer {
 
             if left_ids.len() <= 3 && right_ids.len() <= 3 {
                 // Keep leftmost towards bottom of merge stack
+                trace!("Push to merge stack: {left_ids:?}");
+                trace!("Push to merge stack: {right_ids:?}");
                 merge_stack.push(left_ids);
                 merge_stack.push(right_ids);
             } else if left_ids.len() <= 3 {
+                trace!("Push to merge stack: {left_ids:?}");
+                trace!("Push to split stack: {right_ids:?}");
                 merge_stack.push(left_ids);
                 split_stack.push(right_ids);
             } else {
                 // Keep rightmost towards bottom of split stack
+                trace!("Push to split stack: {left_ids:?}");
+                trace!("Push to split stack: {right_ids:?}");
                 split_stack.push(right_ids);
                 split_stack.push(left_ids);
             }
@@ -452,6 +519,7 @@ impl ConvexHullComputer for DivideConquer {
                 right_ids = merge_stack.pop().unwrap();
                 left_ids = merge_stack.pop().unwrap();
                 let merged_ids = self.merge(left_ids, right_ids, polygon);
+                trace!("Push to merge stack: {merged_ids:?}");
                 merge_stack.push(merged_ids);
             }
         }
@@ -459,6 +527,7 @@ impl ConvexHullComputer for DivideConquer {
         let hull_ids = merge_stack
             .pop()
             .expect("Merge stack should have exactly 1 element");
+        info!("Computed convex hull with {} vertices", hull_ids.len());
         polygon.get_polygon(hull_ids, true, true)
     }
 }
@@ -469,39 +538,60 @@ pub struct Incremental;
 impl Incremental {
     fn init_hull_three_leftmost(&self, polygon: &Polygon) -> (Polygon, Vec<VertexId>) {
         // Initialize hull with three leftmost vertices
-        // (accomplished by split_off call)
         let mut hull_ids = polygon.vertex_ids_by_increasing_x();
-        let ids = hull_ids.split_off(3);
+        let other_ids = hull_ids.split_off(3);
         if polygon
             .get_triangle(&hull_ids[0], &hull_ids[1], &hull_ids[2])
             .unwrap()
             .area()
             < 0.0
         {
+            debug!("Reversing init vertices to have valid CCW area");
             hull_ids.reverse();
         }
+        debug!("Initial hull (three leftmost vertices): {hull_ids:?}");
         let hull = polygon.get_polygon(hull_ids, false, false);
-        (hull, ids)
+        (hull, other_ids)
     }
 
     fn upper_tangent_vertex(&self, hull: &Polygon, v: VertexId, polygon: &Polygon) -> VertexId {
-        let mut hull_ut_v = hull.highest_rightmost_vertex().id;
-        let mut ut = polygon.get_line_segment(&hull_ut_v, &v).unwrap();
-        while !ut.is_upper_tangent(&hull_ut_v, &hull) {
-            hull_ut_v = hull.next_vertex_id(&hull_ut_v).unwrap(); // Move up ccw
-            ut = polygon.get_line_segment(&hull_ut_v, &v).unwrap();
+        let mut ut_v_id = hull.highest_rightmost_vertex().id;
+        let mut ut = polygon.get_line_segment(&ut_v_id, &v).unwrap();
+
+        trace!(
+            v:?=polygon.get_vertex(&ut_v_id).unwrap(), ut:?;
+            "Starting upper tangent vertex search"
+        );
+
+        let mut step = 1;
+        while !ut.is_upper_tangent(&ut_v_id, &hull) {
+            ut_v_id = hull.next_vertex_id(&ut_v_id).unwrap(); // Move up ccw
+            ut = polygon.get_line_segment(&ut_v_id, &v).unwrap();
+            trace!(v:?=polygon.get_vertex(&ut_v_id).unwrap(), ut:?; "Step {step}");
+            step += 1;
         }
-        hull_ut_v
+
+        ut_v_id
     }
 
     fn lower_tangent_vertex(&self, hull: &Polygon, v: VertexId, polygon: &Polygon) -> VertexId {
-        let mut hull_lt_v = hull.lowest_rightmost_vertex().id;
-        let mut lt = polygon.get_line_segment(&hull_lt_v, &v).unwrap();
-        while !lt.is_lower_tangent(&hull_lt_v, &hull) {
-            hull_lt_v = hull.prev_vertex_id(&hull_lt_v).unwrap(); // Move down cw
-            lt = polygon.get_line_segment(&hull_lt_v, &v).unwrap();
+        let mut lt_v_id = hull.lowest_rightmost_vertex().id;
+        let mut lt = polygon.get_line_segment(&lt_v_id, &v).unwrap();
+
+        trace!(
+            v:?=polygon.get_vertex(&lt_v_id).unwrap(), lt:?;
+            "Starting lower tangent vertex search"
+        );
+
+        let mut step = 1;
+        while !lt.is_lower_tangent(&lt_v_id, &hull) {
+            lt_v_id = hull.prev_vertex_id(&lt_v_id).unwrap(); // Move down cw
+            lt = polygon.get_line_segment(&lt_v_id, &v).unwrap();
+            trace!(v:?=polygon.get_vertex(&lt_v_id).unwrap(), lt:?; "Step {step}");
+            step += 1;
         }
-        hull_lt_v
+
+        lt_v_id
     }
 
     fn extract_boundary(
@@ -513,9 +603,13 @@ impl Incremental {
     ) -> Vec<VertexId> {
         let mut boundary = vec![new_v];
         let mut v = hull_ut_v;
+
+        trace!(new_v:?, hull_ut_v:?, hull_lt_v:?; "Extracting boundary");
+
         while v != hull_lt_v {
             boundary.push(v);
             v = hull.next_vertex_id(&v).unwrap();
+            trace!(v:?; "Boundary vertex");
         }
         boundary.push(hull_lt_v);
         boundary
@@ -524,8 +618,9 @@ impl Incremental {
 
 impl ConvexHullComputer for Incremental {
     fn convex_hull(&self, polygon: &Polygon, tracer: &mut Option<ConvexHullTracer>) -> Polygon {
-        let polygon = polygon.clone_clean_collinear();
+        info!("Computing convex hull with the Incremental algorithm");
 
+        let polygon = polygon.clone_clean_collinear();
         let (mut hull, ids) = self.init_hull_three_leftmost(&polygon);
         if let Some(t) = tracer.as_mut() {
             t.steps.push(ConvexHullTracerStep {
@@ -535,10 +630,13 @@ impl ConvexHullComputer for Incremental {
         }
 
         for id in ids.into_iter() {
+            debug!("Current ID: {id}");
+
             let ut_v = self.upper_tangent_vertex(&hull, id, &polygon);
             let lt_v = self.lower_tangent_vertex(&hull, id, &polygon);
             let new_hull_ids = self.extract_boundary(hull, id, ut_v, lt_v);
 
+            debug!("Current hull: {new_hull_ids:?}");
             hull = polygon.get_polygon(new_hull_ids, false, true);
 
             if let Some(t) = tracer.as_mut() {
@@ -550,6 +648,8 @@ impl ConvexHullComputer for Incremental {
                 });
             }
         }
+
+        info!("Computed convex hull with {} vertices", hull.num_vertices());
         hull
     }
 }
@@ -558,6 +658,7 @@ impl ConvexHullComputer for Incremental {
 mod tests {
     use super::*;
     use crate::test_util::*;
+    use env_logger;
     use rstest::rstest;
     use rstest_reuse::{self, *};
 
@@ -576,6 +677,7 @@ mod tests {
         )]
         computer: impl ConvexHullComputer,
     ) {
+        let _ = env_logger::builder().is_test(true).try_init();
         let hull = computer.convex_hull(&case.polygon, &mut None);
         let hull_ids = hull.vertex_ids().into_iter().sorted().collect_vec();
         assert_eq!(hull_ids, case.metadata.extreme_points);
