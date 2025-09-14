@@ -130,9 +130,13 @@ pub struct GiftWrapping;
 
 impl ConvexHullComputer for GiftWrapping {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+        info!("Computing convex hull with the GiftWrapping algorithm");
+
         let mut hull_ids = HashSet::new();
         let v0 = polygon.rightmost_lowest_vertex();
         hull_ids.insert(v0.id);
+        debug!("Init vertex: {}", v0.id);
+
         // Perform gift-wrapping, using the previous hull edge as a vector to
         // find the point with the least CCW angle w.r.t. the vector. Connect
         // that point to the current terminal vertex to form the newest hull
@@ -140,11 +144,16 @@ impl ConvexHullComputer for GiftWrapping {
         let mut v = v0;
         let mut e = None;
         while v.id != v0.id || e.is_none() {
+            debug!(v:?=v.id, e:?; "Computing min angle vertex");
             let v_min_angle = polygon.min_angle_sorted_vertices(Some(v), e)[0];
+            debug!("Min angle vertex: {}", v_min_angle.id);
             e = polygon.get_line_segment(&v.id, &v_min_angle.id);
             v = v_min_angle;
+            debug!("Adding to hull: {}", v.id);
             hull_ids.insert(v.id);
         }
+
+        info!("Computed convex hull with {} vertices", hull_ids.len());
         polygon.get_polygon(hull_ids, true, false)
     }
 }
