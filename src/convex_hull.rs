@@ -4,7 +4,7 @@ use ordered_float::OrderedFloat as OF;
 use std::collections::HashSet;
 use std::fmt;
 
-use crate::{geometry::Geometry, polygon::Polygon, vertex::VertexId};
+use crate::{data_structure::Stack, geometry::Geometry, polygon::Polygon, vertex::VertexId};
 
 #[derive(Default)]
 pub struct ConvexHullTracerStep {
@@ -414,11 +414,10 @@ impl ConvexHullComputer for DivideConquer {
             return polygon.clone();
         }
 
-        let mut split_stack = Vec::new();
-        let mut merge_stack = Vec::new();
+        let mut split_stack = Stack::with_name(String::from("split"));
+        let mut merge_stack = Stack::with_name(String::from("merge"));
 
         let ids = polygon.vertex_ids_by_increasing_x();
-        trace!("Push to split stack: {ids:?}");
         split_stack.push(ids);
 
         while let Some(mut left_ids) = split_stack.pop() {
@@ -427,19 +426,13 @@ impl ConvexHullComputer for DivideConquer {
 
             if left_ids.len() <= 3 && right_ids.len() <= 3 {
                 // Keep leftmost towards bottom of merge stack
-                trace!("Push to merge stack: {left_ids:?}");
-                trace!("Push to merge stack: {right_ids:?}");
                 merge_stack.push(left_ids);
                 merge_stack.push(right_ids);
             } else if left_ids.len() <= 3 {
-                trace!("Push to merge stack: {left_ids:?}");
-                trace!("Push to split stack: {right_ids:?}");
                 merge_stack.push(left_ids);
                 split_stack.push(right_ids);
             } else {
                 // Keep rightmost towards bottom of split stack
-                trace!("Push to split stack: {left_ids:?}");
-                trace!("Push to split stack: {right_ids:?}");
                 split_stack.push(right_ids);
                 split_stack.push(left_ids);
             }
@@ -448,7 +441,6 @@ impl ConvexHullComputer for DivideConquer {
                 right_ids = merge_stack.pop().unwrap();
                 left_ids = merge_stack.pop().unwrap();
                 let merged_ids = self.merge(left_ids, right_ids, polygon);
-                trace!("Push to merge stack: {merged_ids:?}");
                 merge_stack.push(merged_ids);
             }
         }
