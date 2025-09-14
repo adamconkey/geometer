@@ -154,6 +154,8 @@ pub struct QuickHull;
 
 impl ConvexHullComputer for QuickHull {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+        info!("Computing convex hull with the QuickHull algorithm");
+
         let mut hull_ids = HashSet::new();
         let mut stack = Vec::new();
 
@@ -167,13 +169,16 @@ impl ConvexHullComputer for QuickHull {
 
         hull_ids.insert(x);
         hull_ids.insert(y);
+        trace!("Init hull: {hull_ids:?}");
 
         let (s1, s2): (Vec<_>, Vec<_>) = s.partition(|v| v.right(&xy));
 
         if !s1.is_empty() {
+            trace!(v1:?=x, v2:?=y, s:?=s1.iter().map(|v| v.id).collect_vec(); "Push to stack");
             stack.push((x, y, s1));
         }
         if !s2.is_empty() {
+            trace!(v1:?=y, v2:?=x, s:?=s2.iter().map(|v| v.id).collect_vec(); "Push to stack");
             stack.push((y, x, s2));
         }
 
@@ -184,6 +189,7 @@ impl ConvexHullComputer for QuickHull {
                 .max_by_key(|v| OF(ab.distance_to_vertex(v)))
                 .unwrap()
                 .id;
+            trace!("Add to hull: {c:?}");
             hull_ids.insert(c);
 
             let ac = polygon.get_line_segment(&a, &c).unwrap();
@@ -192,16 +198,20 @@ impl ConvexHullComputer for QuickHull {
             let s2 = s.iter().copied().filter(|v| v.right(&cb)).collect_vec();
 
             if !s1.is_empty() {
+                trace!(v1:?=a, v2:?=c, s:?=s1.iter().map(|v| v.id).collect_vec(); "Push to stack");
                 stack.push((a, c, s1));
             }
             if !s2.is_empty() {
+                trace!(v1:?=c, v2:?=b, s:?=s2.iter().map(|v| v.id).collect_vec(); "Push to stack");
                 stack.push((c, b, s2));
             }
             if stack.is_empty() {
+                trace!("Stack is empty");
                 break;
             }
         }
 
+        info!("Computed convex hull with {} vertices", hull_ids.len());
         polygon.get_polygon(hull_ids, true, false)
     }
 }
@@ -462,7 +472,7 @@ impl ConvexHullComputer for DivideConquer {
         let mut merge_stack = Vec::new();
 
         let ids = polygon.vertex_ids_by_increasing_x();
-        trace!("Push split stack: {ids:?}");
+        trace!("Push to split stack: {ids:?}");
         split_stack.push(ids);
 
         while let Some(mut left_ids) = split_stack.pop() {
@@ -471,19 +481,19 @@ impl ConvexHullComputer for DivideConquer {
 
             if left_ids.len() <= 3 && right_ids.len() <= 3 {
                 // Keep leftmost towards bottom of merge stack
-                trace!("Push merge stack: {left_ids:?}");
-                trace!("Push merge stack: {right_ids:?}");
+                trace!("Push to merge stack: {left_ids:?}");
+                trace!("Push to merge stack: {right_ids:?}");
                 merge_stack.push(left_ids);
                 merge_stack.push(right_ids);
             } else if left_ids.len() <= 3 {
-                trace!("Push merge stack: {left_ids:?}");
-                trace!("Push split stack: {right_ids:?}");
+                trace!("Push to merge stack: {left_ids:?}");
+                trace!("Push to split stack: {right_ids:?}");
                 merge_stack.push(left_ids);
                 split_stack.push(right_ids);
             } else {
                 // Keep rightmost towards bottom of split stack
-                trace!("Push split stack: {left_ids:?}");
-                trace!("Push split stack: {right_ids:?}");
+                trace!("Push to split stack: {left_ids:?}");
+                trace!("Push to split stack: {right_ids:?}");
                 split_stack.push(right_ids);
                 split_stack.push(left_ids);
             }
@@ -492,7 +502,7 @@ impl ConvexHullComputer for DivideConquer {
                 right_ids = merge_stack.pop().unwrap();
                 left_ids = merge_stack.pop().unwrap();
                 let merged_ids = self.merge(left_ids, right_ids, polygon);
-                trace!("Push merge stack: {merged_ids:?}");
+                trace!("Push to merge stack: {merged_ids:?}");
                 merge_stack.push(merged_ids);
             }
         }
