@@ -1,10 +1,14 @@
 use itertools::Itertools;
 use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
-use std::collections::HashSet;
 use std::fmt;
 
-use crate::{geometry::Geometry, polygon::Polygon, vertex::VertexId};
+use crate::{
+    data_structure::{HullSet, Stack},
+    geometry::Geometry,
+    polygon::Polygon,
+    vertex::VertexId,
+};
 
 #[derive(Default)]
 pub struct ConvexHullTracerStep {
@@ -61,10 +65,9 @@ impl ConvexHullComputer for GiftWrapping {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
         info!("Computing convex hull with the GiftWrapping algorithm");
 
-        let mut hull_ids = HashSet::new();
+        let mut hull_ids = HullSet::default();
         let v0 = polygon.rightmost_lowest_vertex();
         hull_ids.insert(v0.id);
-        debug!("Init vertex: {}", v0.id);
 
         // Perform gift-wrapping, using the previous hull edge as a vector to
         // find the point with the least CCW angle w.r.t. the vector. Connect
@@ -78,7 +81,6 @@ impl ConvexHullComputer for GiftWrapping {
             debug!("Min angle vertex: {}", v_min_angle.id);
             e = polygon.get_line_segment(&v.id, &v_min_angle.id);
             v = v_min_angle;
-            debug!("Adding to hull: {}", v.id);
             hull_ids.insert(v.id);
         }
 
@@ -94,8 +96,8 @@ impl ConvexHullComputer for QuickHull {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
         info!("Computing convex hull with the QuickHull algorithm");
 
-        let mut hull_ids = HashSet::new();
-        let mut stack = Vec::new();
+        let mut hull_ids = HullSet::default();
+        let mut stack = Stack::default();
 
         let x = polygon.lowest_rightmost_vertex().id;
         let y = polygon.highest_leftmost_vertex().id;
@@ -107,16 +109,13 @@ impl ConvexHullComputer for QuickHull {
 
         hull_ids.insert(x);
         hull_ids.insert(y);
-        trace!("Init hull: {hull_ids:?}");
 
         let (s1, s2): (Vec<_>, Vec<_>) = s.partition(|v| v.right(&xy));
 
         if !s1.is_empty() {
-            trace!(v1:?=x, v2:?=y, s:?=s1.iter().map(|v| v.id).collect_vec(); "Push to stack");
             stack.push((x, y, s1));
         }
         if !s2.is_empty() {
-            trace!(v1:?=y, v2:?=x, s:?=s2.iter().map(|v| v.id).collect_vec(); "Push to stack");
             stack.push((y, x, s2));
         }
 
@@ -127,7 +126,6 @@ impl ConvexHullComputer for QuickHull {
                 .max_by_key(|v| OF(ab.distance_to_vertex(v)))
                 .unwrap()
                 .id;
-            trace!("Add to hull: {c:?}");
             hull_ids.insert(c);
 
             let ac = polygon.get_line_segment(&a, &c).unwrap();
@@ -136,11 +134,9 @@ impl ConvexHullComputer for QuickHull {
             let s2 = s.iter().copied().filter(|v| v.right(&cb)).collect_vec();
 
             if !s1.is_empty() {
-                trace!(v1:?=a, v2:?=c, s:?=s1.iter().map(|v| v.id).collect_vec(); "Push to stack");
                 stack.push((a, c, s1));
             }
             if !s2.is_empty() {
-                trace!(v1:?=c, v2:?=b, s:?=s2.iter().map(|v| v.id).collect_vec(); "Push to stack");
                 stack.push((c, b, s2));
             }
             if stack.is_empty() {
@@ -161,7 +157,7 @@ impl ConvexHullComputer for GrahamScan {
     fn convex_hull(&self, polygon: &Polygon, tracer: &mut Option<ConvexHullTracer>) -> Polygon {
         info!("Computing convex hull with the GrahamScan algorithm");
 
-        let mut stack = Vec::new();
+        let mut stack = Stack::default();
         let mut vertices = polygon.min_angle_sorted_vertices(None, None);
 
         // Add rightmost lowest vertex and the next min-angle vertex
@@ -169,7 +165,6 @@ impl ConvexHullComputer for GrahamScan {
         // to be extreme based on vertices being sorted/cleaned
         stack.push(polygon.rightmost_lowest_vertex().id);
         stack.push(vertices.remove(0).id);
-        debug!("Init stack: {stack:?}");
 
         if let Some(t) = tracer.as_mut() {
             t.steps.push(ConvexHullTracerStep {
@@ -414,11 +409,10 @@ impl ConvexHullComputer for DivideConquer {
             return polygon.clone();
         }
 
-        let mut split_stack = Vec::new();
-        let mut merge_stack = Vec::new();
+        let mut split_stack = Stack::with_name(String::from("split"));
+        let mut merge_stack = Stack::with_name(String::from("merge"));
 
         let ids = polygon.vertex_ids_by_increasing_x();
-        trace!("Push to split stack: {ids:?}");
         split_stack.push(ids);
 
         while let Some(mut left_ids) = split_stack.pop() {
@@ -427,19 +421,13 @@ impl ConvexHullComputer for DivideConquer {
 
             if left_ids.len() <= 3 && right_ids.len() <= 3 {
                 // Keep leftmost towards bottom of merge stack
-                trace!("Push to merge stack: {left_ids:?}");
-                trace!("Push to merge stack: {right_ids:?}");
                 merge_stack.push(left_ids);
                 merge_stack.push(right_ids);
             } else if left_ids.len() <= 3 {
-                trace!("Push to merge stack: {left_ids:?}");
-                trace!("Push to split stack: {right_ids:?}");
                 merge_stack.push(left_ids);
                 split_stack.push(right_ids);
             } else {
                 // Keep rightmost towards bottom of split stack
-                trace!("Push to split stack: {left_ids:?}");
-                trace!("Push to split stack: {right_ids:?}");
                 split_stack.push(right_ids);
                 split_stack.push(left_ids);
             }
@@ -448,7 +436,6 @@ impl ConvexHullComputer for DivideConquer {
                 right_ids = merge_stack.pop().unwrap();
                 left_ids = merge_stack.pop().unwrap();
                 let merged_ids = self.merge(left_ids, right_ids, polygon);
-                trace!("Push to merge stack: {merged_ids:?}");
                 merge_stack.push(merged_ids);
             }
         }
