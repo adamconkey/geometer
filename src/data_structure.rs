@@ -32,14 +32,16 @@ impl<T> IntoIterator for Stack<T> {
     }
 }
 
-impl<T: std::fmt::Debug> Stack<T> {
-    pub fn new() -> Self {
+impl<T> Default for Stack<T> {
+    fn default() -> Self {
         Self {
             vec: Vec::new(),
             name: None,
         }
     }
+}
 
+impl<T: std::fmt::Debug> Stack<T> {
     pub fn with_name(name: String) -> Self {
         Self {
             vec: Vec::new(),
@@ -64,17 +66,16 @@ impl<T: std::fmt::Debug> Stack<T> {
             } else {
                 trace!("Pop from stack: {e:?}");
             }
+        } else if let Some(name) = &self.name {
+            trace!("Pop from empty {name} stack");
         } else {
-            if let Some(name) = &self.name {
-                trace!("Pop from empty {name} stack");
-            } else {
-                trace!("Pop from empty stack");
-            }
+            trace!("Pop from empty stack");
         }
         element
     }
 }
 
+#[derive(Default)]
 pub struct HullSet {
     hull: HashSet<VertexId>,
 }
@@ -103,12 +104,6 @@ impl IntoIterator for HullSet {
 }
 
 impl HullSet {
-    pub fn new() -> Self {
-        Self {
-            hull: HashSet::new(),
-        }
-    }
-
     pub fn insert(&mut self, id: VertexId) {
         debug!("Adding vertex to hull: {id}");
         self.hull.insert(id);

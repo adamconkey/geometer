@@ -65,7 +65,7 @@ impl ConvexHullComputer for GiftWrapping {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
         info!("Computing convex hull with the GiftWrapping algorithm");
 
-        let mut hull_ids = HullSet::new();
+        let mut hull_ids = HullSet::default();
         let v0 = polygon.rightmost_lowest_vertex();
         hull_ids.insert(v0.id);
 
@@ -96,8 +96,8 @@ impl ConvexHullComputer for QuickHull {
     fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
         info!("Computing convex hull with the QuickHull algorithm");
 
-        let mut hull_ids = HullSet::new();
-        let mut stack = Stack::new();
+        let mut hull_ids = HullSet::default();
+        let mut stack = Stack::default();
 
         let x = polygon.lowest_rightmost_vertex().id;
         let y = polygon.highest_leftmost_vertex().id;
@@ -157,7 +157,7 @@ impl ConvexHullComputer for GrahamScan {
     fn convex_hull(&self, polygon: &Polygon, tracer: &mut Option<ConvexHullTracer>) -> Polygon {
         info!("Computing convex hull with the GrahamScan algorithm");
 
-        let mut stack = Stack::new();
+        let mut stack = Stack::default();
         let mut vertices = polygon.min_angle_sorted_vertices(None, None);
 
         // Add rightmost lowest vertex and the next min-angle vertex
