@@ -1,11 +1,16 @@
+use regex::Regex;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+
 use clap::{Parser, ValueEnum};
+use flexi_logger::{FileSpec, FlexiLoggerError, Logger};
 use itertools::Itertools;
 use random_color::RandomColor;
 
 use geometer::{
     convex_hull::{
         ConvexHullComputer, ConvexHullTracer, ConvexHullTracerStep, GrahamScan, Incremental,
-        QuickHull,
+        IncrementalStep, QuickHull,
     },
     error::FileError,
     geometry::Geometry,
@@ -43,6 +48,7 @@ struct Args {
 #[derive(Debug)]
 pub enum VisualizationError {
     File(FileError),
+    FlexiLoggerError(FlexiLoggerError),
     Rerun(rerun::RecordingStreamError),
 }
 
@@ -55,6 +61,12 @@ impl From<FileError> for VisualizationError {
 impl From<rerun::RecordingStreamError> for VisualizationError {
     fn from(value: rerun::RecordingStreamError) -> Self {
         VisualizationError::Rerun(value)
+    }
+}
+
+impl From<flexi_logger::FlexiLoggerError> for VisualizationError {
+    fn from(value: flexi_logger::FlexiLoggerError) -> Self {
+        VisualizationError::FlexiLoggerError(value)
     }
 }
 
@@ -326,11 +338,33 @@ impl RerunVisualizer {
         Ok(())
     }
 
+    pub fn parse_logs(&self) -> Result<(), Box<dyn std::error::Error>> {
+        let file = File::open("visualizer.log")?;
+        let reader = BufReader::new(file);
+        let re = Regex::new(r"DEBUG \[.*\] \w+ (?<data>.*)").unwrap();
+
+        for line in reader.lines() {
+            if let Some(caps) = re.captures(&line?) {
+                if let Ok(step) =
+                    serde_hjson::from_str::<IncrementalStep>(&caps["data"].to_string())
+                {
+                    println!("GOOD {step:?}");
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn visualize_convex_hull_incremental(
         &self,
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
+        Logger::try_with_str("debug")?
+            .log_to_file(FileSpec::default().suppress_timestamp())
+            .start()?;
+
         let tracer = &mut Some(ConvexHullTracer::default());
         let _final_hull = Incremental.convex_hull(polygon, tracer);
 
@@ -421,6 +455,8 @@ impl RerunVisualizer {
 
         self.increment_frame(&mut frame);
         self.visualize_final_hull(polygon, tracer, name, hull_color)?;
+
+        let _ = self.parse_logs();
 
         Ok(())
     }

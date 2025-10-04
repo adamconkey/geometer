@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 use crate::{
@@ -9,6 +10,15 @@ use crate::{
     polygon::Polygon,
     vertex::VertexId,
 };
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct IncrementalStep {
+    pub idx: usize,
+    pub new_v: VertexId,
+    pub ut_v: VertexId,
+    pub lt_v: VertexId,
+    pub hull_ids: Vec<VertexId>,
+}
 
 #[derive(Default)]
 pub struct ConvexHullTracerStep {
@@ -545,19 +555,27 @@ impl ConvexHullComputer for Incremental {
             });
         }
 
-        for id in ids.into_iter() {
-            debug!("Current ID: {id}");
+        for (idx, new_v) in ids.into_iter().enumerate() {
+            let ut_v = self.upper_tangent_vertex(&hull, new_v, &polygon);
+            let lt_v = self.lower_tangent_vertex(&hull, new_v, &polygon);
+            let hull_ids = self.extract_boundary(hull, new_v, ut_v, lt_v);
 
-            let ut_v = self.upper_tangent_vertex(&hull, id, &polygon);
-            let lt_v = self.lower_tangent_vertex(&hull, id, &polygon);
-            let new_hull_ids = self.extract_boundary(hull, id, ut_v, lt_v);
+            debug!(
+                "{:?}",
+                IncrementalStep {
+                    idx,
+                    new_v,
+                    ut_v,
+                    lt_v,
+                    hull_ids: hull_ids.clone(),
+                }
+            );
 
-            debug!("Current hull: {new_hull_ids:?}");
-            hull = polygon.get_polygon(new_hull_ids, false, true);
+            hull = polygon.get_polygon(hull_ids, false, true);
 
             if let Some(t) = tracer.as_mut() {
                 t.steps.push(ConvexHullTracerStep {
-                    next_vertex: Some(id),
+                    next_vertex: Some(new_v),
                     upper_tangent_vertex: Some(ut_v),
                     lower_tangent_vertex: Some(lt_v),
                     hull: hull.vertex_ids(),
