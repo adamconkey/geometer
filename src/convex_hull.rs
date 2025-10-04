@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::fmt;
 
 use crate::{
@@ -11,7 +11,7 @@ use crate::{
     vertex::VertexId,
 };
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize)]
 pub struct IncrementalStep {
     pub idx: usize,
     pub new_v: VertexId,
