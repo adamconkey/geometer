@@ -168,7 +168,13 @@ impl Polygon {
     }
 
     pub fn vertex_ids(&self) -> Vec<VertexId> {
-        self.vertices().into_iter().map(|v| v.id).collect_vec()
+        let mut ids = vec![self.anchor];
+        let mut current = self.next_vertex_id(&self.anchor).unwrap();
+        while current != self.anchor {
+            ids.push(current);
+            current = self.next_vertex_id(&current).unwrap();
+        }
+        ids
     }
 
     pub fn vertex_ids_by_increasing_x(&self) -> Vec<VertexId> {

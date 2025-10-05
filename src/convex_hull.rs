@@ -2,7 +2,6 @@ use itertools::Itertools;
 use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
 use serde::Deserialize;
-use std::fmt;
 
 use crate::{
     data_structure::{HullSet, Stack},
@@ -20,59 +19,15 @@ pub struct IncrementalStep {
     pub hull_ids: Vec<VertexId>,
 }
 
-#[derive(Default)]
-pub struct ConvexHullTracerStep {
-    pub hull: Vec<VertexId>,
-    pub next_vertex: Option<VertexId>,
-    pub upper_tangent_vertex: Option<VertexId>,
-    pub lower_tangent_vertex: Option<VertexId>,
-}
-
-impl fmt::Display for ConvexHullTracerStep {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "\tHull Vertices: {:?}", self.hull)?;
-        if let Some(n_v) = self.next_vertex {
-            writeln!(f, "\tNext Vertex: {:?}", n_v)?;
-        }
-        if let Some(ut_v) = self.upper_tangent_vertex {
-            writeln!(f, "\tUpper Tangent Vertex: {:?}", ut_v)?;
-        }
-        if let Some(lt_v) = self.lower_tangent_vertex {
-            writeln!(f, "\tLower Tangent Vertex: {:?}", lt_v)?;
-        }
-        Ok(())
-    }
-}
-
-impl ConvexHullTracerStep {
-    pub fn hull_tail(&self, num_elements: usize) -> Vec<VertexId> {
-        self.hull[self.hull.len() - num_elements..].to_vec()
-    }
-}
-
-#[derive(Default)]
-pub struct ConvexHullTracer {
-    pub steps: Vec<ConvexHullTracerStep>,
-}
-
-impl fmt::Debug for ConvexHullTracer {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (i, step) in self.steps.iter().enumerate() {
-            write!(f, "STEP {}:\n{}", i, step)?;
-        }
-        Ok(())
-    }
-}
-
 pub trait ConvexHullComputer {
-    fn convex_hull(&self, polygon: &Polygon, tracer: &mut Option<ConvexHullTracer>) -> Polygon;
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon;
 }
 
 #[derive(Default)]
 pub struct GiftWrapping;
 
 impl ConvexHullComputer for GiftWrapping {
-    fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
         info!("Computing convex hull with the GiftWrapping algorithm");
 
         let mut hull_ids = HullSet::default();
@@ -103,7 +58,7 @@ impl ConvexHullComputer for GiftWrapping {
 pub struct QuickHull;
 
 impl ConvexHullComputer for QuickHull {
-    fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
         info!("Computing convex hull with the QuickHull algorithm");
 
         let mut hull_ids = HullSet::default();
@@ -164,7 +119,7 @@ impl ConvexHullComputer for QuickHull {
 pub struct GrahamScan;
 
 impl ConvexHullComputer for GrahamScan {
-    fn convex_hull(&self, polygon: &Polygon, tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
         info!("Computing convex hull with the GrahamScan algorithm");
 
         let mut stack = Stack::default();
@@ -176,12 +131,12 @@ impl ConvexHullComputer for GrahamScan {
         stack.push(polygon.rightmost_lowest_vertex().id);
         stack.push(vertices.remove(0).id);
 
-        if let Some(t) = tracer.as_mut() {
-            t.steps.push(ConvexHullTracerStep {
-                hull: stack.clone(),
-                ..Default::default()
-            });
-        }
+        // if let Some(t) = tracer.as_mut() {
+        //     t.steps.push(ConvexHullTracerStep {
+        //         hull: stack.clone(),
+        //         ..Default::default()
+        //     });
+        // }
 
         for v in vertices.iter() {
             debug!("Current vertex: {}", v.id);
@@ -202,13 +157,13 @@ impl ConvexHullComputer for GrahamScan {
                     stack.pop();
                 }
 
-                if let Some(t) = tracer.as_mut() {
-                    t.steps.push(ConvexHullTracerStep {
-                        hull: stack.clone(),
-                        next_vertex: Some(v.id),
-                        ..Default::default()
-                    });
-                }
+                // if let Some(t) = tracer.as_mut() {
+                //     t.steps.push(ConvexHullTracerStep {
+                //         hull: stack.clone(),
+                //         next_vertex: Some(v.id),
+                //         ..Default::default()
+                //     });
+                // }
 
                 if stack[stack.len() - 1] == v.id {
                     debug!("Current hull is valid, continue to next vertex");
@@ -412,7 +367,7 @@ impl DivideConquer {
 }
 
 impl ConvexHullComputer for DivideConquer {
-    fn convex_hull(&self, polygon: &Polygon, _tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
         info!("Computing convex hull with the DivideConquer algorithm");
 
         if polygon.num_vertices() == 3 {
@@ -543,18 +498,18 @@ impl Incremental {
 }
 
 impl ConvexHullComputer for Incremental {
-    fn convex_hull(&self, polygon: &Polygon, tracer: &mut Option<ConvexHullTracer>) -> Polygon {
+    fn convex_hull(&self, polygon: &Polygon) -> Polygon {
         info!("Computing convex hull with the Incremental algorithm");
 
         let polygon = polygon.clone_clean_collinear();
         let (mut hull, ids) = self.init_hull_three_leftmost(&polygon);
-        if let Some(t) = tracer.as_mut() {
-            t.steps.push(ConvexHullTracerStep {
-                hull: hull.vertex_ids(),
-                ..Default::default()
-            });
-        }
-
+        // if let Some(t) = tracer.as_mut() {
+        //     t.steps.push(ConvexHullTracerStep {
+        //         hull: hull.vertex_ids(),
+        //         ..Default::default()
+        //     });
+        // }
+        //
         for (idx, new_v) in ids.into_iter().enumerate() {
             let ut_v = self.upper_tangent_vertex(&hull, new_v, &polygon);
             let lt_v = self.lower_tangent_vertex(&hull, new_v, &polygon);
@@ -572,15 +527,6 @@ impl ConvexHullComputer for Incremental {
             );
 
             hull = polygon.get_polygon(hull_ids, false, true);
-
-            if let Some(t) = tracer.as_mut() {
-                t.steps.push(ConvexHullTracerStep {
-                    next_vertex: Some(new_v),
-                    upper_tangent_vertex: Some(ut_v),
-                    lower_tangent_vertex: Some(lt_v),
-                    hull: hull.vertex_ids(),
-                });
-            }
         }
 
         info!("Computed convex hull with {} vertices", hull.num_vertices());
@@ -603,7 +549,7 @@ mod tests {
         computer: impl ConvexHullComputer,
     ) {
         let _ = env_logger::builder().is_test(true).try_init();
-        let hull = computer.convex_hull(&case.polygon, &mut None);
+        let hull = computer.convex_hull(&case.polygon);
         let hull_ids = hull.vertex_ids().into_iter().sorted().collect_vec();
         assert_eq!(hull_ids, case.metadata.extreme_points);
     }
