@@ -391,7 +391,12 @@ impl RerunVisualizer {
             if i > 0 {
                 self.increment_frame(&mut frame);
 
-                let n_v = polygon.get_vertex(&step.new_v).unwrap();
+                // TODO maybe rename these on step to be about ids
+                let new_v = step.new_v.expect("Should exist i > 0");
+                let ut_v = step.ut_v.expect("Should exist i > 0");
+                let lt_v = step.lt_v.expect("Should exist i > 0");
+
+                let n_v = polygon.get_vertex(&new_v).unwrap();
                 self.rec.log(
                     format!("{name}/alg_{i}/next_vertex"),
                     &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
@@ -405,7 +410,7 @@ impl RerunVisualizer {
                 // Show upper/lower tangent vertices and their connection
                 // to the current hull
                 self.visualize_vertex_chain(
-                    &polygon.get_vertices(vec![step.ut_v, step.new_v]),
+                    &polygon.get_vertices(vec![ut_v, new_v]),
                     &format!("{name}/alg_{i}/upper_tangent"),
                     Some(1.0),
                     Some(ut_color),
@@ -416,7 +421,7 @@ impl RerunVisualizer {
                 )?;
 
                 self.visualize_vertex_chain(
-                    &polygon.get_vertices(vec![step.lt_v, step.new_v]),
+                    &polygon.get_vertices(vec![lt_v, new_v]),
                     &format!("{name}/alg_{i}/lower_tangent"),
                     Some(1.0),
                     Some(lt_color),

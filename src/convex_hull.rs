@@ -2,6 +2,7 @@ use itertools::Itertools;
 use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
 use serde::Deserialize;
+use std::fmt;
 
 use crate::{
     data_structure::{HullSet, Stack},
@@ -10,13 +11,30 @@ use crate::{
     vertex::VertexId,
 };
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct IncrementalStep {
     pub idx: usize,
-    pub new_v: VertexId,
-    pub ut_v: VertexId,
-    pub lt_v: VertexId,
+    pub new_v: Option<VertexId>,
+    pub ut_v: Option<VertexId>,
+    pub lt_v: Option<VertexId>,
     pub hull_ids: Vec<VertexId>,
+}
+
+impl fmt::Display for IncrementalStep {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "IncrementalStep {{ idx: {}", self.idx)?;
+        if let Some(new_v) = self.new_v {
+            write!(f, ", new_v: {new_v}")?;
+        }
+        if let Some(ut_v) = self.ut_v {
+            write!(f, ", ut_v: {ut_v}")?;
+        }
+        if let Some(lt_v) = self.lt_v {
+            write!(f, ", lt_v: {lt_v}")?;
+        }
+        write!(f, ", hull_ids: {:?} }}", self.hull_ids)?;
+        Ok(())
+    }
 }
 
 pub trait ConvexHullComputer {
@@ -503,25 +521,28 @@ impl ConvexHullComputer for Incremental {
 
         let polygon = polygon.clone_clean_collinear();
         let (mut hull, ids) = self.init_hull_three_leftmost(&polygon);
-        // if let Some(t) = tracer.as_mut() {
-        //     t.steps.push(ConvexHullTracerStep {
-        //         hull: hull.vertex_ids(),
-        //         ..Default::default()
-        //     });
-        // }
-        //
+
+        debug!(
+            "{}",
+            IncrementalStep {
+                idx: 0,
+                hull_ids: hull.vertex_ids(),
+                ..Default::default()
+            }
+        );
+
         for (idx, new_v) in ids.into_iter().enumerate() {
             let ut_v = self.upper_tangent_vertex(&hull, new_v, &polygon);
             let lt_v = self.lower_tangent_vertex(&hull, new_v, &polygon);
             let hull_ids = self.extract_boundary(hull, new_v, ut_v, lt_v);
 
             debug!(
-                "{:?}",
+                "{}",
                 IncrementalStep {
-                    idx,
-                    new_v,
-                    ut_v,
-                    lt_v,
+                    idx: idx + 1,
+                    new_v: Some(new_v),
+                    ut_v: Some(ut_v),
+                    lt_v: Some(lt_v),
                     hull_ids: hull_ids.clone(),
                 }
             );
