@@ -37,7 +37,7 @@ where
     let mut steps = Vec::<T>::new();
     for line in reader.lines() {
         if let Some(caps) = re.captures(&line?) {
-            if let Ok(step) = serde_hjson::from_str::<T>(&caps["data"].to_string()) {
+            if let Ok(step) = serde_hjson::from_str::<T>(&caps["data"]) {
                 steps.push(step);
             }
         }
