@@ -1,14 +1,10 @@
-use regex::Regex;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-
 use clap::{Parser, ValueEnum};
-use flexi_logger::{FileSpec, FlexiLoggerError, Logger};
+use flexi_logger::{FileSpec, Logger};
 use itertools::Itertools;
 use random_color::RandomColor;
 
 use geometer::{
-    alg_step::{GrahamScanStep, IncrementalStep},
+    alg_step::{parse_steps_from_logs, GrahamScanStep, IncrementalStep, StepParseError},
     convex_hull::{ConvexHullComputer, GrahamScan, Incremental, QuickHull},
     error::FileError,
     geometry::Geometry,
@@ -26,7 +22,7 @@ enum Visualization {
     Triangulation,
 }
 
-/// Visualize polygons and algorithms using Rerun.io``
+/// Visualize polygons and algorithms using Rerun.io
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -46,13 +42,20 @@ struct Args {
 #[derive(Debug)]
 pub enum VisualizationError {
     File(FileError),
-    FlexiLoggerError(FlexiLoggerError),
+    FlexiLogger(flexi_logger::FlexiLoggerError),
     Rerun(rerun::RecordingStreamError),
+    StepParse(StepParseError),
 }
 
 impl From<FileError> for VisualizationError {
     fn from(value: FileError) -> Self {
         VisualizationError::File(value)
+    }
+}
+
+impl From<flexi_logger::FlexiLoggerError> for VisualizationError {
+    fn from(value: flexi_logger::FlexiLoggerError) -> Self {
+        VisualizationError::FlexiLogger(value)
     }
 }
 
@@ -62,9 +65,9 @@ impl From<rerun::RecordingStreamError> for VisualizationError {
     }
 }
 
-impl From<flexi_logger::FlexiLoggerError> for VisualizationError {
-    fn from(value: flexi_logger::FlexiLoggerError) -> Self {
-        VisualizationError::FlexiLoggerError(value)
+impl From<StepParseError> for VisualizationError {
+    fn from(value: StepParseError) -> Self {
+        VisualizationError::StepParse(value)
     }
 }
 
@@ -185,13 +188,15 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        // TODO need to set different log filename
+        let file_spec = FileSpec::default()
+            .directory("/tmp")
+            .basename("visualizer_graham_scan");
         Logger::try_with_str("debug")?
-            .log_to_file(FileSpec::default().suppress_timestamp())
+            .log_to_file(file_spec.clone())
             .start()?;
 
         let final_hull = GrahamScan.convex_hull(polygon);
-        let steps = self.parse_logs_graham_scan().unwrap();
+        let steps: Vec<GrahamScanStep> = parse_steps_from_logs(file_spec.as_pathbuf(None))?;
 
         // TODO will ultimately want a config such that these could
         // be specified in some configurable or at the very least
@@ -340,61 +345,21 @@ impl RerunVisualizer {
         Ok(())
     }
 
-    pub fn parse_logs_graham_scan(
-        &self,
-    ) -> Result<Vec<GrahamScanStep>, Box<dyn std::error::Error>> {
-        // TODO will need to figure out how to handle the filename logs go to
-        let file = File::open("visualizer.log")?;
-        let reader = BufReader::new(file);
-        let re = Regex::new(r"DEBUG \[.*\] \w+ (?<data>.*)").unwrap();
-
-        let mut steps = Vec::<GrahamScanStep>::new();
-        for line in reader.lines() {
-            if let Some(caps) = re.captures(&line?) {
-                if let Ok(step) = serde_hjson::from_str::<GrahamScanStep>(&caps["data"].to_string())
-                {
-                    steps.push(step);
-                }
-            }
-        }
-
-        Ok(steps)
-    }
-
-    pub fn parse_logs_incremental(
-        &self,
-    ) -> Result<Vec<IncrementalStep>, Box<dyn std::error::Error>> {
-        // TODO will need to figure out how to handle the filename logs go to
-        let file = File::open("visualizer.log")?;
-        let reader = BufReader::new(file);
-        let re = Regex::new(r"DEBUG \[.*\] \w+ (?<data>.*)").unwrap();
-
-        let mut steps = Vec::<IncrementalStep>::new();
-        for line in reader.lines() {
-            if let Some(caps) = re.captures(&line?) {
-                if let Ok(step) =
-                    serde_hjson::from_str::<IncrementalStep>(&caps["data"].to_string())
-                {
-                    steps.push(step);
-                }
-            }
-        }
-
-        Ok(steps)
-    }
-
     pub fn visualize_convex_hull_incremental(
         &self,
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        // TODO need to set different log filename
+        let file_spec = FileSpec::default()
+            .directory("/tmp")
+            .basename("visualizer_incremental");
         Logger::try_with_str("debug")?
-            .log_to_file(FileSpec::default().suppress_timestamp())
+            .log_to_file(file_spec.clone())
             .start()?;
 
         let final_hull = Incremental.convex_hull(polygon);
-        let steps = self.parse_logs_incremental().unwrap();
+        let steps: Vec<IncrementalStep> =
+            parse_steps_from_logs(file_spec.as_pathbuf(None)).unwrap();
 
         let mut frame: i64 = 0;
         self.rec.set_time_sequence("frame", frame);
