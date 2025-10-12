@@ -1,41 +1,14 @@
 use itertools::Itertools;
 use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
-use serde::Deserialize;
-use std::fmt;
 
 use crate::{
+    alg_step::{GrahamScanStep, IncrementalStep},
     data_structure::{HullSet, Stack},
     geometry::Geometry,
     polygon::Polygon,
     vertex::VertexId,
 };
-
-#[derive(Debug, Default, Deserialize)]
-pub struct IncrementalStep {
-    pub idx: usize,
-    pub new_id: Option<VertexId>,
-    pub ut_id: Option<VertexId>,
-    pub lt_id: Option<VertexId>,
-    pub hull_ids: Vec<VertexId>,
-}
-
-impl fmt::Display for IncrementalStep {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "IncrementalStep {{ idx: {}", self.idx)?;
-        if let Some(new_id) = self.new_id {
-            write!(f, ", new_id: {new_id}")?;
-        }
-        if let Some(ut_id) = self.ut_id {
-            write!(f, ", ut_id: {ut_id}")?;
-        }
-        if let Some(lt_id) = self.lt_id {
-            write!(f, ", lt_id: {lt_id}")?;
-        }
-        write!(f, ", hull_ids: {:?} }}", self.hull_ids)?;
-        Ok(())
-    }
-}
 
 pub trait ConvexHullComputer {
     fn convex_hull(&self, polygon: &Polygon) -> Polygon;
@@ -149,41 +122,45 @@ impl ConvexHullComputer for GrahamScan {
         stack.push(polygon.rightmost_lowest_vertex().id);
         stack.push(vertices.remove(0).id);
 
-        // if let Some(t) = tracer.as_mut() {
-        //     t.steps.push(ConvexHullTracerStep {
-        //         hull: stack.clone(),
-        //         ..Default::default()
-        //     });
-        // }
+        debug!(
+            "{}",
+            GrahamScanStep {
+                idx: 0,
+                hull_ids: stack.clone(),
+                ..Default::default()
+            }
+        );
 
-        for v in vertices.iter() {
-            debug!("Current vertex: {}", v.id);
+        for (idx, new_v) in vertices.iter().enumerate() {
+            debug!("Current vertex: {}", new_v.id);
             // If current vertex is a left turn from current segment off
             // top of stack, add vertex to incremental hull on stack and
             // continue to next vertex. Otherwise the current hull on
             // stack is wrong, continue popping until it's corrected.
             loop {
                 assert!(stack.len() >= 2);
-                let v_top = stack[stack.len() - 1];
-                let v_prev = stack[stack.len() - 2];
-                let ls = polygon.get_line_segment(&v_prev, &v_top).unwrap();
-                if v.left(&ls) {
-                    debug!(v:?, ls:?; "Valid, push to stack");
-                    stack.push(v.id);
+                let top_id = stack[stack.len() - 1];
+                let prev_id = stack[stack.len() - 2];
+                let ls = polygon.get_line_segment(&prev_id, &top_id).unwrap();
+                if new_v.left(&ls) {
+                    debug!(new_v:?, ls:?; "Valid, push to stack");
+                    stack.push(new_v.id);
                 } else {
-                    debug!(v:?, ls:?; "Invalid, pop from stack");
+                    debug!(new_v:?, ls:?; "Invalid, pop from stack");
                     stack.pop();
                 }
 
-                // if let Some(t) = tracer.as_mut() {
-                //     t.steps.push(ConvexHullTracerStep {
-                //         hull: stack.clone(),
-                //         next_vertex: Some(v.id),
-                //         ..Default::default()
-                //     });
-                // }
+                // TODO add macro for this
+                debug!(
+                    "{}",
+                    GrahamScanStep {
+                        idx: idx + 1,
+                        new_id: Some(new_v.id),
+                        hull_ids: stack.clone(),
+                    }
+                );
 
-                if stack[stack.len() - 1] == v.id {
+                if stack[stack.len() - 1] == new_v.id {
                     debug!("Current hull is valid, continue to next vertex");
                     break;
                 }

@@ -184,158 +184,165 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        // let _final_hull = GrahamScan.convex_hull(polygon);
-        //
-        // // TODO will ultimately want a config such that these could
-        // // be specified in some configurable or at the very least
-        // // more interpretable way? For now just hardcoding values
-        // // for color scheme I think looks decent
-        // let init_vertex_color = [255, 255, 255, 255];
-        // let polygon_color = [132, 90, 109, 255];
-        // let hull_color = [25, 100, 126, 255];
-        // let check_color = [242, 192, 53, 255];
-        // let valid_color = [52, 163, 82, 255];
-        // let invalid_color = [163, 0, 0, 255];
-        //
-        // let mut frame: i64 = 0;
-        // self.rec.set_time_sequence("frame", frame);
-        //
-        // self.visualize_nominal_polygon(polygon, name, polygon_color)?;
-        //
-        // // Show initial vertex establishing min angle order
-        // let id_0 = polygon.vertex_ids()[0];
-        // let v_0 = polygon.get_vertex(&id_0).unwrap();
-        // self.rec.log(
-        //     format!("{name}/alg_init/init_vertex"),
-        //     &rerun::Points2D::new([(v_0.x as f32, v_0.y as f32)])
-        //         .with_radii([1.0])
-        //         .with_colors([init_vertex_color])
-        //         .with_draw_order(100.0),
-        // )?;
-        //
-        // let mut prev_step: Option<&ConvexHullTracerStep> = None;
-        // for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
-        //     if i == 0 {
-        //         // Show initial edge of hull
-        //         self.visualize_vertex_chain(
-        //             &polygon.get_vertices(step.hull_tail(2)),
-        //             &format!("{name}/hull_{i}"),
-        //             Some(0.8),
-        //             Some(hull_color),
-        //             Some(0.2),
-        //             Some(hull_color),
-        //             None,
-        //             false,
-        //         )?;
-        //     } else {
-        //         self.increment_frame(&mut frame);
-        //
-        //         // Show highlighted edge used for angle test
-        //         let ids = prev_step
-        //             .expect("Prev step should exist i > 0")
-        //             .hull_tail(2);
-        //         let v_origin = polygon.get_vertex(&ids[0]).unwrap();
-        //         let v_head = polygon.get_vertex(&ids[1]).unwrap();
-        //         self.rec.log(
-        //             format!("{name}/alg_{i}/check_edge"),
-        //             &rerun::Arrows2D::from_vectors([(
-        //                 (v_head.x - v_origin.x) as f32,
-        //                 (v_head.y - v_origin.y) as f32,
-        //             )])
-        //             .with_origins([(v_origin.x as f32, v_origin.y as f32)])
-        //             .with_radii([0.3])
-        //             .with_colors([check_color])
-        //             .with_draw_order(100.0),
-        //         )?;
-        //
-        //         // Show next vertex used for angle test
-        //         let n_id = step.next_vertex.expect("Next vertex should exist i > 0");
-        //         let n_v = polygon.get_vertex(&n_id).unwrap();
-        //         self.rec.log(
-        //             format!("{name}/alg_{i}/next_vertex"),
-        //             &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
-        //                 .with_radii([1.0])
-        //                 .with_colors([check_color])
-        //                 .with_draw_order(100.0),
-        //         )?;
-        //
-        //         self.rec.log(
-        //             format!("{name}/alg/next_vertex_marker"),
-        //             &rerun::LineStrips2D::new([[
-        //                 (v_0.x as f32, v_0.y as f32),
-        //                 (n_v.x as f32, n_v.y as f32),
-        //             ]])
-        //             .with_radii([0.1])
-        //             .with_colors([init_vertex_color]),
-        //         )?;
-        //
-        //         self.increment_frame(&mut frame);
-        //         self.clear(format!("{name}/alg_{i}/check_edge"))?;
-        //         self.clear(format!("{name}/alg_{i}/next_vertex"))?;
-        //
-        //         let top_id = step.hull[step.hull.len() - 1];
-        //         if n_id == top_id {
-        //             // Hull is fully repaired at this point, show final edge
-        //             // on stack connected to next vertex is a left turn (this
-        //             // will just be last 3 vertices in hull vertex chain
-        //             // since the next vertex was accepted to the hull)
-        //             self.visualize_vertex_chain(
-        //                 &polygon.get_vertices(step.hull_tail(3)),
-        //                 &format!("{name}/alg_{i}/valid"),
-        //                 Some(1.0),
-        //                 Some(valid_color),
-        //                 Some(0.3),
-        //                 Some(valid_color),
-        //                 Some(100.0),
-        //                 false,
-        //             )?;
-        //         } else {
-        //             // Render final edge on stack to next vertex as invalid
-        //             // right turn
-        //             let mut ids = prev_step.expect("Prev step exists for i > 0").hull_tail(2);
-        //             ids.push(n_id);
-        //             self.visualize_vertex_chain(
-        //                 &polygon.get_vertices(ids),
-        //                 &format!("{name}/alg_{i}/invalid"),
-        //                 Some(1.0),
-        //                 Some(invalid_color),
-        //                 Some(0.3),
-        //                 Some(invalid_color),
-        //                 Some(100.0),
-        //                 false,
-        //             )?;
-        //         }
-        //
-        //         // Show computed hull for this step
-        //         self.increment_frame(&mut frame);
-        //         self.visualize_vertex_chain(
-        //             &polygon.get_vertices(step.hull.clone()),
-        //             &format!("{name}/hull_{i}"),
-        //             Some(0.8),
-        //             Some(hull_color),
-        //             Some(0.2),
-        //             Some(hull_color),
-        //             None,
-        //             true,
-        //         )?;
-        //     }
-        //     prev_step = Some(step);
-        //
-        //     self.clear_recursive(format!("{name}/alg_{i}"))?;
-        //     // Clear out old hull visualizations
-        //     if i > 0 {
-        //         self.clear_recursive(format!("{name}/hull_{}", i - 1))?;
-        //     }
-        // }
-        //
-        // self.increment_frame(&mut frame);
-        // self.visualize_final_hull(polygon, tracer, name, hull_color)?;
-        //
+        // TODO need to set different log filename
+        Logger::try_with_str("debug")?
+            .log_to_file(FileSpec::default().suppress_timestamp())
+            .start()?;
+
+        let final_hull = GrahamScan.convex_hull(polygon);
+        let steps = self.parse_logs_graham_scan().unwrap();
+
+        // TODO will ultimately want a config such that these could
+        // be specified in some configurable or at the very least
+        // more interpretable way? For now just hardcoding values
+        // for color scheme I think looks decent
+        let init_vertex_color = [255, 255, 255, 255];
+        let polygon_color = [132, 90, 109, 255];
+        let hull_color = [25, 100, 126, 255];
+        let check_color = [242, 192, 53, 255];
+        let valid_color = [52, 163, 82, 255];
+        let invalid_color = [163, 0, 0, 255];
+
+        let mut frame: i64 = 0;
+        self.rec.set_time_sequence("frame", frame);
+
+        self.visualize_nominal_polygon(polygon, name, polygon_color)?;
+
+        // Show initial vertex establishing min angle order
+        let id_0 = polygon.vertex_ids()[0];
+        let v_0 = polygon.get_vertex(&id_0).unwrap();
+        self.rec.log(
+            format!("{name}/alg_init/init_vertex"),
+            &rerun::Points2D::new([(v_0.x as f32, v_0.y as f32)])
+                .with_radii([1.0])
+                .with_colors([init_vertex_color])
+                .with_draw_order(100.0),
+        )?;
+
+        let mut prev_step: Option<&ConvexHullTracerStep> = None;
+        for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
+            if i == 0 {
+                // Show initial edge of hull
+                self.visualize_vertex_chain(
+                    &polygon.get_vertices(step.hull_tail(2)),
+                    &format!("{name}/hull_{i}"),
+                    Some(0.8),
+                    Some(hull_color),
+                    Some(0.2),
+                    Some(hull_color),
+                    None,
+                    false,
+                )?;
+            } else {
+                self.increment_frame(&mut frame);
+
+                // Show highlighted edge used for angle test
+                let ids = prev_step
+                    .expect("Prev step should exist i > 0")
+                    .hull_tail(2);
+                let v_origin = polygon.get_vertex(&ids[0]).unwrap();
+                let v_head = polygon.get_vertex(&ids[1]).unwrap();
+                self.rec.log(
+                    format!("{name}/alg_{i}/check_edge"),
+                    &rerun::Arrows2D::from_vectors([(
+                        (v_head.x - v_origin.x) as f32,
+                        (v_head.y - v_origin.y) as f32,
+                    )])
+                    .with_origins([(v_origin.x as f32, v_origin.y as f32)])
+                    .with_radii([0.3])
+                    .with_colors([check_color])
+                    .with_draw_order(100.0),
+                )?;
+
+                // Show next vertex used for angle test
+                let n_id = step.next_vertex.expect("Next vertex should exist i > 0");
+                let n_v = polygon.get_vertex(&n_id).unwrap();
+                self.rec.log(
+                    format!("{name}/alg_{i}/next_vertex"),
+                    &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
+                        .with_radii([1.0])
+                        .with_colors([check_color])
+                        .with_draw_order(100.0),
+                )?;
+
+                self.rec.log(
+                    format!("{name}/alg/next_vertex_marker"),
+                    &rerun::LineStrips2D::new([[
+                        (v_0.x as f32, v_0.y as f32),
+                        (n_v.x as f32, n_v.y as f32),
+                    ]])
+                    .with_radii([0.1])
+                    .with_colors([init_vertex_color]),
+                )?;
+
+                self.increment_frame(&mut frame);
+                self.clear(format!("{name}/alg_{i}/check_edge"))?;
+                self.clear(format!("{name}/alg_{i}/next_vertex"))?;
+
+                let top_id = step.hull[step.hull.len() - 1];
+                if n_id == top_id {
+                    // Hull is fully repaired at this point, show final edge
+                    // on stack connected to next vertex is a left turn (this
+                    // will just be last 3 vertices in hull vertex chain
+                    // since the next vertex was accepted to the hull)
+                    self.visualize_vertex_chain(
+                        &polygon.get_vertices(step.hull_tail(3)),
+                        &format!("{name}/alg_{i}/valid"),
+                        Some(1.0),
+                        Some(valid_color),
+                        Some(0.3),
+                        Some(valid_color),
+                        Some(100.0),
+                        false,
+                    )?;
+                } else {
+                    // Render final edge on stack to next vertex as invalid
+                    // right turn
+                    let mut ids = prev_step.expect("Prev step exists for i > 0").hull_tail(2);
+                    ids.push(n_id);
+                    self.visualize_vertex_chain(
+                        &polygon.get_vertices(ids),
+                        &format!("{name}/alg_{i}/invalid"),
+                        Some(1.0),
+                        Some(invalid_color),
+                        Some(0.3),
+                        Some(invalid_color),
+                        Some(100.0),
+                        false,
+                    )?;
+                }
+
+                // Show computed hull for this step
+                self.increment_frame(&mut frame);
+                self.visualize_vertex_chain(
+                    &polygon.get_vertices(step.hull.clone()),
+                    &format!("{name}/hull_{i}"),
+                    Some(0.8),
+                    Some(hull_color),
+                    Some(0.2),
+                    Some(hull_color),
+                    None,
+                    true,
+                )?;
+            }
+            prev_step = Some(step);
+
+            self.clear_recursive(format!("{name}/alg_{i}"))?;
+            // Clear out old hull visualizations
+            if i > 0 {
+                self.clear_recursive(format!("{name}/hull_{}", i - 1))?;
+            }
+        }
+
+        self.increment_frame(&mut frame);
+        self.visualize_final_hull(&final_hull, name, hull_color)?;
+
         Ok(())
     }
 
-    // TODO will need to make this more general beyond incrmental
-    pub fn parse_logs(&self) -> Result<Vec<IncrementalStep>, Box<dyn std::error::Error>> {
+    pub fn parse_logs_graham_scan(
+        &self,
+    ) -> Result<Vec<IncrementalStep>, Box<dyn std::error::Error>> {
         // TODO will need to figure out how to handle the filename logs go to
         let file = File::open("visualizer.log")?;
         let reader = BufReader::new(file);
@@ -347,7 +354,28 @@ impl RerunVisualizer {
                 if let Ok(step) =
                     serde_hjson::from_str::<IncrementalStep>(&caps["data"].to_string())
                 {
-                    println!("GOOD {step:?}");
+                    steps.push(step);
+                }
+            }
+        }
+
+        Ok(steps)
+    }
+
+    pub fn parse_logs_incremental(
+        &self,
+    ) -> Result<Vec<IncrementalStep>, Box<dyn std::error::Error>> {
+        // TODO will need to figure out how to handle the filename logs go to
+        let file = File::open("visualizer.log")?;
+        let reader = BufReader::new(file);
+        let re = Regex::new(r"DEBUG \[.*\] \w+ (?<data>.*)").unwrap();
+
+        let mut steps = Vec::<IncrementalStep>::new();
+        for line in reader.lines() {
+            if let Some(caps) = re.captures(&line?) {
+                if let Ok(step) =
+                    serde_hjson::from_str::<IncrementalStep>(&caps["data"].to_string())
+                {
                     steps.push(step);
                 }
             }
@@ -367,7 +395,7 @@ impl RerunVisualizer {
             .start()?;
 
         let final_hull = Incremental.convex_hull(polygon);
-        let steps = self.parse_logs().unwrap();
+        let steps = self.parse_logs_incremental().unwrap();
 
         let mut frame: i64 = 0;
         self.rec.set_time_sequence("frame", frame);

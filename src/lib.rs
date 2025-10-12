@@ -6,6 +6,7 @@
 // empirical precision limit on the entire test suite
 const F64_ASSERT_PRECISION: f64 = 1e-4f64;
 
+pub mod alg_step;
 pub mod bounding_box;
 pub mod convex_hull;
 pub mod data_structure;
