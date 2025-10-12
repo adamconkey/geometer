@@ -99,3 +99,56 @@ impl fmt::Display for IncrementalStep {
         Ok(())
     }
 }
+
+#[macro_export]
+macro_rules! log_graham_step {
+    ($idx:expr,$hull_ids:expr) => {
+        debug!(
+            "{}",
+            GrahamScanStep {
+                idx: $idx,
+                hull_ids: $hull_ids,
+                ..Default::default()
+            }
+        );
+    };
+    ($idx:expr,$new_id:expr,$hull_ids:expr) => {
+        debug!(
+            "{}",
+            GrahamScanStep {
+                idx: $idx,
+                new_id: Some($new_id),
+                hull_ids: $hull_ids,
+            }
+        );
+    };
+}
+
+#[macro_export]
+macro_rules! log_incremental_step {
+    ($idx:expr,$hull_ids:expr) => {
+        debug!(
+            "{}",
+            IncrementalStep {
+                idx: $idx,
+                hull_ids: $hull_ids,
+                ..Default::default()
+            }
+        );
+    };
+    ($idx:expr,$new_id:expr,$ut_id:expr, $lt_id:expr,$hull_ids:expr) => {
+        debug!(
+            "{}",
+            IncrementalStep {
+                idx: $idx,
+                new_id: Some($new_id),
+                ut_id: Some($ut_id),
+                lt_id: Some($lt_id),
+                hull_ids: $hull_ids,
+            }
+        );
+    };
+}
+
+pub(crate) use log_graham_step;
+pub(crate) use log_incremental_step;
