@@ -3,7 +3,7 @@ use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
 
 use crate::{
-    alg_step::{log_graham_step, GrahamScanStep, IncrementalStep},
+    alg_step::{log_graham_step, log_incremental_step, GrahamScanStep, IncrementalStep},
     data_structure::{HullSet, Stack},
     geometry::Geometry,
     polygon::Polygon,
@@ -484,30 +484,14 @@ impl ConvexHullComputer for Incremental {
         let polygon = polygon.clone_clean_collinear();
         let (mut hull, ids) = self.init_hull_three_leftmost(&polygon);
 
-        debug!(
-            "{}",
-            IncrementalStep {
-                idx: 0,
-                hull_ids: hull.vertex_ids(),
-                ..Default::default()
-            }
-        );
+        log_incremental_step!(0, hull.vertex_ids());
 
         for (idx, new_id) in ids.into_iter().enumerate() {
             let ut_id = self.upper_tangent_vertex(&hull, new_id, &polygon);
             let lt_id = self.lower_tangent_vertex(&hull, new_id, &polygon);
             let hull_ids = self.extract_boundary(hull, new_id, ut_id, lt_id);
 
-            debug!(
-                "{}",
-                IncrementalStep {
-                    idx: idx + 1,
-                    new_id: Some(new_id),
-                    ut_id: Some(ut_id),
-                    lt_id: Some(lt_id),
-                    hull_ids: hull_ids.clone(),
-                }
-            );
+            log_incremental_step!(idx + 1, new_id, ut_id, lt_id, hull_ids.clone());
 
             hull = polygon.get_polygon(hull_ids, false, true);
         }
