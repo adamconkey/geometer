@@ -1,12 +1,11 @@
 use clap::{Parser, ValueEnum};
+use flexi_logger::{FileSpec, Logger};
 use itertools::Itertools;
 use random_color::RandomColor;
 
 use geometer::{
-    convex_hull::{
-        ConvexHullComputer, ConvexHullTracer, ConvexHullTracerStep, GrahamScan, Incremental,
-        QuickHull,
-    },
+    alg_step::{parse_steps_from_logs, GrahamScanStep, IncrementalStep, StepParseError},
+    convex_hull::{ConvexHullComputer, GrahamScan, Incremental, QuickHull},
     error::FileError,
     geometry::Geometry,
     polygon::Polygon,
@@ -23,7 +22,7 @@ enum Visualization {
     Triangulation,
 }
 
-/// Visualize polygons and algorithms using Rerun.io``
+/// Visualize polygons and algorithms using Rerun.io
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -43,7 +42,9 @@ struct Args {
 #[derive(Debug)]
 pub enum VisualizationError {
     File(FileError),
+    FlexiLogger(flexi_logger::FlexiLoggerError),
     Rerun(rerun::RecordingStreamError),
+    StepParse(StepParseError),
 }
 
 impl From<FileError> for VisualizationError {
@@ -52,9 +53,21 @@ impl From<FileError> for VisualizationError {
     }
 }
 
+impl From<flexi_logger::FlexiLoggerError> for VisualizationError {
+    fn from(value: flexi_logger::FlexiLoggerError) -> Self {
+        VisualizationError::FlexiLogger(value)
+    }
+}
+
 impl From<rerun::RecordingStreamError> for VisualizationError {
     fn from(value: rerun::RecordingStreamError) -> Self {
         VisualizationError::Rerun(value)
+    }
+}
+
+impl From<StepParseError> for VisualizationError {
+    fn from(value: StepParseError) -> Self {
+        VisualizationError::StepParse(value)
     }
 }
 
@@ -155,7 +168,7 @@ impl RerunVisualizer {
         self.visualize_nominal_polygon(polygon, name, polygon_color)?;
 
         self.increment_frame(&mut frame);
-        let hull = QuickHull.convex_hull(polygon, &mut None);
+        let hull = QuickHull.convex_hull(polygon);
         self.visualize_vertex_chain(
             &hull.vertices().into_iter().cloned().collect_vec(),
             &format!("{name}/convex_hull"),
@@ -175,8 +188,15 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        let tracer = &mut Some(ConvexHullTracer::default());
-        let _final_hull = GrahamScan.convex_hull(polygon, tracer);
+        let file_spec = FileSpec::default()
+            .directory("/tmp")
+            .basename("visualizer_graham_scan");
+        Logger::try_with_str("debug")?
+            .log_to_file(file_spec.clone())
+            .start()?;
+
+        let final_hull = GrahamScan.convex_hull(polygon);
+        let steps: Vec<GrahamScanStep> = parse_steps_from_logs(file_spec.as_pathbuf(None))?;
 
         // TODO will ultimately want a config such that these could
         // be specified in some configurable or at the very least
@@ -205,8 +225,8 @@ impl RerunVisualizer {
                 .with_draw_order(100.0),
         )?;
 
-        let mut prev_step: Option<&ConvexHullTracerStep> = None;
-        for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
+        let mut prev_step: Option<&GrahamScanStep> = None;
+        for (i, step) in steps.iter().enumerate() {
             if i == 0 {
                 // Show initial edge of hull
                 self.visualize_vertex_chain(
@@ -241,11 +261,11 @@ impl RerunVisualizer {
                 )?;
 
                 // Show next vertex used for angle test
-                let n_id = step.next_vertex.expect("Next vertex should exist i > 0");
-                let n_v = polygon.get_vertex(&n_id).unwrap();
+                let new_id = step.new_id.expect("Should exist i > 0");
+                let new_v = polygon.get_vertex(&new_id).unwrap();
                 self.rec.log(
                     format!("{name}/alg_{i}/next_vertex"),
-                    &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
+                    &rerun::Points2D::new([(new_v.x as f32, new_v.y as f32)])
                         .with_radii([1.0])
                         .with_colors([check_color])
                         .with_draw_order(100.0),
@@ -255,7 +275,7 @@ impl RerunVisualizer {
                     format!("{name}/alg/next_vertex_marker"),
                     &rerun::LineStrips2D::new([[
                         (v_0.x as f32, v_0.y as f32),
-                        (n_v.x as f32, n_v.y as f32),
+                        (new_v.x as f32, new_v.y as f32),
                     ]])
                     .with_radii([0.1])
                     .with_colors([init_vertex_color]),
@@ -265,8 +285,7 @@ impl RerunVisualizer {
                 self.clear(format!("{name}/alg_{i}/check_edge"))?;
                 self.clear(format!("{name}/alg_{i}/next_vertex"))?;
 
-                let top_id = step.hull[step.hull.len() - 1];
-                if n_id == top_id {
+                if new_id == step.hull_top() {
                     // Hull is fully repaired at this point, show final edge
                     // on stack connected to next vertex is a left turn (this
                     // will just be last 3 vertices in hull vertex chain
@@ -285,7 +304,7 @@ impl RerunVisualizer {
                     // Render final edge on stack to next vertex as invalid
                     // right turn
                     let mut ids = prev_step.expect("Prev step exists for i > 0").hull_tail(2);
-                    ids.push(n_id);
+                    ids.push(new_id);
                     self.visualize_vertex_chain(
                         &polygon.get_vertices(ids),
                         &format!("{name}/alg_{i}/invalid"),
@@ -301,7 +320,7 @@ impl RerunVisualizer {
                 // Show computed hull for this step
                 self.increment_frame(&mut frame);
                 self.visualize_vertex_chain(
-                    &polygon.get_vertices(step.hull.clone()),
+                    &polygon.get_vertices(step.hull_ids.clone()),
                     &format!("{name}/hull_{i}"),
                     Some(0.8),
                     Some(hull_color),
@@ -321,7 +340,7 @@ impl RerunVisualizer {
         }
 
         self.increment_frame(&mut frame);
-        self.visualize_final_hull(polygon, tracer, name, hull_color)?;
+        self.visualize_final_hull(&final_hull, name, hull_color)?;
 
         Ok(())
     }
@@ -331,8 +350,16 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        let tracer = &mut Some(ConvexHullTracer::default());
-        let _final_hull = Incremental.convex_hull(polygon, tracer);
+        let file_spec = FileSpec::default()
+            .directory("/tmp")
+            .basename("visualizer_incremental");
+        Logger::try_with_str("debug")?
+            .log_to_file(file_spec.clone())
+            .start()?;
+
+        let final_hull = Incremental.convex_hull(polygon);
+        let steps: Vec<IncrementalStep> =
+            parse_steps_from_logs(file_spec.as_pathbuf(None)).unwrap();
 
         let mut frame: i64 = 0;
         self.rec.set_time_sequence("frame", frame);
@@ -343,26 +370,29 @@ impl RerunVisualizer {
         // for color scheme I think looks decent
         let polygon_color = [132, 90, 109, 255];
         let hull_color = [25, 100, 126, 255];
-        let next_vertex_color = [242, 192, 53, 255];
+        let new_vertex_color = [242, 192, 53, 255];
         let ut_color = [52, 163, 82, 255];
         let lt_color = [163, 0, 0, 255];
 
         self.visualize_nominal_polygon(polygon, name, polygon_color)?;
 
-        // For each step will show upper/lower tangent vertex selection and
-        // how they connect to the current hull, followed by the resulting
-        // hull computed at that step
-        for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
+        // For each step, show upper/lower tangent vertex selection and
+        // how they connect to the current hull, followed by the
+        // resulting hull computed at that step
+        for (i, step) in steps.iter().enumerate() {
             if i > 0 {
                 self.increment_frame(&mut frame);
 
-                let n_id = step.next_vertex.expect("Next vertex should exist i > 0");
-                let n_v = polygon.get_vertex(&n_id).unwrap();
+                let new_id = step.new_id.expect("Should exist i > 0");
+                let ut_id = step.ut_id.expect("Should exist i > 0");
+                let lt_id = step.lt_id.expect("Should exist i > 0");
+
+                let new_v = polygon.get_vertex(&new_id).unwrap();
                 self.rec.log(
                     format!("{name}/alg_{i}/next_vertex"),
-                    &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
+                    &rerun::Points2D::new([(new_v.x as f32, new_v.y as f32)])
                         .with_radii([1.0])
-                        .with_colors([next_vertex_color])
+                        .with_colors([new_vertex_color])
                         .with_draw_order(100.0),
                 )?;
 
@@ -370,11 +400,8 @@ impl RerunVisualizer {
 
                 // Show upper/lower tangent vertices and their connection
                 // to the current hull
-                let ut_id = step
-                    .upper_tangent_vertex
-                    .expect("Upper tangent vertex should exist i > 0");
                 self.visualize_vertex_chain(
-                    &polygon.get_vertices(vec![ut_id, n_id]),
+                    &polygon.get_vertices(vec![ut_id, new_id]),
                     &format!("{name}/alg_{i}/upper_tangent"),
                     Some(1.0),
                     Some(ut_color),
@@ -384,11 +411,8 @@ impl RerunVisualizer {
                     false,
                 )?;
 
-                let lt_id = step
-                    .lower_tangent_vertex
-                    .expect("Lower tangent vertex should exist i > 0");
                 self.visualize_vertex_chain(
-                    &polygon.get_vertices(vec![lt_id, n_id]),
+                    &polygon.get_vertices(vec![lt_id, new_id]),
                     &format!("{name}/alg_{i}/lower_tangent"),
                     Some(1.0),
                     Some(lt_color),
@@ -402,7 +426,7 @@ impl RerunVisualizer {
             // Show computed hull for this step
             self.increment_frame(&mut frame);
             self.visualize_vertex_chain(
-                &polygon.get_vertices(step.hull.clone()),
+                &polygon.get_vertices(step.hull_ids.clone()),
                 &format!("{name}/hull_{i}"),
                 Some(0.8),
                 Some(hull_color),
@@ -420,7 +444,7 @@ impl RerunVisualizer {
         }
 
         self.increment_frame(&mut frame);
-        self.visualize_final_hull(polygon, tracer, name, hull_color)?;
+        self.visualize_final_hull(&final_hull, name, hull_color)?;
 
         Ok(())
     }
@@ -445,14 +469,12 @@ impl RerunVisualizer {
 
     fn visualize_final_hull(
         &self,
-        polygon: &Polygon,
-        tracer: &mut Option<ConvexHullTracer>,
+        final_hull: &Polygon,
         name: &String,
         hull_color: [u8; 4],
     ) -> Result<(), VisualizationError> {
-        let final_step = tracer.as_ref().unwrap().steps.last().unwrap();
         self.visualize_vertex_chain(
-            &polygon.get_vertices(final_step.hull.clone()),
+            &final_hull.get_vertices(final_hull.vertex_ids()),
             &format!("{name}/hull_final"),
             Some(1.0),
             Some(hull_color),

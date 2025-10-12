@@ -4,6 +4,7 @@ use std::fmt;
 use crate::{line_segment::LineSegment, triangle::Triangle, vector::Vector};
 
 #[derive(Clone, Copy, Default, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(transparent)]
 pub struct VertexId(u32);
 
 impl From<u32> for VertexId {
@@ -45,7 +46,7 @@ impl fmt::Display for Vertex {
 
 impl fmt::Debug for Vertex {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{ id: {}, x: {}, y: {} }}", self.id, self.x, self.y)
+        write!(f, "{{id: {}, x: {}, y: {} }}", self.id, self.x, self.y)
     }
 }
 

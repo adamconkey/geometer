@@ -16,27 +16,27 @@ fn benchmark_convex_hull(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("divide_conquer", name),
             polygon,
-            |b, polygon| b.iter(|| DivideConquer.convex_hull(polygon, &mut None)),
+            |b, polygon| b.iter(|| DivideConquer.convex_hull(polygon)),
         );
         group.bench_with_input(
             BenchmarkId::new("gift_wrapping", name),
             polygon,
-            |b, polygon| b.iter(|| GiftWrapping.convex_hull(polygon, &mut None)),
+            |b, polygon| b.iter(|| GiftWrapping.convex_hull(polygon)),
         );
         group.bench_with_input(
             BenchmarkId::new("graham_scan", name),
             polygon,
-            |b, polygon| b.iter(|| GrahamScan.convex_hull(polygon, &mut None)),
+            |b, polygon| b.iter(|| GrahamScan.convex_hull(polygon)),
         );
         group.bench_with_input(
             BenchmarkId::new("incremental", name),
             polygon,
-            |b, polygon| b.iter(|| Incremental.convex_hull(polygon, &mut None)),
+            |b, polygon| b.iter(|| Incremental.convex_hull(polygon)),
         );
         group.bench_with_input(
             BenchmarkId::new("quick_hull", name),
             polygon,
-            |b, polygon| b.iter(|| QuickHull.convex_hull(polygon, &mut None)),
+            |b, polygon| b.iter(|| QuickHull.convex_hull(polygon)),
         );
     }
     group.finish();
