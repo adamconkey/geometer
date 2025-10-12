@@ -14,23 +14,23 @@ use crate::{
 #[derive(Debug, Default, Deserialize)]
 pub struct IncrementalStep {
     pub idx: usize,
-    pub new_v: Option<VertexId>,
-    pub ut_v: Option<VertexId>,
-    pub lt_v: Option<VertexId>,
+    pub new_id: Option<VertexId>,
+    pub ut_id: Option<VertexId>,
+    pub lt_id: Option<VertexId>,
     pub hull_ids: Vec<VertexId>,
 }
 
 impl fmt::Display for IncrementalStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "IncrementalStep {{ idx: {}", self.idx)?;
-        if let Some(new_v) = self.new_v {
-            write!(f, ", new_v: {new_v}")?;
+        if let Some(new_id) = self.new_id {
+            write!(f, ", new_id: {new_id}")?;
         }
-        if let Some(ut_v) = self.ut_v {
-            write!(f, ", ut_v: {ut_v}")?;
+        if let Some(ut_id) = self.ut_id {
+            write!(f, ", ut_id: {ut_id}")?;
         }
-        if let Some(lt_v) = self.lt_v {
-            write!(f, ", lt_v: {lt_v}")?;
+        if let Some(lt_id) = self.lt_id {
+            write!(f, ", lt_id: {lt_id}")?;
         }
         write!(f, ", hull_ids: {:?} }}", self.hull_ids)?;
         Ok(())
@@ -453,64 +453,64 @@ impl Incremental {
         (hull, other_ids)
     }
 
-    fn upper_tangent_vertex(&self, hull: &Polygon, v: VertexId, polygon: &Polygon) -> VertexId {
-        let mut ut_v_id = hull.highest_rightmost_vertex().id;
-        let mut ut = polygon.get_line_segment(&ut_v_id, &v).unwrap();
+    fn upper_tangent_vertex(&self, hull: &Polygon, id: VertexId, polygon: &Polygon) -> VertexId {
+        let mut ut_id = hull.highest_rightmost_vertex().id;
+        let mut ut = polygon.get_line_segment(&ut_id, &id).unwrap();
 
         trace!(
-            v:?=polygon.get_vertex(&ut_v_id).unwrap(), ut:?;
+            ut_v:?=polygon.get_vertex(&ut_id).unwrap(), ut:?;
             "Starting upper tangent vertex search"
         );
 
         let mut step = 1;
-        while !ut.is_upper_tangent(&ut_v_id, &hull) {
-            ut_v_id = hull.next_vertex_id(&ut_v_id).unwrap(); // Move up ccw
-            ut = polygon.get_line_segment(&ut_v_id, &v).unwrap();
-            trace!(v:?=polygon.get_vertex(&ut_v_id).unwrap(), ut:?; "Step {step}");
+        while !ut.is_upper_tangent(&ut_id, &hull) {
+            ut_id = hull.next_vertex_id(&ut_id).unwrap(); // Move up ccw
+            ut = polygon.get_line_segment(&ut_id, &id).unwrap();
+            trace!(ut_v:?=polygon.get_vertex(&ut_id).unwrap(), ut:?; "Step {step}");
             step += 1;
         }
 
-        ut_v_id
+        ut_id
     }
 
-    fn lower_tangent_vertex(&self, hull: &Polygon, v: VertexId, polygon: &Polygon) -> VertexId {
-        let mut lt_v_id = hull.lowest_rightmost_vertex().id;
-        let mut lt = polygon.get_line_segment(&lt_v_id, &v).unwrap();
+    fn lower_tangent_vertex(&self, hull: &Polygon, id: VertexId, polygon: &Polygon) -> VertexId {
+        let mut lt_id = hull.lowest_rightmost_vertex().id;
+        let mut lt = polygon.get_line_segment(&lt_id, &id).unwrap();
 
         trace!(
-            v:?=polygon.get_vertex(&lt_v_id).unwrap(), lt:?;
+            lt_v:?=polygon.get_vertex(&lt_id).unwrap(), lt:?;
             "Starting lower tangent vertex search"
         );
 
         let mut step = 1;
-        while !lt.is_lower_tangent(&lt_v_id, &hull) {
-            lt_v_id = hull.prev_vertex_id(&lt_v_id).unwrap(); // Move down cw
-            lt = polygon.get_line_segment(&lt_v_id, &v).unwrap();
-            trace!(v:?=polygon.get_vertex(&lt_v_id).unwrap(), lt:?; "Step {step}");
+        while !lt.is_lower_tangent(&lt_id, &hull) {
+            lt_id = hull.prev_vertex_id(&lt_id).unwrap(); // Move down cw
+            lt = polygon.get_line_segment(&lt_id, &id).unwrap();
+            trace!(lt_v:?=polygon.get_vertex(&lt_id).unwrap(), lt:?; "Step {step}");
             step += 1;
         }
 
-        lt_v_id
+        lt_id
     }
 
     fn extract_boundary(
         &self,
         hull: Polygon,
-        new_v: VertexId,
-        hull_ut_v: VertexId,
-        hull_lt_v: VertexId,
+        new_id: VertexId,
+        hull_ut_id: VertexId,
+        hull_lt_id: VertexId,
     ) -> Vec<VertexId> {
-        let mut boundary = vec![new_v];
-        let mut v = hull_ut_v;
+        let mut boundary = vec![new_id];
+        let mut id = hull_ut_id;
 
-        trace!(new_v:?, hull_ut_v:?, hull_lt_v:?; "Extracting boundary");
+        trace!(new_id:?, hull_ut_id:?, hull_lt_id:?; "Extracting boundary");
 
-        while v != hull_lt_v {
-            boundary.push(v);
-            v = hull.next_vertex_id(&v).unwrap();
-            trace!(v:?; "Boundary vertex");
+        while id != hull_lt_id {
+            boundary.push(id);
+            id = hull.next_vertex_id(&id).unwrap();
+            trace!(id:?; "Boundary vertex");
         }
-        boundary.push(hull_lt_v);
+        boundary.push(hull_lt_id);
         boundary
     }
 }
@@ -531,18 +531,18 @@ impl ConvexHullComputer for Incremental {
             }
         );
 
-        for (idx, new_v) in ids.into_iter().enumerate() {
-            let ut_v = self.upper_tangent_vertex(&hull, new_v, &polygon);
-            let lt_v = self.lower_tangent_vertex(&hull, new_v, &polygon);
-            let hull_ids = self.extract_boundary(hull, new_v, ut_v, lt_v);
+        for (idx, new_id) in ids.into_iter().enumerate() {
+            let ut_id = self.upper_tangent_vertex(&hull, new_id, &polygon);
+            let lt_id = self.lower_tangent_vertex(&hull, new_id, &polygon);
+            let hull_ids = self.extract_boundary(hull, new_id, ut_id, lt_id);
 
             debug!(
                 "{}",
                 IncrementalStep {
                     idx: idx + 1,
-                    new_v: Some(new_v),
-                    ut_v: Some(ut_v),
-                    lt_v: Some(lt_v),
+                    new_id: Some(new_id),
+                    ut_id: Some(ut_id),
+                    lt_id: Some(lt_id),
                     hull_ids: hull_ids.clone(),
                 }
             );

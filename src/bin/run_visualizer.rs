@@ -378,7 +378,7 @@ impl RerunVisualizer {
         // for color scheme I think looks decent
         let polygon_color = [132, 90, 109, 255];
         let hull_color = [25, 100, 126, 255];
-        let next_vertex_color = [242, 192, 53, 255];
+        let new_vertex_color = [242, 192, 53, 255];
         let ut_color = [52, 163, 82, 255];
         let lt_color = [163, 0, 0, 255];
 
@@ -391,17 +391,16 @@ impl RerunVisualizer {
             if i > 0 {
                 self.increment_frame(&mut frame);
 
-                // TODO maybe rename these on step to be about ids
-                let new_v = step.new_v.expect("Should exist i > 0");
-                let ut_v = step.ut_v.expect("Should exist i > 0");
-                let lt_v = step.lt_v.expect("Should exist i > 0");
+                let new_id = step.new_id.expect("Should exist i > 0");
+                let ut_id = step.ut_id.expect("Should exist i > 0");
+                let lt_id = step.lt_id.expect("Should exist i > 0");
 
-                let n_v = polygon.get_vertex(&new_v).unwrap();
+                let new_v = polygon.get_vertex(&new_id).unwrap();
                 self.rec.log(
                     format!("{name}/alg_{i}/next_vertex"),
-                    &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
+                    &rerun::Points2D::new([(new_v.x as f32, new_v.y as f32)])
                         .with_radii([1.0])
-                        .with_colors([next_vertex_color])
+                        .with_colors([new_vertex_color])
                         .with_draw_order(100.0),
                 )?;
 
@@ -410,7 +409,7 @@ impl RerunVisualizer {
                 // Show upper/lower tangent vertices and their connection
                 // to the current hull
                 self.visualize_vertex_chain(
-                    &polygon.get_vertices(vec![ut_v, new_v]),
+                    &polygon.get_vertices(vec![ut_id, new_id]),
                     &format!("{name}/alg_{i}/upper_tangent"),
                     Some(1.0),
                     Some(ut_color),
@@ -421,7 +420,7 @@ impl RerunVisualizer {
                 )?;
 
                 self.visualize_vertex_chain(
-                    &polygon.get_vertices(vec![lt_v, new_v]),
+                    &polygon.get_vertices(vec![lt_id, new_id]),
                     &format!("{name}/alg_{i}/lower_tangent"),
                     Some(1.0),
                     Some(lt_color),
