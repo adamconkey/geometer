@@ -3,7 +3,7 @@ use log::{debug, info, trace};
 use ordered_float::OrderedFloat as OF;
 
 use crate::{
-    alg_step::{GrahamScanStep, IncrementalStep},
+    alg_step::{log_graham_step, GrahamScanStep, IncrementalStep},
     data_structure::{HullSet, Stack},
     geometry::Geometry,
     polygon::Polygon,
@@ -122,14 +122,7 @@ impl ConvexHullComputer for GrahamScan {
         stack.push(polygon.rightmost_lowest_vertex().id);
         stack.push(vertices.remove(0).id);
 
-        debug!(
-            "{}",
-            GrahamScanStep {
-                idx: 0,
-                hull_ids: stack.clone(),
-                ..Default::default()
-            }
-        );
+        log_graham_step!(0, stack.clone());
 
         for (idx, new_v) in vertices.iter().enumerate() {
             debug!("Current vertex: {}", new_v.id);
@@ -150,15 +143,7 @@ impl ConvexHullComputer for GrahamScan {
                     stack.pop();
                 }
 
-                // TODO add macro for this
-                debug!(
-                    "{}",
-                    GrahamScanStep {
-                        idx: idx + 1,
-                        new_id: Some(new_v.id),
-                        hull_ids: stack.clone(),
-                    }
-                );
+                log_graham_step!(idx + 1, new_v.id, stack.clone());
 
                 if stack[stack.len() - 1] == new_v.id {
                     debug!("Current hull is valid, continue to next vertex");
