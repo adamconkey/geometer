@@ -8,7 +8,8 @@ use itertools::Itertools;
 use random_color::RandomColor;
 
 use geometer::{
-    convex_hull::{ConvexHullComputer, GrahamScan, Incremental, IncrementalStep, QuickHull},
+    alg_step::{GrahamScanStep, IncrementalStep},
+    convex_hull::{ConvexHullComputer, GrahamScan, Incremental, QuickHull},
     error::FileError,
     geometry::Geometry,
     polygon::Polygon,
@@ -219,8 +220,8 @@ impl RerunVisualizer {
                 .with_draw_order(100.0),
         )?;
 
-        let mut prev_step: Option<&ConvexHullTracerStep> = None;
-        for (i, step) in tracer.as_ref().unwrap().steps.iter().enumerate() {
+        let mut prev_step: Option<&GrahamScanStep> = None;
+        for (i, step) in steps.iter().enumerate() {
             if i == 0 {
                 // Show initial edge of hull
                 self.visualize_vertex_chain(
@@ -255,11 +256,11 @@ impl RerunVisualizer {
                 )?;
 
                 // Show next vertex used for angle test
-                let n_id = step.next_vertex.expect("Next vertex should exist i > 0");
-                let n_v = polygon.get_vertex(&n_id).unwrap();
+                let new_id = step.new_id.expect("Should exist i > 0");
+                let new_v = polygon.get_vertex(&new_id).unwrap();
                 self.rec.log(
                     format!("{name}/alg_{i}/next_vertex"),
-                    &rerun::Points2D::new([(n_v.x as f32, n_v.y as f32)])
+                    &rerun::Points2D::new([(new_v.x as f32, new_v.y as f32)])
                         .with_radii([1.0])
                         .with_colors([check_color])
                         .with_draw_order(100.0),
@@ -269,7 +270,7 @@ impl RerunVisualizer {
                     format!("{name}/alg/next_vertex_marker"),
                     &rerun::LineStrips2D::new([[
                         (v_0.x as f32, v_0.y as f32),
-                        (n_v.x as f32, n_v.y as f32),
+                        (new_v.x as f32, new_v.y as f32),
                     ]])
                     .with_radii([0.1])
                     .with_colors([init_vertex_color]),
@@ -279,8 +280,7 @@ impl RerunVisualizer {
                 self.clear(format!("{name}/alg_{i}/check_edge"))?;
                 self.clear(format!("{name}/alg_{i}/next_vertex"))?;
 
-                let top_id = step.hull[step.hull.len() - 1];
-                if n_id == top_id {
+                if new_id == step.hull_top() {
                     // Hull is fully repaired at this point, show final edge
                     // on stack connected to next vertex is a left turn (this
                     // will just be last 3 vertices in hull vertex chain
@@ -299,7 +299,7 @@ impl RerunVisualizer {
                     // Render final edge on stack to next vertex as invalid
                     // right turn
                     let mut ids = prev_step.expect("Prev step exists for i > 0").hull_tail(2);
-                    ids.push(n_id);
+                    ids.push(new_id);
                     self.visualize_vertex_chain(
                         &polygon.get_vertices(ids),
                         &format!("{name}/alg_{i}/invalid"),
@@ -315,7 +315,7 @@ impl RerunVisualizer {
                 // Show computed hull for this step
                 self.increment_frame(&mut frame);
                 self.visualize_vertex_chain(
-                    &polygon.get_vertices(step.hull.clone()),
+                    &polygon.get_vertices(step.hull_ids.clone()),
                     &format!("{name}/hull_{i}"),
                     Some(0.8),
                     Some(hull_color),
@@ -342,17 +342,16 @@ impl RerunVisualizer {
 
     pub fn parse_logs_graham_scan(
         &self,
-    ) -> Result<Vec<IncrementalStep>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<GrahamScanStep>, Box<dyn std::error::Error>> {
         // TODO will need to figure out how to handle the filename logs go to
         let file = File::open("visualizer.log")?;
         let reader = BufReader::new(file);
         let re = Regex::new(r"DEBUG \[.*\] \w+ (?<data>.*)").unwrap();
 
-        let mut steps = Vec::<IncrementalStep>::new();
+        let mut steps = Vec::<GrahamScanStep>::new();
         for line in reader.lines() {
             if let Some(caps) = re.captures(&line?) {
-                if let Ok(step) =
-                    serde_hjson::from_str::<IncrementalStep>(&caps["data"].to_string())
+                if let Ok(step) = serde_hjson::from_str::<GrahamScanStep>(&caps["data"].to_string())
                 {
                     steps.push(step);
                 }

@@ -21,6 +21,16 @@ impl fmt::Display for GrahamScanStep {
     }
 }
 
+impl GrahamScanStep {
+    pub fn hull_tail(&self, num_elements: usize) -> Vec<VertexId> {
+        self.hull_ids[self.hull_ids.len() - num_elements..].to_vec()
+    }
+
+    pub fn hull_top(&self) -> VertexId {
+        self.hull_ids[self.hull_ids.len() - 1]
+    }
+}
+
 #[derive(Debug, Default, Deserialize)]
 pub struct IncrementalStep {
     pub idx: usize,
