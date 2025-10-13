@@ -272,6 +272,16 @@ impl RerunVisualizer {
                 )?;
 
                 self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!(
+                        "Checking angle between vector {} -> {} and vertex {}",
+                        v_origin.id, v_head.id, new_id
+                    ))
+                    .with_level(rerun::TextLogLevel::DEBUG)
+                    .with_color(check_color),
+                )?;
+
+                self.rec.log(
                     format!("{name}/alg/next_vertex_marker"),
                     &rerun::LineStrips2D::new([[
                         (v_0.x as f32, v_0.y as f32),
@@ -300,13 +310,23 @@ impl RerunVisualizer {
                         Some(100.0),
                         false,
                     )?;
+
+                    self.rec.log(
+                        "logs",
+                        &rerun::TextLog::new(format!(
+                            "Pushing valid vertex to hull stack: {}",
+                            new_id
+                        ))
+                        .with_level(rerun::TextLogLevel::DEBUG)
+                        .with_color(valid_color),
+                    )?;
                 } else {
                     // Render final edge on stack to next vertex as invalid
                     // right turn
                     let mut ids = prev_step.expect("Prev step exists for i > 0").hull_tail(2);
                     ids.push(new_id);
                     self.visualize_vertex_chain(
-                        &polygon.get_vertices(ids),
+                        &polygon.get_vertices(ids.clone()),
                         &format!("{name}/alg_{i}/invalid"),
                         Some(1.0),
                         Some(invalid_color),
@@ -314,6 +334,16 @@ impl RerunVisualizer {
                         Some(invalid_color),
                         Some(100.0),
                         false,
+                    )?;
+
+                    self.rec.log(
+                        "logs",
+                        &rerun::TextLog::new(format!(
+                            "Popping invalid vertex from hull stack: {}",
+                            ids[1]
+                        ))
+                        .with_level(rerun::TextLogLevel::DEBUG)
+                        .with_color(invalid_color),
                     )?;
                 }
 
@@ -329,6 +359,12 @@ impl RerunVisualizer {
                     None,
                     true,
                 )?;
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!("Current hull stack: {:?}", step.hull_ids))
+                        .with_level(rerun::TextLogLevel::DEBUG)
+                        .with_color(hull_color),
+                )?;
             }
             prev_step = Some(step);
 
@@ -341,6 +377,12 @@ impl RerunVisualizer {
 
         self.increment_frame(&mut frame);
         self.visualize_final_hull(&final_hull, name, hull_color)?;
+        self.rec.log(
+            "logs",
+            &rerun::TextLog::new(format!("Final hull: {:?}", final_hull.vertex_ids()))
+                .with_level(rerun::TextLogLevel::DEBUG)
+                .with_color(hull_color),
+        )?;
 
         Ok(())
     }
