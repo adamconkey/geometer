@@ -437,10 +437,10 @@ impl RerunVisualizer {
         // more interpretable way? For now just hardcoding values
         // for color scheme I think looks decent
         let polygon_color = [132, 90, 109, 255];
-        let hull_color = [25, 100, 126, 255];
+        let hull_color = [72, 125, 219, 255];
         let new_vertex_color = [242, 192, 53, 255];
-        let ut_color = [52, 163, 82, 255];
-        let lt_color = [163, 0, 0, 255];
+        let ut_color = [212, 70, 110, 255];
+        let lt_color = [242, 138, 27, 255];
 
         self.visualize_nominal_polygon(polygon, name, polygon_color)?;
 
@@ -461,7 +461,16 @@ impl RerunVisualizer {
                     &rerun::Points2D::new([(new_v.x as f32, new_v.y as f32)])
                         .with_radii([1.0])
                         .with_colors([new_vertex_color])
-                        .with_draw_order(100.0),
+                        .with_draw_order(100.0)
+                        .with_labels([new_id.to_string()]),
+                )?;
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!(
+                        "Connecting vertex {new_id} to hull with upper/lower tangents"
+                    ))
+                    .with_level(rerun::TextLogLevel::DEBUG)
+                    .with_color(new_vertex_color),
                 )?;
 
                 self.increment_frame(&mut frame);
@@ -477,9 +486,14 @@ impl RerunVisualizer {
                     Some(ut_color),
                     Some(90.0),
                     false,
-                    false,
+                    true,
                 )?;
-
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!("Upper tangent: {new_id} -> {ut_id}"))
+                        .with_level(rerun::TextLogLevel::DEBUG)
+                        .with_color(ut_color),
+                )?;
                 self.visualize_vertex_chain(
                     &polygon.get_vertices(vec![lt_id, new_id]),
                     &format!("{name}/alg_{i}/lower_tangent"),
@@ -489,7 +503,13 @@ impl RerunVisualizer {
                     Some(lt_color),
                     Some(90.0),
                     false,
-                    false,
+                    true,
+                )?;
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!("Lower tangent: {new_id} -> {lt_id}"))
+                        .with_level(rerun::TextLogLevel::DEBUG)
+                        .with_color(lt_color),
                 )?;
             }
 
@@ -504,7 +524,13 @@ impl RerunVisualizer {
                 Some(hull_color),
                 Some(50.0),
                 true,
-                false,
+                true,
+            )?;
+            self.rec.log(
+                "logs",
+                &rerun::TextLog::new(format!("Current hull stack: {:?}", step.hull_ids))
+                    .with_level(rerun::TextLogLevel::DEBUG)
+                    .with_color(hull_color),
             )?;
 
             self.clear_recursive(format!("{name}/alg_{i}"))?;
