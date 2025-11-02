@@ -92,18 +92,23 @@ impl RerunVisualizer {
         edge_color: Option<[u8; 4]>,
         draw_order: Option<f32>,
         close_chain: bool,
+        show_labels: bool,
     ) -> Result<(), VisualizationError> {
         let vertex_radius = vertex_radius.unwrap_or(1.0);
         let vertex_color = vertex_color.unwrap_or(RandomColor::new().to_rgba_array());
         let draw_order = draw_order.unwrap_or(30.0);
 
-        self.rec.log(
-            format!("{name}/vertices"),
-            &rerun::Points2D::new(vertices.iter().map(|v| (v.x as f32, v.y as f32)))
-                .with_radii([vertex_radius])
-                .with_colors([vertex_color])
-                .with_draw_order(draw_order),
-        )?;
+        let mut points = rerun::Points2D::new(vertices.iter().map(|v| (v.x as f32, v.y as f32)))
+            .with_radii([vertex_radius])
+            .with_colors([vertex_color])
+            .with_draw_order(draw_order);
+
+        if show_labels {
+            let vertex_ids = vertices.iter().map(|v| v.id.to_string()).collect_vec();
+            points = points.with_labels(vertex_ids);
+        }
+
+        self.rec.log(format!("{name}/vertices"), &points)?;
 
         let edge_radius = edge_radius.unwrap_or(0.1);
         let edge_color = edge_color.unwrap_or(RandomColor::new().to_rgba_array());
@@ -145,6 +150,7 @@ impl RerunVisualizer {
             Some(polygon_color),
             None,
             true,
+            false,
         )?;
 
         for (i, mesh) in rerun_meshes.iter().enumerate() {
@@ -178,6 +184,7 @@ impl RerunVisualizer {
             Some(hull_color),
             Some(100.0),
             true,
+            false,
         )?;
 
         Ok(())
@@ -204,15 +211,24 @@ impl RerunVisualizer {
         // for color scheme I think looks decent
         let init_vertex_color = [255, 255, 255, 255];
         let polygon_color = [132, 90, 109, 255];
-        let hull_color = [25, 100, 126, 255];
+        let hull_color = [72, 125, 219, 255];
         let check_color = [242, 192, 53, 255];
         let valid_color = [52, 163, 82, 255];
-        let invalid_color = [163, 0, 0, 255];
+        let invalid_color = [235, 64, 52, 255];
 
         let mut frame: i64 = 0;
         self.rec.set_time_sequence("frame", frame);
 
         self.visualize_nominal_polygon(polygon, name, polygon_color)?;
+
+        self.rec.log(
+            "logs",
+            &rerun::TextLog::new("Polygon to compute convex hull for")
+                .with_level(rerun::TextLogLevel::DEBUG)
+                .with_color(polygon_color),
+        )?;
+
+        self.increment_frame(&mut frame);
 
         // Show initial vertex establishing min angle order
         let id_0 = polygon.vertex_ids()[0];
@@ -222,7 +238,8 @@ impl RerunVisualizer {
             &rerun::Points2D::new([(v_0.x as f32, v_0.y as f32)])
                 .with_radii([1.0])
                 .with_colors([init_vertex_color])
-                .with_draw_order(100.0),
+                .with_draw_order(100.0)
+                .with_labels([id_0.to_string()]),
         )?;
 
         let mut prev_step: Option<&GrahamScanStep> = None;
@@ -238,6 +255,17 @@ impl RerunVisualizer {
                     Some(hull_color),
                     None,
                     false,
+                    true,
+                )?;
+
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!(
+                        "Initialized with hull edge {} -> {}",
+                        step.hull_ids[0], step.hull_ids[1]
+                    ))
+                    .with_level(rerun::TextLogLevel::DEBUG)
+                    .with_color(hull_color),
                 )?;
             } else {
                 self.increment_frame(&mut frame);
@@ -257,7 +285,8 @@ impl RerunVisualizer {
                     .with_origins([(v_origin.x as f32, v_origin.y as f32)])
                     .with_radii([0.3])
                     .with_colors([check_color])
-                    .with_draw_order(100.0),
+                    .with_draw_order(100.0)
+                    .with_labels([format!("{} -> {}", v_origin.id, v_head.id)]),
                 )?;
 
                 // Show next vertex used for angle test
@@ -268,7 +297,18 @@ impl RerunVisualizer {
                     &rerun::Points2D::new([(new_v.x as f32, new_v.y as f32)])
                         .with_radii([1.0])
                         .with_colors([check_color])
-                        .with_draw_order(100.0),
+                        .with_draw_order(100.0)
+                        .with_labels([new_id.to_string()]),
+                )?;
+
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!(
+                        "Checking angle between vector {} -> {} and vertex {}",
+                        v_origin.id, v_head.id, new_id
+                    ))
+                    .with_level(rerun::TextLogLevel::DEBUG)
+                    .with_color(check_color),
                 )?;
 
                 self.rec.log(
@@ -299,14 +339,27 @@ impl RerunVisualizer {
                         Some(valid_color),
                         Some(100.0),
                         false,
+                        true,
                     )?;
+
+                    self.rec.log(
+                        "logs",
+                        &rerun::TextLog::new(format!(
+                            "Pushing valid vertex to hull stack: {}",
+                            new_id
+                        ))
+                        .with_level(rerun::TextLogLevel::DEBUG)
+                        .with_color(valid_color),
+                    )?;
+
+                    self.increment_frame(&mut frame);
                 } else {
                     // Render final edge on stack to next vertex as invalid
                     // right turn
                     let mut ids = prev_step.expect("Prev step exists for i > 0").hull_tail(2);
                     ids.push(new_id);
                     self.visualize_vertex_chain(
-                        &polygon.get_vertices(ids),
+                        &polygon.get_vertices(ids.clone()),
                         &format!("{name}/alg_{i}/invalid"),
                         Some(1.0),
                         Some(invalid_color),
@@ -314,11 +367,32 @@ impl RerunVisualizer {
                         Some(invalid_color),
                         Some(100.0),
                         false,
+                        true,
+                    )?;
+
+                    self.rec.log(
+                        "logs",
+                        &rerun::TextLog::new(format!(
+                            "Popping invalid vertex from hull stack: {}",
+                            ids[1]
+                        ))
+                        .with_level(rerun::TextLogLevel::DEBUG)
+                        .with_color(invalid_color),
+                    )?;
+
+                    self.increment_frame(&mut frame);
+                    // Keep visualization of vertex being checked for next iter
+                    self.rec.log(
+                        format!("{name}/alg_{}/next_vertex", i + 1),
+                        &rerun::Points2D::new([(new_v.x as f32, new_v.y as f32)])
+                            .with_radii([1.0])
+                            .with_colors([check_color])
+                            .with_draw_order(100.0)
+                            .with_labels([new_id.to_string()]),
                     )?;
                 }
 
                 // Show computed hull for this step
-                self.increment_frame(&mut frame);
                 self.visualize_vertex_chain(
                     &polygon.get_vertices(step.hull_ids.clone()),
                     &format!("{name}/hull_{i}"),
@@ -328,6 +402,13 @@ impl RerunVisualizer {
                     Some(hull_color),
                     None,
                     true,
+                    true,
+                )?;
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!("Current hull stack: {:?}", step.hull_ids))
+                        .with_level(rerun::TextLogLevel::DEBUG)
+                        .with_color(hull_color),
                 )?;
             }
             prev_step = Some(step);
@@ -341,6 +422,12 @@ impl RerunVisualizer {
 
         self.increment_frame(&mut frame);
         self.visualize_final_hull(&final_hull, name, hull_color)?;
+        self.rec.log(
+            "logs",
+            &rerun::TextLog::new(format!("Final hull: {:?}", final_hull.vertex_ids()))
+                .with_level(rerun::TextLogLevel::DEBUG)
+                .with_color(hull_color),
+        )?;
 
         Ok(())
     }
@@ -369,12 +456,19 @@ impl RerunVisualizer {
         // more interpretable way? For now just hardcoding values
         // for color scheme I think looks decent
         let polygon_color = [132, 90, 109, 255];
-        let hull_color = [25, 100, 126, 255];
+        let hull_color = [72, 125, 219, 255];
         let new_vertex_color = [242, 192, 53, 255];
-        let ut_color = [52, 163, 82, 255];
-        let lt_color = [163, 0, 0, 255];
+        let ut_color = [212, 70, 110, 255];
+        let lt_color = [242, 138, 27, 255];
 
         self.visualize_nominal_polygon(polygon, name, polygon_color)?;
+
+        self.rec.log(
+            "logs",
+            &rerun::TextLog::new("Polygon to compute convex hull for")
+                .with_level(rerun::TextLogLevel::DEBUG)
+                .with_color(polygon_color),
+        )?;
 
         // For each step, show upper/lower tangent vertex selection and
         // how they connect to the current hull, followed by the
@@ -393,7 +487,16 @@ impl RerunVisualizer {
                     &rerun::Points2D::new([(new_v.x as f32, new_v.y as f32)])
                         .with_radii([1.0])
                         .with_colors([new_vertex_color])
-                        .with_draw_order(100.0),
+                        .with_draw_order(100.0)
+                        .with_labels([new_id.to_string()]),
+                )?;
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!(
+                        "Connecting vertex {new_id} to hull with upper/lower tangents"
+                    ))
+                    .with_level(rerun::TextLogLevel::DEBUG)
+                    .with_color(new_vertex_color),
                 )?;
 
                 self.increment_frame(&mut frame);
@@ -409,8 +512,14 @@ impl RerunVisualizer {
                     Some(ut_color),
                     Some(90.0),
                     false,
+                    true,
                 )?;
-
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!("Upper tangent: {new_id} -> {ut_id}"))
+                        .with_level(rerun::TextLogLevel::DEBUG)
+                        .with_color(ut_color),
+                )?;
                 self.visualize_vertex_chain(
                     &polygon.get_vertices(vec![lt_id, new_id]),
                     &format!("{name}/alg_{i}/lower_tangent"),
@@ -420,6 +529,13 @@ impl RerunVisualizer {
                     Some(lt_color),
                     Some(90.0),
                     false,
+                    true,
+                )?;
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!("Lower tangent: {new_id} -> {lt_id}"))
+                        .with_level(rerun::TextLogLevel::DEBUG)
+                        .with_color(lt_color),
                 )?;
             }
 
@@ -434,6 +550,13 @@ impl RerunVisualizer {
                 Some(hull_color),
                 Some(50.0),
                 true,
+                true,
+            )?;
+            self.rec.log(
+                "logs",
+                &rerun::TextLog::new(format!("Current hull stack: {:?}", step.hull_ids))
+                    .with_level(rerun::TextLogLevel::DEBUG)
+                    .with_color(hull_color),
             )?;
 
             self.clear_recursive(format!("{name}/alg_{i}"))?;
@@ -464,6 +587,7 @@ impl RerunVisualizer {
             Some(polygon_color),
             Some(10.0),
             true,
+            false,
         )
     }
 
@@ -481,6 +605,7 @@ impl RerunVisualizer {
             Some(0.3),
             Some(hull_color),
             Some(200.0),
+            true,
             true,
         )
     }
