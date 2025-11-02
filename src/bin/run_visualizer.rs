@@ -221,6 +221,15 @@ impl RerunVisualizer {
 
         self.visualize_nominal_polygon(polygon, name, polygon_color)?;
 
+        self.rec.log(
+            "logs",
+            &rerun::TextLog::new(format!("Polygon to compute convex hull for",))
+                .with_level(rerun::TextLogLevel::DEBUG)
+                .with_color(polygon_color),
+        )?;
+
+        self.increment_frame(&mut frame);
+
         // Show initial vertex establishing min angle order
         let id_0 = polygon.vertex_ids()[0];
         let v_0 = polygon.get_vertex(&id_0).unwrap();
@@ -246,7 +255,17 @@ impl RerunVisualizer {
                     Some(hull_color),
                     None,
                     false,
-                    false,
+                    true,
+                )?;
+
+                self.rec.log(
+                    "logs",
+                    &rerun::TextLog::new(format!(
+                        "Initialized with hull edge {} -> {}",
+                        step.hull_ids[0], step.hull_ids[1]
+                    ))
+                    .with_level(rerun::TextLogLevel::DEBUG)
+                    .with_color(hull_color),
                 )?;
             } else {
                 self.increment_frame(&mut frame);
@@ -443,6 +462,13 @@ impl RerunVisualizer {
         let lt_color = [242, 138, 27, 255];
 
         self.visualize_nominal_polygon(polygon, name, polygon_color)?;
+
+        self.rec.log(
+            "logs",
+            &rerun::TextLog::new(format!("Polygon to compute convex hull for",))
+                .with_level(rerun::TextLogLevel::DEBUG)
+                .with_color(polygon_color),
+        )?;
 
         // For each step, show upper/lower tangent vertex selection and
         // how they connect to the current hull, followed by the
