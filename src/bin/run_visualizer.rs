@@ -223,7 +223,7 @@ impl RerunVisualizer {
 
         self.rec.log(
             "logs",
-            &rerun::TextLog::new(format!("Polygon to compute convex hull for",))
+            &rerun::TextLog::new("Polygon to compute convex hull for")
                 .with_level(rerun::TextLogLevel::DEBUG)
                 .with_color(polygon_color),
         )?;
@@ -465,7 +465,7 @@ impl RerunVisualizer {
 
         self.rec.log(
             "logs",
-            &rerun::TextLog::new(format!("Polygon to compute convex hull for",))
+            &rerun::TextLog::new("Polygon to compute convex hull for")
                 .with_level(rerun::TextLogLevel::DEBUG)
                 .with_color(polygon_color),
         )?;
