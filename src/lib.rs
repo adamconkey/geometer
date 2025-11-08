@@ -20,5 +20,8 @@ pub mod util;
 pub mod vector;
 pub mod vertex;
 
+#[cfg(feature = "visualizer")]
+pub mod convex_hull_visualizer;
+
 #[cfg(test)]
 pub mod test_util;
