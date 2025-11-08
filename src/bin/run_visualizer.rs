@@ -584,7 +584,7 @@ impl RerunVisualizer {
             Some(200.0),
             true,
             true,
-        );
+        )?;
 
         self.rec.log(
             "logs",
