@@ -32,20 +32,23 @@ struct Args {
 
 fn main() -> Result<(), VisualizationError> {
     let args = Args::parse();
-    let visualizer = RerunVisualizer::new("Geometer".to_string());
+    let visualizer = RerunVisualizer::new("Geometer".to_string())?;
 
     let polygon = load_polygon(&args.polygon, &args.folder)?;
     let name = format!("{}/{}", args.polygon, args.folder);
 
     match args.visualization {
-        Visualization::ConvexHull => visualizer?.visualize_convex_hull(&polygon, &name)?,
+        Visualization::ConvexHull => visualizer.visualize_convex_hull(&polygon, &name)?,
         Visualization::ConvexHullGrahamScan => {
-            visualizer?.visualize_convex_hull_graham_scan(&polygon, &name)?
+            // TODO this is temporary just to compile for now,
+            // will ultimately create separate visualizers for
+            // each one and run them.
+            visualizer.visualize_convex_hull_incremental(&polygon, &name)?
         }
         Visualization::ConvexHullIncremental => {
-            visualizer?.visualize_convex_hull_incremental(&polygon, &name)?
+            visualizer.visualize_convex_hull_incremental(&polygon, &name)?
         }
-        Visualization::Triangulation => visualizer?.visualize_triangulation(&polygon, &name)?,
+        Visualization::Triangulation => visualizer.visualize_triangulation(&polygon, &name)?,
     };
 
     Ok(())
