@@ -195,13 +195,7 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        let file_spec = FileSpec::default()
-            .directory("/tmp")
-            .basename("visualizer_graham_scan");
-        Logger::try_with_str("debug")?
-            .log_to_file(file_spec.clone())
-            .start()?;
-
+        let file_spec = self.init_logger("visualizer_graham_scan".to_string())?;
         let final_hull = GrahamScan.convex_hull(polygon);
         let steps: Vec<GrahamScanStep> = parse_steps_from_logs(file_spec.as_pathbuf(None))?;
 
@@ -415,12 +409,6 @@ impl RerunVisualizer {
 
         self.increment_frame(&mut frame);
         self.visualize_final_hull(&final_hull, name, hull_color)?;
-        self.rec.log(
-            "logs",
-            &rerun::TextLog::new(format!("Final hull: {:?}", final_hull.vertex_ids()))
-                .with_level(rerun::TextLogLevel::DEBUG)
-                .with_color(hull_color),
-        )?;
 
         Ok(())
     }
@@ -430,13 +418,7 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        let file_spec = FileSpec::default()
-            .directory("/tmp")
-            .basename("visualizer_incremental");
-        Logger::try_with_str("debug")?
-            .log_to_file(file_spec.clone())
-            .start()?;
-
+        let file_spec = self.init_logger("visualizer_incremental".to_string())?;
         let final_hull = Incremental.convex_hull(polygon);
         let steps: Vec<IncrementalStep> =
             parse_steps_from_logs(file_spec.as_pathbuf(None)).unwrap();
@@ -602,7 +584,16 @@ impl RerunVisualizer {
             Some(200.0),
             true,
             true,
-        )
+        );
+
+        self.rec.log(
+            "logs",
+            &rerun::TextLog::new(format!("Final hull: {:?}", final_hull.vertex_ids()))
+                .with_level(rerun::TextLogLevel::DEBUG)
+                .with_color(hull_color),
+        )?;
+
+        Ok(())
     }
 
     fn increment_frame(&self, frame: &mut i64) {
@@ -638,6 +629,14 @@ impl RerunVisualizer {
             meshes.push(mesh);
         }
         meshes
+    }
+
+    fn init_logger(&self, name: String) -> Result<FileSpec, VisualizationError> {
+        let file_spec = FileSpec::default().directory("/tmp").basename(name);
+        Logger::try_with_str("debug")?
+            .log_to_file(file_spec.clone())
+            .start()?;
+        Ok(file_spec)
     }
 }
 
