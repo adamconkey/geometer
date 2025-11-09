@@ -9,7 +9,7 @@ use crate::{
     geometry::Geometry,
     polygon::Polygon,
     triangulation::{EarClipping, Triangulation, TriangulationComputer},
-    vertex::Vertex,
+    vertex::{Vertex, VertexId},
 };
 
 #[derive(Debug)]
@@ -138,13 +138,12 @@ impl RerunVisualizer {
         polygon: &Polygon,
         name: &String,
     ) -> Result<(), VisualizationError> {
-        let polygon_color = [132, 90, 109, 255];
         let hull_color = [25, 100, 126, 255];
 
         let mut frame: i64 = 0;
         self.rec.set_time_sequence("frame", frame);
 
-        self.visualize_nominal_polygon(polygon, name, polygon_color)?;
+        self.visualize_nominal_polygon(polygon, name)?;
 
         self.increment_frame(&mut frame);
         let hull = QuickHull.convex_hull(polygon);
@@ -180,13 +179,12 @@ impl RerunVisualizer {
         // be specified in some configurable or at the very least
         // more interpretable way? For now just hardcoding values
         // for color scheme I think looks decent
-        let polygon_color = [132, 90, 109, 255];
         let hull_color = [72, 125, 219, 255];
         let new_vertex_color = [242, 192, 53, 255];
         let ut_color = [212, 70, 110, 255];
         let lt_color = [242, 138, 27, 255];
 
-        self.visualize_nominal_polygon(polygon, name, polygon_color)?;
+        self.visualize_nominal_polygon(polygon, name)?;
 
         // For each step, show upper/lower tangent vertex selection and
         // how they connect to the current hull, followed by the
@@ -285,7 +283,7 @@ impl RerunVisualizer {
         }
 
         self.increment_frame(&mut frame);
-        self.visualize_final_hull(&final_hull, name, hull_color)?;
+        self.visualize_final_hull(&final_hull, name)?;
 
         Ok(())
     }
@@ -294,8 +292,10 @@ impl RerunVisualizer {
         &self,
         polygon: &Polygon,
         name: &String,
-        polygon_color: [u8; 4],
     ) -> Result<(), VisualizationError> {
+        // TODO this will be part of config
+        let polygon_color = [132, 90, 109, 255];
+
         self.visualize_vertex_chain(
             &polygon.vertices().into_iter().cloned().collect_vec(),
             &format!("{name}/polygon"),
@@ -322,8 +322,10 @@ impl RerunVisualizer {
         &self,
         final_hull: &Polygon,
         name: &String,
-        hull_color: [u8; 4],
     ) -> Result<(), VisualizationError> {
+        // TODO this will be part of config
+        let hull_color = [72, 125, 219, 255];
+
         self.visualize_vertex_chain(
             &final_hull.get_vertices(final_hull.vertex_ids()),
             &format!("{name}/hull_final"),
@@ -420,18 +422,11 @@ impl GrahamScanVisualizer {
         // more interpretable way? For now just hardcoding values
         // for color scheme I think looks decent
         let init_vertex_color = [255, 255, 255, 255];
-        let polygon_color = [132, 90, 109, 255];
-        let hull_color = [72, 125, 219, 255];
         let check_color = [242, 192, 53, 255];
-        let valid_color = [52, 163, 82, 255];
-        let invalid_color = [235, 64, 52, 255];
 
-        let mut frame: i64 = 0;
-        self.rerun.rec.set_time_sequence("frame", frame);
-
-        self.rerun
-            .visualize_nominal_polygon(polygon, name, polygon_color)?;
-
+        let mut frame: i64 = -1;
+        self.rerun.increment_frame(&mut frame);
+        self.rerun.visualize_nominal_polygon(polygon, name)?;
         self.rerun.increment_frame(&mut frame);
 
         // Show initial vertex establishing min angle order
@@ -450,27 +445,7 @@ impl GrahamScanVisualizer {
         for (i, step) in steps.iter().enumerate() {
             if i == 0 {
                 // Show initial edge of hull
-                self.rerun.visualize_vertex_chain(
-                    &polygon.get_vertices(step.hull_tail(2)),
-                    &format!("{name}/hull_{i}"),
-                    Some(0.8),
-                    Some(hull_color),
-                    Some(0.2),
-                    Some(hull_color),
-                    None,
-                    false,
-                    true,
-                )?;
-
-                self.rerun.rec.log(
-                    "logs",
-                    &rerun::TextLog::new(format!(
-                        "Initialized with hull edge {} -> {}",
-                        step.hull_ids[0], step.hull_ids[1]
-                    ))
-                    .with_level(rerun::TextLogLevel::DEBUG)
-                    .with_color(hull_color),
-                )?;
+                self.visualize_hull(step.hull_ids.clone(), &polygon, &name, i, false)?;
             } else {
                 self.rerun.increment_frame(&mut frame);
 
@@ -534,57 +509,16 @@ impl GrahamScanVisualizer {
                     // on stack connected to next vertex is a left turn (this
                     // will just be last 3 vertices in hull vertex chain
                     // since the next vertex was accepted to the hull)
-                    self.rerun.visualize_vertex_chain(
-                        &polygon.get_vertices(step.hull_tail(3)),
-                        &format!("{name}/alg_{i}/valid"),
-                        Some(1.0),
-                        Some(valid_color),
-                        Some(0.3),
-                        Some(valid_color),
-                        Some(100.0),
-                        false,
-                        true,
-                    )?;
-
-                    self.rerun.rec.log(
-                        "logs",
-                        &rerun::TextLog::new(format!(
-                            "Pushing valid vertex to hull stack: {}",
-                            new_id
-                        ))
-                        .with_level(rerun::TextLogLevel::DEBUG)
-                        .with_color(valid_color),
-                    )?;
-
+                    self.visualize_check_result(step.hull_tail(3), polygon, name, i, true)?;
                     self.rerun.increment_frame(&mut frame);
                 } else {
                     // Render final edge on stack to next vertex as invalid
                     // right turn
                     let mut ids = prev_step.expect("Prev step exists for i > 0").hull_tail(2);
                     ids.push(new_id);
-                    self.rerun.visualize_vertex_chain(
-                        &polygon.get_vertices(ids.clone()),
-                        &format!("{name}/alg_{i}/invalid"),
-                        Some(1.0),
-                        Some(invalid_color),
-                        Some(0.3),
-                        Some(invalid_color),
-                        Some(100.0),
-                        false,
-                        true,
-                    )?;
-
-                    self.rerun.rec.log(
-                        "logs",
-                        &rerun::TextLog::new(format!(
-                            "Popping invalid vertex from hull stack: {}",
-                            ids[1]
-                        ))
-                        .with_level(rerun::TextLogLevel::DEBUG)
-                        .with_color(invalid_color),
-                    )?;
-
+                    self.visualize_check_result(ids.clone(), polygon, name, i, false)?;
                     self.rerun.increment_frame(&mut frame);
+
                     // Keep visualization of vertex being checked for next iter
                     self.rerun.rec.log(
                         format!("{name}/alg_{}/next_vertex", i + 1),
@@ -597,23 +531,7 @@ impl GrahamScanVisualizer {
                 }
 
                 // Show computed hull for this step
-                self.rerun.visualize_vertex_chain(
-                    &polygon.get_vertices(step.hull_ids.clone()),
-                    &format!("{name}/hull_{i}"),
-                    Some(0.8),
-                    Some(hull_color),
-                    Some(0.2),
-                    Some(hull_color),
-                    None,
-                    true,
-                    true,
-                )?;
-                self.rerun.rec.log(
-                    "logs",
-                    &rerun::TextLog::new(format!("Current hull stack: {:?}", step.hull_ids))
-                        .with_level(rerun::TextLogLevel::DEBUG)
-                        .with_color(hull_color),
-                )?;
+                self.visualize_hull(step.hull_ids.clone(), &polygon, &name, i, false)?;
             }
             prev_step = Some(step);
 
@@ -626,8 +544,95 @@ impl GrahamScanVisualizer {
         }
 
         self.rerun.increment_frame(&mut frame);
-        self.rerun
-            .visualize_final_hull(&final_hull, name, hull_color)?;
+        self.rerun.visualize_final_hull(&final_hull, name)?;
+
+        Ok(())
+    }
+
+    fn visualize_hull(
+        &self,
+        hull_ids: Vec<VertexId>,
+        polygon: &Polygon,
+        name: &String,
+        step_index: usize,
+        initial: bool,
+    ) -> Result<(), VisualizationError> {
+        // TODO this will be part of config
+        let hull_color = [72, 125, 219, 255];
+
+        self.rerun.visualize_vertex_chain(
+            &polygon.get_vertices(hull_ids.clone()),
+            &format!("{name}/hull_{step_index}"),
+            Some(0.8),
+            Some(hull_color),
+            Some(0.2),
+            Some(hull_color),
+            None,
+            !initial,
+            true,
+        )?;
+
+        if initial {
+            self.rerun.rec.log(
+                "logs",
+                &rerun::TextLog::new(format!(
+                    "Initialized with hull edge {} -> {}",
+                    hull_ids[0], hull_ids[1]
+                ))
+                .with_level(rerun::TextLogLevel::DEBUG)
+                .with_color(hull_color),
+            )?;
+        } else {
+            self.rerun.rec.log(
+                "logs",
+                &rerun::TextLog::new(format!("Current hull stack: {:?}", hull_ids))
+                    .with_level(rerun::TextLogLevel::DEBUG)
+                    .with_color(hull_color),
+            )?;
+        }
+        Ok(())
+    }
+
+    fn visualize_check_result(
+        &self,
+        vertex_ids: Vec<VertexId>,
+        polygon: &Polygon,
+        name: &String,
+        step_index: usize,
+        valid: bool,
+    ) -> Result<(), VisualizationError> {
+        // TODO this will be part of config
+        let valid_color = [52, 163, 82, 255];
+        let invalid_color = [235, 64, 52, 255];
+
+        let color = match valid {
+            true => valid_color,
+            false => invalid_color,
+        };
+
+        self.rerun.visualize_vertex_chain(
+            &polygon.get_vertices(vertex_ids.clone()),
+            &format!("{name}/alg_{step_index}/valid"),
+            Some(1.0),
+            Some(color),
+            Some(0.3),
+            Some(color),
+            Some(100.0),
+            false,
+            true,
+        )?;
+
+        let msg = match valid {
+            true => format!("Pushing valid vertex to hull stack: {}", vertex_ids[0]),
+            false => format!("Popping invalid vertex from hull stack: {}", vertex_ids[1]),
+        };
+
+        self.rerun.rec.log(
+            "logs",
+            &rerun::TextLog::new(msg)
+                .with_level(rerun::TextLogLevel::DEBUG)
+                .with_color(color),
+        )?;
 
         Ok(())
     }
